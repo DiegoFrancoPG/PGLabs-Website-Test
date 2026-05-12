@@ -16,6 +16,11 @@ const config: StorybookConfig = {
   docs: {
     autodocs: "tag",
   },
+  managerHead: (head) => `${head}`,
+  viteFinal: (config) => {
+    config.cacheDir = ".vite-storybook-cache";
+    return config;
+  },
 };
 
 export default config;
