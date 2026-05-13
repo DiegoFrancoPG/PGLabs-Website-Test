@@ -9,6 +9,8 @@ const cardVariants = cva(
       variant: {
         default: "bg-brand-cream border-black/5 p-8",
         white: "bg-white border-black/5 p-8",
+        muted: "bg-muted border-black/5 p-8",
+        orange: "bg-brand-orange border-transparent p-8 text-white",
         dark: "bg-white/5 border-white/10 p-8",
         mini: "bg-white/85 border-transparent shadow-xs p-3 px-4 flex-row items-center gap-3.5",
         phase: "bg-brand-cream border-black/5 p-7 px-6 items-center text-center",
@@ -21,10 +23,15 @@ const cardVariants = cva(
         blue: "before:absolute before:top-0 before:left-0 before:h-0.5 before:w-full before:bg-gradient-to-r before:from-accent-blue/30 before:to-transparent relative overflow-hidden",
         gold: "before:absolute before:top-0 before:left-0 before:h-0.5 before:w-full before:bg-gradient-to-r before:from-accent-gold/30 before:to-transparent relative overflow-hidden",
       },
+      shadow: {
+        none: "",
+        sm: "shadow-sm",
+      },
     },
     defaultVariants: {
       variant: "default",
       accent: "none",
+      shadow: "none",
     },
   }
 );
@@ -34,10 +41,10 @@ export interface CardProps
     VariantProps<typeof cardVariants> {}
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, variant, accent, ...props }, ref) => (
+  ({ className, variant, accent, shadow, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn(cardVariants({ variant, accent, className }))}
+      className={cn(cardVariants({ variant, accent, shadow, className }))}
       {...props}
     />
   )
