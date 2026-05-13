@@ -1,0 +1,16 @@
+# Claude Code internals
+.claude/worktrees/
+
+# Storybook/Vite cache
+design-system/.vite-storybook-cache/
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+storybook-static/
+
+# OS
+.DS_Store
