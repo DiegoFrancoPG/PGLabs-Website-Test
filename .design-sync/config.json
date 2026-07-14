@@ -1,0 +1,28 @@
+{
+  "projectId": "b0304749-6486-4c24-b70b-f1a5b8abec81",
+  "shape": "storybook",
+  "storybookConfigDir": "design-system/.storybook",
+  "pkg": "@pglabs/design-system",
+  "globalName": "PGLabsDesignSystem",
+  "storybookStatic": ".design-sync/sb-reference",
+  "entry": "design-system/src/index.ts",
+  "tsconfig": "tsconfig.json",
+  "cssEntry": "dist/styles.css",
+  "readmeHeader": ".design-sync/conventions.md",
+  "buildCmd": "npm --prefix design-system ci && npm --prefix design-system run build:types && npm --prefix design-system run build:css",
+  "overrides": {
+    "Navbar": { "cardMode": "column" },
+    "Card": { "cardMode": "column" }
+  },
+  "titleMap": {
+    "Navigation": "Navbar",
+    "Form": null,
+    "Colors": null,
+    "Shadows&Radius": null,
+    "Spacing": null,
+    "Typography": null,
+    "Hero": null,
+    "FeatureSection": null,
+    "PhaseTimeline": null
+  }
+}
