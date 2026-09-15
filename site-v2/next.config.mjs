@@ -1,3 +1,17 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+
+/*
+ * The version reported by /api/v1/health. Read from package.json here so it
+ * cannot drift from the release, and exposed as a build constant rather than
+ * importing package.json into the route (which would pull the dependency list
+ * into the bundle).
+ */
+const { version } = JSON.parse(fs.readFileSync(path.join(here, "package.json"), "utf8"));
+
 /** @type {import('next').NextConfig} */
 
 /*
@@ -19,6 +33,19 @@ const PLATFORM_PATHS = [
 ];
 
 const nextConfig = {
+  env: {
+    APP_VERSION: version,
+  },
+
+  /*
+   * The design system lives in a sibling directory and is consumed from source
+   * through the `@ds` tsconfig path. Turbopack only resolves inside its root,
+   * which defaults to this folder, so the root is lifted one level to cover it.
+   */
+  turbopack: {
+    root: path.join(here, ".."),
+  },
+
   async headers() {
     return [
       // spec/05: never cache an authenticated response across users.

@@ -1,0 +1,126 @@
+import { z } from "zod";
+
+/*
+ * Environment contract for .env.example, validated with Zod (ADR-16).
+ *
+ * Two rules from spec/05 shape this file:
+ *
+ *   "Missing optional email/model keys disables that integration with
+ *    NOT_CONFIGURED, visible in operations; does not block unrelated learning."
+ *   "Production fixtures/mock providers are forbidden. Local tests explicitly
+ *    inject fake adapters, never infer mock mode from missing credentials."
+ *
+ * So a missing secret is never a signal to substitute a mock. It either fails
+ * loudly (core configuration) or reports NOT_CONFIGURED for that one
+ * integration (optional configuration). There is no third path.
+ */
+
+if (typeof window !== "undefined") {
+  throw new Error("lib/env is server-only and must never reach the browser bundle");
+}
+
+const APP_ENVS = ["development", "test", "pilot", "production"] as const;
+export type AppEnv = (typeof APP_ENVS)[number];
+
+/*
+ * Core: the application cannot serve a correct request without these.
+ *
+ * The Supabase and CRON entries join this schema as the features that use them
+ * land — Auth at T04, jobs at T21 — rather than being demanded by a build that
+ * has nothing to point them at. They are already listed in .env.example.
+ */
+/*
+ * spec/05 checks a mutation's Origin header against the configured app origin,
+ * so this has to be a real http(s) origin. Zod's `.url()` is not enough on its
+ * own: it accepts "localhost:3001", reading "localhost" as the scheme.
+ */
+const httpUrl = z.string().refine(
+  (value) => {
+    try {
+      const url = new URL(value);
+      return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+      return false;
+    }
+  },
+  { message: "must be an absolute http(s) URL" }
+);
+
+const coreSchema = z.object({
+  APP_ENV: z.enum(APP_ENVS).default("development"),
+  NEXT_PUBLIC_APP_URL: httpUrl,
+});
+
+/*
+ * Optional: each entry gates exactly one integration. Absent means that
+ * integration reports NOT_CONFIGURED; it never means "use a fake".
+ */
+const optionalSchema = z.object({
+  RESEND_API_KEY: z.string().min(1).optional(),
+  RESEND_WEBHOOK_SECRET: z.string().min(1).optional(),
+  EMAIL_FROM: z.string().email().optional(),
+  OPENAI_API_KEY: z.string().min(1).optional(),
+  OPENAI_MODEL: z.string().min(1).default("gpt-5-mini"),
+  TUTOR_MONTHLY_BUDGET_USD: z.coerce.number().positive().default(10),
+  TUTOR_INPUT_USD_PER_MILLION: z.coerce.number().nonnegative().default(0.25),
+  TUTOR_OUTPUT_USD_PER_MILLION: z.coerce.number().nonnegative().default(2.0),
+  CERTIFICATE_ISSUER: z.string().min(1).default("PGLearn"),
+  SUPABASE_STORAGE_BUCKET: z.string().min(1).default("pglearn-private"),
+});
+
+const envSchema = coreSchema.merge(optionalSchema);
+
+export type ServerEnv = z.infer<typeof envSchema>;
+
+let cached: ServerEnv | undefined;
+
+/**
+ * Parses and caches the environment. Throws with every problem listed at once,
+ * naming variables only — never their values, which are secrets.
+ */
+export function serverEnv(): ServerEnv {
+  if (cached) return cached;
+  const parsed = envSchema.safeParse(process.env);
+  if (!parsed.success) {
+    const problems = parsed.error.issues
+      .map((i) => `  ${i.path.join(".") || "(root)"}: ${i.message}`)
+      .join("\n");
+    throw new Error(`Invalid environment configuration:\n${problems}`);
+  }
+  cached = parsed.data;
+  return cached;
+}
+
+/** Test-only: drops the cache so a test can parse a different environment. */
+export function resetServerEnvCache(): void {
+  cached = undefined;
+}
+
+export type IntegrationName = "email" | "tutor";
+
+/**
+ * What `/admin/operations` renders (spec/04: "missing model/email configuration
+ * clearly shown"). Reports whether an integration can run — never the keys.
+ */
+export function integrationStatus(): Record<IntegrationName, "configured" | "not_configured"> {
+  const env = serverEnv();
+  return {
+    email: env.RESEND_API_KEY && env.EMAIL_FROM ? "configured" : "not_configured",
+    tutor: env.OPENAI_API_KEY ? "configured" : "not_configured",
+  };
+}
+
+/**
+ * Startup check (spec/05: "Startup validates core app/Auth configuration").
+ * Invoked from instrumentation.ts so a misconfigured deployment fails at boot
+ * rather than on a learner's first request.
+ */
+export function assertCoreConfigured(): void {
+  const env = serverEnv();
+  if (env.APP_ENV === "pilot" || env.APP_ENV === "production") {
+    // spec/05: "Production fixtures/mock providers are forbidden."
+    if (process.env.PGLEARN_USE_FIXTURES) {
+      throw new Error("PGLEARN_USE_FIXTURES must never be set outside development or test");
+    }
+  }
+}

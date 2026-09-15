@@ -43,7 +43,7 @@
     {
       "id": "T01",
       "title": "Bootstrap repository and shared contracts",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [],
       "requirements": [
@@ -56,7 +56,7 @@
       ],
       "implementation_targets": [
         "package.json scripts and exact package-lock.json",
-        "src/app shell and src/lib/clock",
+        "app/ shell (root app/, per D-01) and lib/clock",
         "tests harness and safe environment validation"
       ],
       "acceptance_ids": [
@@ -66,12 +66,26 @@
         "health"
       ],
       "checks": [
-        "npm run build",
+        "npm run lint",
         "npm run typecheck",
+        "npm run test:unit",
+        "npm run test:integration",
+        "npm run test:e2e",
+        "npm run build",
+        "npm run db:reset:test",
         "python3 verify_spec.py"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "Next.js resolved 14.2.35 -> 16.3.5 and React 18 -> 19 per ADR-01 ('resolve currently supported patched versions'); the entire Next 14 line was unpatched, including a critical RCE in the Image Optimization API. npm audit now reports 0 vulnerabilities. AC-001 is only partially exercised: the app shell builds, but 'reset creates schema and deterministic fixtures' cannot pass until M01 lands at T02 and fixtures at M05. The db:reset:test script and its non-production guards are in place and tested.",
+      "evidence": [
+        "commit on branch pglearn-integration; spec package relocated to the application root",
+        "all seven required scripts pass: lint, typecheck, test:unit, test:integration, test:e2e, build, verify_spec",
+        "27 vitest tests (unit + integration); 12 Playwright tests across 390px and 1440px projects",
+        "GET /api/v1/health returns {data:{status:'ok',version:'2.0.0'},request_id:<uuid>} and is validated against contracts/api.json by tests/integration/health-contract.test.ts",
+        "startup guard verified: with NEXT_PUBLIC_APP_URL unset the server fails its instrumentation hook and serves 500 for every request; it never falls back to a default or a mock",
+        "db:reset:test refuses APP_ENV=production and APP_ENV=pilot (exit 1), and refuses a remote Supabase host even when APP_ENV=test (exit 1)",
+        "marketing routes still prerender static; /api/v1 responses carry private,no-store and X-Robots-Tag noindex while / does not",
+        "AC-001 PARTIAL: app shell builds (verified); database reset blocked on T02 M01 migration and M05 fixtures"
+      ]
     },
     {
       "id": "T02",

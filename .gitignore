@@ -9,6 +9,8 @@ node_modules
 
 # Build outputs
 .next/
+test-results/
+playwright-report/
 dist/
 build/
 storybook-static/

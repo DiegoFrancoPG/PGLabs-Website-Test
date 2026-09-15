@@ -3,11 +3,11 @@
 ## Current state
 
 - Specification version: 1.0, 15 September 2026.
-- Application implementation: T00 done. No specification task (T01–T30) has started.
-- Active task: none. Start T01.
-- Last completed application task: T00 (added by the integration plan, not part of specification v1.0).
+- Application implementation: T00 and T01 done. T02–T30 todo.
+- Active task: none. Start T02.
+- Last completed application task: T01.
 - Specification validation: `python3 verify_spec.py` PASS — 66 operations, 70 schemas, 31 acyclic tasks. This validates the package, not the application.
-- Inputs outstanding: actual media/source content, final course details, service credentials and sender setup. Plus the certificate issuer string (see below).
+- Inputs outstanding: a Supabase project (or the local CLI stack) is now the first blocker — T02 cannot start without one. Then actual media/source content, final course details, service credentials and sender setup, and the certificate issuer string (see below).
 
 ## Host application
 
@@ -43,11 +43,11 @@ Accessibility constraint carried from the token definitions: `brand-500` (#59C4E
 - **Unresolved failures / blocked checks:** none.
 - **Next unblocked task:** T01.
 
-### Decisions T00 deliberately deferred to T01
+### Decisions T00 deferred to T01 — all resolved
 
-1. **Next.js is on an unpatched major.** `next@14.2.35` is the newest 14.x, but the whole 14 line is covered by the current advisories, including a critical RCE in the Image Optimization API; npm's remediation is `next@16.3.5`. ADR-01 assigns "resolve currently supported patched versions" to T01, so T00 stayed on the baseline version. **T01 must decide 14 → 16 (and React 18 → 19) before further UI work.**
-2. `site-v2/package.json` still lists `clsx`, `tailwind-merge` and `class-variance-authority`, which site-v2 no longer imports directly. Harmless now; leaving them allows the bundle duplication described below to return. T01 owns the dependency set.
-3. The tutor drawer is not built. It is a composition of `Dialog` and belongs to T19.
+1. Next.js upgraded 14.2.35 → 16.3.5, React 18 → 19. See T01 below.
+2. `clsx`, `tailwind-merge` and `class-variance-authority` removed from site-v2's direct dependencies; they resolve from the design system, which is the only thing that imports them.
+3. The tutor drawer is still not built. It is a composition of `Dialog` and belongs to T19.
 
 ### Problems found and fixed in the baseline
 
@@ -62,6 +62,56 @@ Accessibility constraint carried from the token definitions: `brand-500` (#59C4E
 ### Input still needed
 
 ADR-11 defaults the certificate issuer to "PGLearn", but under D-02 PGLearn is a PG Labs product. Confirm the issuer string — "PGLearn", "PG Labs", or "PGLearn by PG Labs" — before T15.
+
+## T01 — Bootstrap repository and shared contracts
+
+- **Task ID and status:** T01, done. AC-001 partially exercised — see below.
+- **Implementer / branch / commit:** Claude Code / `pglearn-integration`.
+- **Files changed:** `lib/clock.ts`, `lib/http.ts`, `lib/env.ts`, `instrumentation.ts`, `app/api/v1/health/route.ts`, `next.config.mjs`, `package.json`, `eslint.config.mjs`, `vitest.config.mts`, `playwright.config.ts`, `scripts/db-reset-test.mjs`, `tests/unit/{clock,http,env}.test.ts`, `tests/integration/health-contract.test.ts`, `tests/e2e/{health,marketing}.spec.ts`, both lockfiles.
+- **Acceptance IDs exercised:** AC-001, **partially** — see the limitation below.
+- **Commands and results:** all seven required scripts pass.
+
+  | Script | Result |
+  |---|---|
+  | `npm run lint` | PASS |
+  | `npm run typecheck` | PASS |
+  | `npm run test:unit` | PASS — 22 tests |
+  | `npm run test:integration` | PASS — 5 tests |
+  | `npm run test:e2e` | PASS — 12 tests across 390px and 1440px |
+  | `npm run build` | PASS — marketing routes still prerendered static |
+  | `npm run db:reset:test` | Guards verified; reset itself blocked until T02 |
+  | `python3 verify_spec.py` | PASS |
+
+- **Real integrations exercised:** none, and none are reachable yet. No database, email or model call exists in this task. AC-001 explicitly requires the bootstrap to be verifiable "without calling external providers", and it is.
+- **Unresolved failures / blocked checks:** AC-001's second clause, "reset creates schema and deterministic fixtures", cannot pass until the M01 migration lands at T02 and fixtures at M05. The `db:reset:test` script exists, refuses unsafe targets, and explains what is missing. `tests/acceptance.json` still records AC-001 as `not_run`, because the full scenario has not passed.
+- **Contract or default changes, with reason:** dependency versions only, under ADR-01's instruction to resolve currently supported patched versions. No API, schema or security change.
+- **Next unblocked task:** T02.
+
+### Dependency resolution (ADR-01)
+
+`next@14.2.35` was the newest 14.x, but the entire Next 14 line was covered by current advisories — cache poisoning, SSRF, several DoS paths, and a **critical unauthenticated RCE in the Image Optimization API**, which matters because the marketing site uses `next/image` throughout. The remediation is `next@16.3.5`, which requires React 19.
+
+Upgraded, since ADR-01 says to resolve patched versions and not to assume the specification's date freezes them, and the application has no users yet.
+
+Verified by rebuilding the T00 commit and comparing rendered output: **all seven marketing pages are identical in every visible word and every meta tag** across the upgrade. `npm audit` reports 0 vulnerabilities.
+
+Two things the upgrade required:
+- Next 16 builds with Turbopack, which only resolves modules inside its root. The design system is a sibling directory reached through the `@ds` path alias, so `turbopack.root` is lifted one level.
+- `@types/node` was pinned to `^20` while ADR-01 requires the Node 22 runtime. Aligned to `^22`.
+
+### What T01 established
+
+- **`lib/clock.ts`** — the injected `Clock` from spec/05. Nothing reads a header, query parameter or body, so a caller cannot move the clock.
+- **`lib/http.ts`** — the `{data, request_id}` / `{error:{code,message,fields}, request_id}` envelopes, the full spec/05 error-code to HTTP-status map, and `Retry-After` on temporary rate limits. `fields` is always emitted, because the contract marks it required.
+- **`lib/env.ts`** — Zod validation with a deliberate two-way split: core configuration fails loudly, optional integration keys report `NOT_CONFIGURED`. There is no third path, so a missing secret can never select a mock. Validation errors name variables, never values.
+- **`instrumentation.ts`** — runs that check at server startup.
+- **`/api/v1/health`** — status and version only, per spec/05. It does not probe the database or any provider.
+- **`tests/integration/health-contract.test.ts`** — validates the route's real response against `contracts/api.json` rather than a copied shape, so a contract edit the handler ignores fails here. Includes negative cases proving the validator catches drift.
+
+### Notes for T02
+
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET` are in `.env.example` but not yet in `lib/env.ts`'s core schema. Promote them as the features that use them land — Auth at T04, jobs at T21 — so the schema always describes what the app actually requires.
+- `scripts/db-reset-test.mjs` expects `supabase/config.toml`. T02 should `supabase init`, add the M01 migration, and add the Supabase CLI as a dev dependency so the script runs from a clean checkout.
 
 ## Update this section after each implementation task
 
@@ -79,3 +129,4 @@ ADR-11 defaults the certificate issuer to "PGLearn", but under D-02 PGLearn is a
 
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
+- T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
