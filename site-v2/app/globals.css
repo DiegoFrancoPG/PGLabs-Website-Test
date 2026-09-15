@@ -1,0 +1,102 @@
+/*
+ * PGLabs site v2 — "Editorial"
+ * Design decisions sourced from assets/PeaceGeeks_NY_Donor_Deck_DRAFT.pptx
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Nunito+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 3px;
+  }
+
+  body {
+    @apply bg-white text-steel-500 font-body antialiased;
+    font-size: 17px;
+    line-height: 1.6;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display text-ink-800;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  /* Anchor offset so in-page links clear the fixed masthead */
+  [id] {
+    scroll-margin-top: 96px;
+  }
+}
+
+@layer utilities {
+  /* Lining, tabular figures — keeps rows of deck-style stats aligned */
+  .tabular {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  .animate-testimonial-in {
+    animation: testimonial-fade-in 0.35s ease-out both;
+  }
+
+  @keyframes testimonial-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /*
+   * Hero pixel band. Each cell runs the same slow cycle with its own duration,
+   * negative delay and peak opacity, so the field reads as random without any
+   * JavaScript. The long tail at 0 opacity is what keeps the band sparse: a
+   * cell is only visible for roughly a quarter of its cycle.
+   */
+  .animate-pixel {
+    animation-name: pixel-appear;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    animation-iteration-count: infinite;
+    animation-fill-mode: both;
+    opacity: 0;
+  }
+
+  @keyframes pixel-appear {
+    0% {
+      opacity: 0;
+    }
+    10% {
+      opacity: var(--pixel-peak);
+    }
+    22% {
+      opacity: var(--pixel-peak);
+    }
+    32% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-pixel {
+      animation: none;
+      /* Holds the field as a faint static texture rather than vanishing it */
+      opacity: calc(var(--pixel-peak) * 0.4);
+    }
+  }
+}

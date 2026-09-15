@@ -1,0 +1,265 @@
+{
+  "version": "1.0",
+  "now": "2026-09-15T12:00:00Z",
+  "id_algorithm": "UUIDv5 namespace 53c2ab34-10e2-4a93-afb9-8f3c35da5500 and alias string",
+  "ids": {
+    "admin": "b35dfc4c-ebcb-5c9c-b6cb-63039f06d974",
+    "manager_a": "263e5cfb-2724-5b43-a675-d36759b67d1d",
+    "manager_b": "a1288183-f0cf-5b98-9fce-e445e4978786",
+    "amber": "6dbad48c-f06b-5321-84d6-0b42d923296d",
+    "ben": "c3fff508-6114-5ff3-986e-d75fe599c2bd",
+    "cora": "699ddb9e-51d8-5f85-8512-9a5cb3f136ba",
+    "dana": "2e24b9ee-5756-5e53-a3e6-cab38a00f1c8",
+    "personal": "d132f5f4-a23c-51c2-81e3-3d81ea102b2b",
+    "multi": "86aedbc4-2d82-5920-89d0-3a758d7794ff",
+    "org_a": "e803e98e-7e2b-5663-be8d-b90a533b408a",
+    "org_b": "16f88a87-6764-53cf-abde-3778f2ea1355",
+    "cohort_a": "8d660e2e-a9fb-5b6a-9ec3-d5d6b06f64a3",
+    "cohort_b": "4c376975-2853-5b3d-92c4-d3ad68ad104e",
+    "program_shared": "6f0169d8-f0c3-5c98-a1d1-2567de5cc1df",
+    "program_b_only": "ca077cbc-8c50-51ed-ba8b-f26d4f2f7528",
+    "version_shared": "fabecfce-b09c-541e-acf3-575147e78603",
+    "version_b_only": "1e4985f2-8eec-5418-998a-484f5561c049",
+    "module_shared": "1690cd9c-eca0-5455-944c-94bf4537dd5d",
+    "class_video": "d95caac8-b580-5147-bc93-bd483f308611",
+    "class_text": "85553726-1d5b-5d3c-98ae-beb5a2b5f132",
+    "class_audio": "ef874b1a-bdc6-5750-b384-a30f3199bd44",
+    "exercise_audio": "083cddbe-279d-5ea2-8289-7fb9ece21de6",
+    "grant_a": "0459023a-6a55-56cf-b516-1476b9054b8b",
+    "grant_b": "8a84ced4-af81-5d2f-be68-4ce5168daf59",
+    "grant_personal": "88b02634-0869-5a61-aaa5-cf9b925b238c",
+    "offering_a": "65999d80-6d61-5239-8300-529875cbc1e6",
+    "offering_b": "28d4d19d-d896-509f-9dc3-93bfaf80450d",
+    "enroll_amber": "f1961d6a-d742-5300-bd9a-a9fa80d6ae07",
+    "enroll_ben": "c12faa8a-c9e6-50bf-b8ee-4bc5cef608c3",
+    "enroll_cora": "6029de49-7fd6-5401-89c5-c0bbc2d91552",
+    "enroll_dana": "3e8eaf57-1d94-5e0c-b942-bc033cc29a9f",
+    "enroll_personal": "59abe2b6-25fb-5383-851e-6098b6574c5f",
+    "enroll_multi_a": "02d75f6a-c7c0-5b54-b8bb-4ae517909d38",
+    "enroll_multi_b": "31d3c60d-01cb-585e-bd19-c97ba634b560",
+    "certificate_cora": "17faeee8-f113-5036-a712-0d56f2b25a00",
+    "source_video": "54e0450b-1a84-558f-b419-359082c44f53",
+    "source_text": "3126c909-33fb-535e-8661-549bfea4cec5",
+    "source_audio": "8117df35-7ef7-555a-9d54-70c5e355a0ce"
+  },
+  "profiles": [
+    {
+      "alias": "admin",
+      "id": "b35dfc4c-ebcb-5c9c-b6cb-63039f06d974",
+      "email": "admin@example.invalid",
+      "display_name": "Admin",
+      "timezone": "UTC",
+      "onboarded": true
+    },
+    {
+      "alias": "manager_a",
+      "id": "263e5cfb-2724-5b43-a675-d36759b67d1d",
+      "email": "manager_a@example.invalid",
+      "display_name": "Manager A",
+      "timezone": "UTC",
+      "onboarded": true
+    },
+    {
+      "alias": "manager_b",
+      "id": "a1288183-f0cf-5b98-9fce-e445e4978786",
+      "email": "manager_b@example.invalid",
+      "display_name": "Manager B",
+      "timezone": "UTC",
+      "onboarded": true
+    },
+    {
+      "alias": "amber",
+      "id": "6dbad48c-f06b-5321-84d6-0b42d923296d",
+      "email": "amber@example.invalid",
+      "display_name": "Amber",
+      "timezone": "UTC",
+      "onboarded": true
+    },
+    {
+      "alias": "ben",
+      "id": "c3fff508-6114-5ff3-986e-d75fe599c2bd",
+      "email": "ben@example.invalid",
+      "display_name": "Ben",
+      "timezone": "UTC",
+      "onboarded": true
+    },
+    {
+      "alias": "cora",
+      "id": "699ddb9e-51d8-5f85-8512-9a5cb3f136ba",
+      "email": "cora@example.invalid",
+      "display_name": "Cora",
+      "timezone": "UTC",
+      "onboarded": true
+    },
+    {
+      "alias": "dana",
+      "id": "2e24b9ee-5756-5e53-a3e6-cab38a00f1c8",
+      "email": "dana@example.invalid",
+      "display_name": "Dana",
+      "timezone": "UTC",
+      "onboarded": false
+    },
+    {
+      "alias": "personal",
+      "id": "d132f5f4-a23c-51c2-81e3-3d81ea102b2b",
+      "email": "personal@example.invalid",
+      "display_name": "Personal",
+      "timezone": "UTC",
+      "onboarded": true
+    },
+    {
+      "alias": "multi",
+      "id": "86aedbc4-2d82-5920-89d0-3a758d7794ff",
+      "email": "multi@example.invalid",
+      "display_name": "Multi",
+      "timezone": "UTC",
+      "onboarded": true
+    }
+  ],
+  "organizations": [
+    {
+      "alias": "org_a",
+      "name": "Demo Organization A",
+      "timezone": "UTC"
+    },
+    {
+      "alias": "org_b",
+      "name": "Demo Organization B",
+      "timezone": "UTC"
+    }
+  ],
+  "memberships": [
+    {
+      "user": "manager_a",
+      "organization": "org_a",
+      "role": "manager",
+      "status": "active"
+    },
+    {
+      "user": "manager_b",
+      "organization": "org_b",
+      "role": "manager",
+      "status": "active"
+    },
+    {
+      "user": "amber",
+      "organization": "org_a",
+      "role": "learner",
+      "status": "active"
+    },
+    {
+      "user": "ben",
+      "organization": "org_a",
+      "role": "learner",
+      "status": "active"
+    },
+    {
+      "user": "cora",
+      "organization": "org_a",
+      "role": "learner",
+      "status": "active"
+    },
+    {
+      "user": "dana",
+      "organization": "org_a",
+      "role": "learner",
+      "status": "invited"
+    },
+    {
+      "user": "multi",
+      "organization": "org_a",
+      "role": "learner",
+      "status": "active"
+    },
+    {
+      "user": "multi",
+      "organization": "org_b",
+      "role": "learner",
+      "status": "active"
+    }
+  ],
+  "content": {
+    "program": "program_shared",
+    "version": "version_shared",
+    "classes": [
+      {
+        "alias": "class_video",
+        "kind": "video",
+        "duration_ms": 600000,
+        "required": true,
+        "source": "Prompt specificity helps define the task, audience, constraints and desired output.",
+        "caption": "WEBVTT\n\n00:00.000 --> 00:10.000\nDefine the task, audience and desired output.\n"
+      },
+      {
+        "alias": "class_text",
+        "kind": "text",
+        "required": true,
+        "body_md": "# Verify outputs\nCheck factual claims against reliable sources.",
+        "source": "AI-generated factual claims should be verified against reliable sources."
+      },
+      {
+        "alias": "class_audio",
+        "kind": "audio",
+        "duration_ms": 600000,
+        "required": true,
+        "exercise": "exercise_audio",
+        "source": "Use synthetic information in workplace examples and avoid entering confidential customer information.",
+        "exercise_instructions": "Write one example of a workplace task you could practice with synthetic information."
+      }
+    ],
+    "private_b_program": "program_b_only",
+    "notes": "Synthetic three-class test program, separate from the real nine-video curriculum. Generate small local player fixtures in tests; real media checks require actual assets."
+  },
+  "offering_a": {
+    "starts_at": "2026-09-01T09:00:00Z",
+    "due_at": "2026-09-13T17:00:00Z",
+    "access_ends_at": "2026-10-01T00:00:00Z",
+    "users": [
+      "amber",
+      "ben",
+      "cora",
+      "dana"
+    ]
+  },
+  "progress": {
+    "amber": {
+      "completed_classes": []
+    },
+    "ben": {
+      "completed_classes": [
+        "class_video",
+        "class_text"
+      ],
+      "last_activity_at": "2026-09-14T12:00:00Z"
+    },
+    "cora": {
+      "completed_classes": [
+        "class_video",
+        "class_text",
+        "class_audio"
+      ],
+      "exercise_response": "Draft a sample sales follow-up using fictional customer details.",
+      "completed_at": "2026-09-12T12:00:00Z"
+    },
+    "dana": {
+      "completed_classes": []
+    }
+  },
+  "expected_report": {
+    "assigned": 4,
+    "not_started": 2,
+    "in_progress": 1,
+    "completed": 1,
+    "overdue": 3,
+    "completion_rate": 25.0,
+    "average_progress": 41.7,
+    "row_progress_percent": {
+      "amber": 0.0,
+      "ben": 66.7,
+      "cora": 100.0,
+      "dana": 0.0
+    }
+  },
+  "additional_contexts": "personal has an individual grant/enrollment; multi has separate enrollments in A and B offerings not counted in offering_a fixture report. B-only catalog material is not granted to A.",
+  "credentials": "Do not commit passwords. Seed runner creates local test passwords via env and prints only account aliases; no real outbound recipients."
+}

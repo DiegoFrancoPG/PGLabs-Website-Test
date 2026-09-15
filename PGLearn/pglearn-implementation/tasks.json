@@ -1,0 +1,1107 @@
+{
+  "version": "1.0",
+  "status_values": [
+    "todo",
+    "in_progress",
+    "blocked",
+    "done"
+  ],
+  "completion_rule": "All task acceptance IDs exercised with evidence. For explicitly cross-task checks, record partial evidence and dependency; never mark the full scenario passed early. Release gate requires full real checks.",
+  "tasks": [
+    {
+      "id": "T01",
+      "title": "Bootstrap repository and shared contracts",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [],
+      "requirements": [
+        "FR-14"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "README.md",
+        "contracts/api.json"
+      ],
+      "implementation_targets": [
+        "package.json scripts and exact package-lock.json",
+        "src/app shell and src/lib/clock",
+        "tests harness and safe environment validation"
+      ],
+      "acceptance_ids": [
+        "AC-001"
+      ],
+      "operation_ids": [
+        "health"
+      ],
+      "checks": [
+        "npm run build",
+        "npm run typecheck",
+        "python3 verify_spec.py"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T02",
+      "title": "Create schema migration and constraint tests",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T01"
+      ],
+      "requirements": [
+        "FR-02",
+        "FR-05"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "contracts/schema.sql",
+        "spec/02-data-and-security.md",
+        "tests/fixtures.json"
+      ],
+      "implementation_targets": [
+        "supabase/migrations/M01_schema.sql",
+        "tests/integration/database-constraints"
+      ],
+      "acceptance_ids": [
+        "AC-002",
+        "AC-003"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "npm run db:reset:test",
+        "npm run test:integration -- database-constraints"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T03",
+      "title": "Implement relationship guards and permission boundary",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T02"
+      ],
+      "requirements": [
+        "FR-02"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/02-data-and-security.md"
+      ],
+      "implementation_targets": [
+        "M02 guard triggers/private predicates",
+        "M03 RPC allowlist and grant/revoke privileges",
+        "M04 service entrypoint boundaries"
+      ],
+      "acceptance_ids": [
+        "AC-004",
+        "AC-005"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "npm run test:integration -- database-security"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T04",
+      "title": "Implement verified session and profile services",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T03"
+      ],
+      "requirements": [
+        "FR-01",
+        "FR-02"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/05-integrations-operations.md",
+        "spec/04-ui.md"
+      ],
+      "implementation_targets": [
+        "src/lib/auth SSR clients",
+        "src/features/identity profile services",
+        "login/logout/profile page"
+      ],
+      "acceptance_ids": [
+        "AC-006",
+        "AC-007",
+        "AC-064"
+      ],
+      "operation_ids": [
+        "get_me",
+        "update_me"
+      ],
+      "checks": [
+        "npm run typecheck",
+        "npm run test:unit -- <changed feature>",
+        "npm run test:e2e -- auth"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T05",
+      "title": "Implement invitation onboarding and password recovery",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T04"
+      ],
+      "requirements": [
+        "FR-01"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/03-behavior.md",
+        "spec/05-integrations-operations.md"
+      ],
+      "implementation_targets": [
+        "Auth callback/password setup/reset",
+        "provision and accept invitation handlers",
+        "identity reconciliation and test adapters"
+      ],
+      "acceptance_ids": [
+        "AC-008",
+        "AC-009"
+      ],
+      "operation_ids": [
+        "get_invitation",
+        "accept_invitation"
+      ],
+      "checks": [
+        "npm run test:integration -- onboarding",
+        "npm run test:e2e -- invitations"
+      ],
+      "notes": "Real email acceptance also requires T21; local tests inject delivery adapter.",
+      "evidence": []
+    },
+    {
+      "id": "T06",
+      "title": "Implement organization and invitation administration",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T05"
+      ],
+      "requirements": [
+        "FR-02",
+        "FR-03"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/02-data-and-security.md",
+        "spec/03-behavior.md"
+      ],
+      "implementation_targets": [
+        "organization/membership command handlers",
+        "invitation intent/outbox/retry logic",
+        "admin organization forms"
+      ],
+      "acceptance_ids": [
+        "AC-010",
+        "AC-011"
+      ],
+      "operation_ids": [
+        "list_organizations",
+        "create_organization",
+        "update_organization",
+        "update_membership",
+        "create_invitation",
+        "resend_invitation"
+      ],
+      "checks": [
+        "npm run test:integration -- organizations"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T07",
+      "title": "Implement cohorts and catalog grants",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T06"
+      ],
+      "requirements": [
+        "FR-03",
+        "FR-04",
+        "FR-15"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/02-data-and-security.md",
+        "spec/04-ui.md"
+      ],
+      "implementation_targets": [
+        "cohort/member/grant handlers and manager screens"
+      ],
+      "acceptance_ids": [
+        "AC-012",
+        "AC-013"
+      ],
+      "operation_ids": [
+        "list_cohorts",
+        "create_cohort",
+        "update_cohort",
+        "list_cohort_members",
+        "add_cohort_members",
+        "remove_cohort_member",
+        "list_grants",
+        "create_grant",
+        "update_grant"
+      ],
+      "checks": [
+        "npm run test:integration -- cohorts-grants"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T08",
+      "title": "Implement draft content CRUD and ordering",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T03"
+      ],
+      "requirements": [
+        "FR-06"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/03-behavior.md",
+        "spec/04-ui.md"
+      ],
+      "implementation_targets": [
+        "content DTOs/handlers",
+        "program/module/class/exercise editor"
+      ],
+      "acceptance_ids": [
+        "AC-014"
+      ],
+      "operation_ids": [
+        "list_programs",
+        "create_program",
+        "update_program",
+        "get_version",
+        "update_version",
+        "create_module",
+        "update_module",
+        "create_class",
+        "update_class",
+        "delete_class",
+        "put_exercise",
+        "delete_exercise",
+        "reorder_content"
+      ],
+      "checks": [
+        "npm run test:integration -- content"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T09",
+      "title": "Implement private uploads, captions and file access",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T08",
+        "T04"
+      ],
+      "requirements": [
+        "FR-06",
+        "FR-07",
+        "FR-15"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/03-behavior.md",
+        "spec/05-integrations-operations.md"
+      ],
+      "implementation_targets": [
+        "StorageProvider adapter",
+        "asset authorize/finalize/download routes",
+        "upload progress and VTT conversion"
+      ],
+      "acceptance_ids": [
+        "AC-015",
+        "AC-016",
+        "AC-017",
+        "AC-062"
+      ],
+      "operation_ids": [
+        "authorize_upload",
+        "finalize_upload",
+        "authorize_download"
+      ],
+      "checks": [
+        "npm run test:integration -- assets"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T10",
+      "title": "Implement publication and frozen content",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T09"
+      ],
+      "requirements": [
+        "FR-06"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/02-data-and-security.md",
+        "spec/03-behavior.md"
+      ],
+      "implementation_targets": [
+        "publish transaction and source chunk indexing",
+        "published preview/lock UI"
+      ],
+      "acceptance_ids": [
+        "AC-018",
+        "AC-019"
+      ],
+      "operation_ids": [
+        "publish_version"
+      ],
+      "checks": [
+        "npm run test:integration -- publication"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T11",
+      "title": "Implement dated offerings and enrollment",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T07",
+        "T10"
+      ],
+      "requirements": [
+        "FR-02",
+        "FR-05",
+        "FR-15"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/03-behavior.md"
+      ],
+      "implementation_targets": [
+        "offering/enrollment handlers and assignment forms",
+        "availability predicates and transactional date updates"
+      ],
+      "acceptance_ids": [
+        "AC-020",
+        "AC-021",
+        "AC-022",
+        "AC-063",
+        "AC-065"
+      ],
+      "operation_ids": [
+        "list_offerings",
+        "create_offering",
+        "update_offering",
+        "enroll_cohort",
+        "enroll_personal",
+        "update_enrollment"
+      ],
+      "checks": [
+        "npm run test:integration -- enrollment"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T12",
+      "title": "Build learner dashboard and class experience",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T11"
+      ],
+      "requirements": [
+        "FR-07",
+        "FR-08"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/04-ui.md"
+      ],
+      "implementation_targets": [
+        "learn routes/outline/player/text/download UI",
+        "availability and empty/loading states"
+      ],
+      "acceptance_ids": [
+        "AC-066"
+      ],
+      "operation_ids": [
+        "list_my_enrollments",
+        "get_enrollment",
+        "get_learning_class"
+      ],
+      "checks": [
+        "npm run test:e2e -- learning-navigation"
+      ],
+      "notes": "Resume persistence is implemented and verified in T13; this task proves navigation, scoped reads and UI states only.",
+      "evidence": []
+    },
+    {
+      "id": "T13",
+      "title": "Implement durable playback, text progress and resume",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T12"
+      ],
+      "requirements": [
+        "FR-08",
+        "FR-15"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/03-behavior.md"
+      ],
+      "implementation_targets": [
+        "playback/session/event transaction",
+        "interval union and coverage",
+        "text completion/continue calculation",
+        "Atomic class/program completion helper including unique certificate identity and outbox insert; PDF/UI follows T15"
+      ],
+      "acceptance_ids": [
+        "AC-023",
+        "AC-024",
+        "AC-025",
+        "AC-026",
+        "AC-027",
+        "AC-028",
+        "AC-029",
+        "AC-030"
+      ],
+      "operation_ids": [
+        "start_playback",
+        "record_progress",
+        "complete_text"
+      ],
+      "checks": [
+        "npm run test:unit -- progress",
+        "npm run test:integration -- progress",
+        "npm run test:e2e -- resume"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T14",
+      "title": "Implement short-response exercise completion",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T13"
+      ],
+      "requirements": [
+        "FR-09"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/03-behavior.md",
+        "spec/04-ui.md"
+      ],
+      "implementation_targets": [
+        "exercise completion transaction and read-only saved response UI",
+        "Unicode validation and retry conflict handling"
+      ],
+      "acceptance_ids": [
+        "AC-031",
+        "AC-032",
+        "AC-033"
+      ],
+      "operation_ids": [
+        "complete_exercise",
+        "get_exercise_completion"
+      ],
+      "checks": [
+        "npm run test:unit -- exercise",
+        "npm run test:integration -- exercise"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T15",
+      "title": "Implement certificates and completion transaction",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T14"
+      ],
+      "requirements": [
+        "FR-10"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/03-behavior.md"
+      ],
+      "implementation_targets": [
+        "Verify and finish atomic completion/certificate/outbox helper introduced in T13; add immutable certificate metadata and revocation",
+        "PDF renderer and metadata/download/revoke handlers"
+      ],
+      "acceptance_ids": [
+        "AC-034",
+        "AC-035"
+      ],
+      "operation_ids": [
+        "get_certificate",
+        "get_certificate_pdf",
+        "revoke_certificate"
+      ],
+      "checks": [
+        "npm run test:integration -- certificates",
+        "npm run test:e2e -- certificate"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T16",
+      "title": "Implement scoped manager/admin reporting",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T15"
+      ],
+      "requirements": [
+        "FR-02",
+        "FR-12"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/03-behavior.md",
+        "tests/fixtures.json"
+      ],
+      "implementation_targets": [
+        "reports SQL/DTOs",
+        "manager dashboard and CSV export"
+      ],
+      "acceptance_ids": [
+        "AC-036",
+        "AC-037",
+        "AC-038"
+      ],
+      "operation_ids": [
+        "report_enrollments",
+        "export_enrollments"
+      ],
+      "checks": [
+        "npm run test:integration -- reports"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T17",
+      "title": "Implement tutor context retrieval and privacy",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T10",
+        "T11"
+      ],
+      "requirements": [
+        "FR-02",
+        "FR-13"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/05-integrations-operations.md"
+      ],
+      "implementation_targets": [
+        "authorized chunk retrieval and bounded prompt builder",
+        "tutor session access handlers"
+      ],
+      "acceptance_ids": [
+        "AC-039"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "npm run test:integration -- tutor-context"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T18",
+      "title": "Implement tutor model adapter and budget accounting",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T17"
+      ],
+      "requirements": [
+        "FR-13",
+        "FR-14"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/05-integrations-operations.md"
+      ],
+      "implementation_targets": [
+        "OpenAI structured answer adapter",
+        "request dedupe and durable usage reservation/settlement",
+        "request/history handlers"
+      ],
+      "acceptance_ids": [
+        "AC-040",
+        "AC-041",
+        "AC-043",
+        "AC-044"
+      ],
+      "operation_ids": [
+        "ask_tutor",
+        "get_tutor_request",
+        "list_tutor_history"
+      ],
+      "checks": [
+        "npm run test:integration -- tutor"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T19",
+      "title": "Build tutor UI and evaluate adapter behavior",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T18",
+        "T12"
+      ],
+      "requirements": [
+        "FR-13"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/04-ui.md",
+        "spec/05-integrations-operations.md"
+      ],
+      "implementation_targets": [
+        "class tutor drawer/pending/failure/source links",
+        "Recorded synthetic-course evaluation; real-course evaluation belongs to T25"
+      ],
+      "acceptance_ids": [
+        "AC-040",
+        "AC-041",
+        "AC-042",
+        "AC-067"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "npm run test:e2e -- tutor",
+        "Run synthetic-course evaluation through injected provider; label test evidence as such"
+      ],
+      "notes": "Live course/model evaluation remains AC-061 at T25; this implementation task can finish from explicit adapter/UI tests without claiming live readiness.",
+      "evidence": []
+    },
+    {
+      "id": "T20",
+      "title": "Implement reminder eligibility and outbox claims",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T15"
+      ],
+      "requirements": [
+        "FR-11",
+        "FR-14"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/03-behavior.md"
+      ],
+      "implementation_targets": [
+        "timezone-aware rule selectors",
+        "daily cap and transactional outbox claims",
+        "provider uncertainty state machine"
+      ],
+      "acceptance_ids": [
+        "AC-045",
+        "AC-046",
+        "AC-047",
+        "AC-048"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "npm run test:unit -- reminders",
+        "npm run test:integration -- outbox"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T21",
+      "title": "Connect email, webhooks and cron",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T20",
+        "T06"
+      ],
+      "requirements": [
+        "FR-01",
+        "FR-11"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/05-integrations-operations.md"
+      ],
+      "implementation_targets": [
+        "Resend adapter/templates and custom SMTP setup",
+        "GET reminder job and webhook verification",
+        "vercel.json schedules"
+      ],
+      "acceptance_ids": [
+        "AC-009",
+        "AC-049",
+        "AC-050"
+      ],
+      "operation_ids": [
+        "run_reminders",
+        "email_webhook"
+      ],
+      "checks": [
+        "npm run test:integration -- email",
+        "Verify route/cron configuration and provider adapter with controlled test payloads; real mail gate is T25"
+      ],
+      "notes": "Adapter tests may use explicit test doubles. Real controlled delivery is mandatory at T25.",
+      "evidence": []
+    },
+    {
+      "id": "T22",
+      "title": "Implement redacted operations and configuration failures",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T21",
+        "T18"
+      ],
+      "requirements": [
+        "FR-14"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/05-integrations-operations.md"
+      ],
+      "implementation_targets": [
+        "admin notifications/jobs status and safe retry",
+        "provider config validation and redacted logs"
+      ],
+      "acceptance_ids": [
+        "AC-048",
+        "AC-051"
+      ],
+      "operation_ids": [
+        "list_notifications",
+        "retry_notification",
+        "list_jobs"
+      ],
+      "checks": [
+        "npm run test:integration -- operations"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T23",
+      "title": "Integrate responsive admin/manager/learner UI",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T16",
+        "T19",
+        "T22"
+      ],
+      "requirements": [
+        "FR-06",
+        "FR-07",
+        "FR-12"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/04-ui.md"
+      ],
+      "implementation_targets": [
+        "consistent role navigation and PGLearn branding",
+        "complete program upload/assignment/report flows"
+      ],
+      "acceptance_ids": [
+        "AC-053"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "npm run test:e2e -- primary-flows",
+        "Manual keyboard/layout check at 390px and desktop using labeled fixture media"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T24",
+      "title": "Run cross-context and end-to-end verification",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T23"
+      ],
+      "requirements": [
+        "FR-02",
+        "FR-14"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/02-data-and-security.md",
+        "tests/acceptance.json"
+      ],
+      "implementation_targets": [
+        "real test evidence and corrected defects",
+        "private-cache/origin/access/secret checks"
+      ],
+      "acceptance_ids": [
+        "AC-003",
+        "AC-004",
+        "AC-007",
+        "AC-021",
+        "AC-023",
+        "AC-032",
+        "AC-038",
+        "AC-039",
+        "AC-064",
+        "AC-065"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "npm run test:integration",
+        "npm run test:e2e",
+        "npm run lint",
+        "npm run typecheck",
+        "npm run build"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T25",
+      "title": "Rehearse and record demo gate",
+      "status": "todo",
+      "release": "demo",
+      "depends_on": [
+        "T24"
+      ],
+      "requirements": [
+        "FR-01",
+        "FR-03",
+        "FR-06",
+        "FR-10",
+        "FR-11",
+        "FR-12",
+        "FR-13"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "README.md",
+        "tests/acceptance.json"
+      ],
+      "implementation_targets": [
+        "deployment/rehearsal evidence",
+        "explicit list of any unavailable real integrations"
+      ],
+      "acceptance_ids": [
+        "AC-052",
+        "AC-054",
+        "AC-061"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "Follow five-minute end-to-end script with actual source/provider inputs",
+        "Deliver one controlled invitation and reminder through real provider; inspect configured scheduler",
+        "Run real nine-video course tutor evaluation and uploaded-media checks"
+      ],
+      "notes": "Do not mark demo gate done if a required feature only has a mock or fails. User can still choose to show partial work with clear disclosure.",
+      "evidence": []
+    },
+    {
+      "id": "T26",
+      "title": "Add validated bulk roster import",
+      "status": "todo",
+      "release": "pilot",
+      "depends_on": [
+        "T11",
+        "T21"
+      ],
+      "requirements": [
+        "FR-03"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/04-ui.md",
+        "spec/03-behavior.md"
+      ],
+      "implementation_targets": [
+        "CSV preview/apply UI reusing create_invitation and add_cohort_members commands",
+        "No new API contract needed: apply uses existing idempotent routes with per-row keys"
+      ],
+      "acceptance_ids": [
+        "AC-055"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "npm run test:integration -- bulk-import"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T27",
+      "title": "Add new-version cloning UI and checks",
+      "status": "todo",
+      "release": "pilot",
+      "depends_on": [
+        "T10"
+      ],
+      "requirements": [
+        "FR-06"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/02-data-and-security.md",
+        "spec/03-behavior.md"
+      ],
+      "implementation_targets": [
+        "clone-version handler and draft UI",
+        "independent asset identity/requirements"
+      ],
+      "acceptance_ids": [
+        "AC-056"
+      ],
+      "operation_ids": [
+        "clone_version"
+      ],
+      "checks": [
+        "npm run test:integration -- version-cloning"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T28",
+      "title": "Implement retention and verify recovery",
+      "status": "todo",
+      "release": "pilot",
+      "depends_on": [
+        "T22"
+      ],
+      "requirements": [
+        "FR-14"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/05-integrations-operations.md"
+      ],
+      "implementation_targets": [
+        "retention handler and schedule",
+        "separate database/asset backup restore runbook"
+      ],
+      "acceptance_ids": [
+        "AC-057",
+        "AC-058"
+      ],
+      "operation_ids": [
+        "run_retention"
+      ],
+      "checks": [
+        "npm run test:integration -- retention",
+        "Perform restore rehearsal in disposable environment"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T29",
+      "title": "Measure 40-user load and operational limits",
+      "status": "todo",
+      "release": "pilot",
+      "depends_on": [
+        "T24",
+        "T26",
+        "T27",
+        "T28"
+      ],
+      "requirements": [
+        "FR-08",
+        "FR-12",
+        "FR-14"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/05-integrations-operations.md",
+        "tests/fixtures.json"
+      ],
+      "implementation_targets": [
+        "repeatable bounded load scenario and measurements",
+        "quota/spend/latency fixes based on evidence"
+      ],
+      "acceptance_ids": [
+        "AC-059"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "Run 40-user scenario; record concurrency/network/p95/error rate"
+      ],
+      "notes": "",
+      "evidence": []
+    },
+    {
+      "id": "T30",
+      "title": "Release pilot and onboard manager",
+      "status": "todo",
+      "release": "pilot",
+      "depends_on": [
+        "T25",
+        "T29"
+      ],
+      "requirements": [
+        "FR-14"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "tests/acceptance.json",
+        "HANDOFF.md"
+      ],
+      "implementation_targets": [
+        "full gate evidence",
+        "manager runbook and verified roster/content/dates",
+        "recorded pilot deployment/migration version"
+      ],
+      "acceptance_ids": [
+        "AC-060"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "Reconcile all mandatory acceptance evidence and verify manager operation"
+      ],
+      "notes": "",
+      "evidence": []
+    }
+  ]
+}

@@ -1,0 +1,838 @@
+{
+  "version": "1.0",
+  "scenarios": [
+    {
+      "id": "AC-001",
+      "title": "Clean bootstrap",
+      "given": "Fresh repository and local Supabase test environment",
+      "when": "Run installed scripts and test DB reset",
+      "then": "App shell builds; reset creates schema and deterministic fixtures without calling external providers.",
+      "layer": "integration",
+      "requirements": [
+        "FR-14"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-002",
+      "title": "Schema constraints",
+      "given": "Reference schema and auth fixture users",
+      "when": "Insert grant with both subjects, bad dates, duplicate offering enrollment or cross-version progress",
+      "then": "Each statement fails the relevant CHECK/UNIQUE/FK; transaction does not leave a partial row.",
+      "layer": "database",
+      "requirements": [
+        "FR-02",
+        "FR-05"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-003",
+      "title": "No direct table access",
+      "given": "anon and authenticated DB roles",
+      "when": "SELECT or INSERT app.enrollments, including through Data API",
+      "then": "Permission denied or inaccessible schema; no row data disclosed.",
+      "layer": "database",
+      "requirements": [
+        "FR-02"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-004",
+      "title": "Function privilege boundary",
+      "given": "Authenticated learner token",
+      "when": "Call pglearn_job/provision or unknown pglearn_rpc action",
+      "then": "Service functions deny execute; unknown action returns stable denial and makes no changes.",
+      "layer": "database",
+      "requirements": [
+        "FR-02"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-005",
+      "title": "Cross-context relationship",
+      "given": "Org A grant and org B cohort",
+      "when": "Create offering referencing mismatched grant/cohort via handler or privileged insert test",
+      "then": "Relationship trigger rejects; no offering/enrollment created.",
+      "layer": "database",
+      "requirements": [
+        "FR-02",
+        "FR-04"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-006",
+      "title": "Session and profile authority",
+      "given": "Signed-in learner with manipulated profile fields/cookie role metadata",
+      "when": "Try to set platform_admin, email or organization role through update_me",
+      "then": "Unknown fields rejected; DB authority remains unchanged.",
+      "layer": "integration",
+      "requirements": [
+        "FR-01",
+        "FR-02"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-007",
+      "title": "Anonymous and logout",
+      "given": "Unauthenticated or server-revoked session",
+      "when": "Open protected class/API",
+      "then": "Page redirects to login; API returns 401; no cached content from another user.",
+      "layer": "e2e",
+      "requirements": [
+        "FR-01"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-008",
+      "title": "Invitation acceptance",
+      "given": "Pending unexpired invitation for amber",
+      "when": "Accept as amber, then retry; separately try as ben",
+      "then": "Amber becomes onboarded/active once; retry returns same state; ben gets 404.",
+      "layer": "integration",
+      "requirements": [
+        "FR-01",
+        "FR-03"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-009",
+      "title": "New versus existing account",
+      "given": "One new email and one existing verified user",
+      "when": "Invite both and follow email/callback",
+      "then": "New user sets password before onboarding; existing user signs in and accepts without password reset; neither gains access before acceptance.",
+      "layer": "e2e",
+      "requirements": [
+        "FR-01"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-010",
+      "title": "Invitation retry and expiry",
+      "given": "Repeated create request ID; expired invitation; missing mail response",
+      "when": "Retry same request, then explicitly resend expired invitation",
+      "then": "No duplicate membership/enrollment; resend replaces invitation with 24h expiry; private Auth link never returned to manager.",
+      "layer": "integration",
+      "requirements": [
+        "FR-03",
+        "FR-14"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-011",
+      "title": "Last manager and scope",
+      "given": "One active manager A",
+      "when": "Remove/demote manager or have manager A invite manager B/promote learner",
+      "then": "Last-manager change fails 409; manager role promotion/foreign-org action denied.",
+      "layer": "database",
+      "requirements": [
+        "FR-02",
+        "FR-03"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-012",
+      "title": "Cohort membership removal",
+      "given": "Active enrolled cohort learner",
+      "when": "Remove learner from cohort, then re-add",
+      "then": "Prior progress retained; enrollment cancelled; re-add alone does not reactivate; explicit valid reactivation restores access.",
+      "layer": "integration",
+      "requirements": [
+        "FR-03",
+        "FR-15"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-013",
+      "title": "Catalog subject and expiry",
+      "given": "A grant, personal grant, and B-only program",
+      "when": "Manager A lists catalog/grants then assigns B-only content or personal grant",
+      "then": "Only own entitled summaries visible; invalid assignment denied; personal grant never grants A access.",
+      "layer": "integration",
+      "requirements": [
+        "FR-04"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-014",
+      "title": "Draft editing and ordering",
+      "given": "Two modules with existing classes",
+      "when": "Reorder complete sibling list then submit duplicate/foreign ID list",
+      "then": "Valid order contiguous and persisted; invalid reorder rejected atomically.",
+      "layer": "integration",
+      "requirements": [
+        "FR-06"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-015",
+      "title": "Asset upload authorization",
+      "given": "Admin draft class and learner token",
+      "when": "Authorize supported upload as admin; try learner upload or path traversal filename",
+      "then": "Admin receives exact scoped upload permission; learner denied; key sanitized/no traversal.",
+      "layer": "integration",
+      "requirements": [
+        "FR-06",
+        "FR-07"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-016",
+      "title": "Upload finalization",
+      "given": "Uploaded object with declared/actual mismatch or invalid SRT",
+      "when": "Finalize upload",
+      "then": "Asset not ready; stable error shown; class cannot publish until corrected.",
+      "layer": "integration",
+      "requirements": [
+        "FR-06"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-017",
+      "title": "Caption conversion",
+      "given": "Valid English SRT with timestamps and overlapping cues",
+      "when": "Finalize caption then play generated VTT",
+      "then": "Timestamps/text preserved, overlap allowed, invalid end<=start rejected, raw HTML not executed.",
+      "layer": "integration",
+      "requirements": [
+        "FR-07"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-018",
+      "title": "Publication guard",
+      "given": "Draft missing required source/caption or all classes optional",
+      "when": "Publish",
+      "then": "422 PUBLISH_INCOMPLETE with specific fields; version remains draft.",
+      "layer": "integration",
+      "requirements": [
+        "FR-06"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-019",
+      "title": "Published immutability",
+      "given": "Published version with enrollment",
+      "when": "Edit/delete class/assets through route or DB privileged test",
+      "then": "VERSION_PUBLISHED/trigger rejection; original denominator/source/assets unchanged.",
+      "layer": "database",
+      "requirements": [
+        "FR-06",
+        "FR-08"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-020",
+      "title": "Enrollment uniqueness",
+      "given": "Eligible active/invited cohort members",
+      "when": "Assign same offering twice",
+      "then": "Same enrollment IDs returned; assigned count unchanged on second call.",
+      "layer": "integration",
+      "requirements": [
+        "FR-05"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-021",
+      "title": "Personal and multi-org privacy",
+      "given": "personal and multi fixture accounts",
+      "when": "List own enrollments and manager A reports",
+      "then": "Personal learner works without org; manager A sees only A records; multi progress in B is unaffected by A updates.",
+      "layer": "integration",
+      "requirements": [
+        "FR-02",
+        "FR-05"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-022",
+      "title": "Time boundaries",
+      "given": "Start S, due D, hard end E, active grant",
+      "when": "Read/write at S, D, D+1ms, E",
+      "then": "S permits access; completion at D is on time; D+1ms may complete late; E rejects new learning writes.",
+      "layer": "unit",
+      "requirements": [
+        "FR-05",
+        "FR-15"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-023",
+      "title": "Grant revoked during session",
+      "given": "Authorized playing learner with valid URL",
+      "when": "Revoke grant, request next heartbeat/download renewal",
+      "then": "Write/renewal rejected; existing issued link may remain usable only until expiry; prior progress retained.",
+      "layer": "integration",
+      "requirements": [
+        "FR-15"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-024",
+      "title": "Cross-session resume",
+      "given": "Acknowledged position 125000ms",
+      "when": "Reload and log in on another browser then Continue",
+      "then": "Same enrollment/class/position restored; no automatic completion from opening.",
+      "layer": "e2e",
+      "requirements": [
+        "FR-08"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-025",
+      "title": "Interval coverage threshold",
+      "given": "600000ms media and no exercise",
+      "when": "Accumulate unique [0,539999) then extend to 540000",
+      "then": "First content incomplete; at 540000 content completes exactly; overlapping replay adds zero duplicate coverage.",
+      "layer": "unit",
+      "requirements": [
+        "FR-08"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-026",
+      "title": "Seek is not playback",
+      "given": "New 600000ms media session",
+      "when": "Seek to 590000 then submit plausible played [590000,600000)",
+      "then": "Coverage=10000ms, class incomplete despite position at end.",
+      "layer": "unit",
+      "requirements": [
+        "FR-08"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-027",
+      "title": "Heartbeat replay/order",
+      "given": "Accepted sequence 3 and event UUID",
+      "when": "Retry identical event; send new event sequence 2; reuse event with different body",
+      "then": "Identical replay no new credit; stale accepted=false; changed payload returns 409; position/completion never regresses.",
+      "layer": "integration",
+      "requirements": [
+        "FR-08"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-028",
+      "title": "Two playback tabs",
+      "given": "Session A active then session B starts for same enrollment",
+      "when": "Send heartbeat from A then from B",
+      "then": "A gets 409 SESSION_SUPERSEDED; B writes; old tab cannot overwrite resume.",
+      "layer": "integration",
+      "requirements": [
+        "FR-08"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-029",
+      "title": "Impossible progress evidence",
+      "given": "15s elapsed at rate 1",
+      "when": "Submit 500000ms interval or negative/out-of-duration positions",
+      "then": "422 INVALID_PROGRESS and no state change.",
+      "layer": "unit",
+      "requirements": [
+        "FR-08"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-030",
+      "title": "Text explicit completion",
+      "given": "Required text class viewed",
+      "when": "GET class then POST text completion",
+      "then": "GET leaves completion null; POST sets content complete and follows exercise rule.",
+      "layer": "integration",
+      "requirements": [
+        "FR-08"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-031",
+      "title": "Exercise Unicode validation",
+      "given": "Uncompleted exercise",
+      "when": "Submit whitespace-only, confirmation false, 2000 code points, and 2001 code points",
+      "then": "First two reject; 2000 accepts with confirmation; 2001 rejects consistently in UI/API/DB.",
+      "layer": "unit",
+      "requirements": [
+        "FR-09"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-032",
+      "title": "Exercise atomicity and access",
+      "given": "Learner owns active matching enrollment",
+      "when": "Inject transaction failure while saving response; attempt foreign enrollment/class exercise",
+      "then": "No response/completion on failure; cross-context request denied; retry succeeds once.",
+      "layer": "integration",
+      "requirements": [
+        "FR-02",
+        "FR-09"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-033",
+      "title": "Exercise before content",
+      "given": "Required media class incomplete",
+      "when": "Save response/confirmation then finish media",
+      "then": "Exercise saved read-only; class stays incomplete until media criterion then completes once.",
+      "layer": "integration",
+      "requirements": [
+        "FR-09",
+        "FR-10"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-034",
+      "title": "Concurrent final completion",
+      "given": "All but final criterion complete",
+      "when": "Submit two concurrent final completions",
+      "then": "One enrollment completion timestamp, one certificate and one certificate notification event.",
+      "layer": "database",
+      "requirements": [
+        "FR-10"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-035",
+      "title": "Certificate access and snapshot",
+      "given": "Cora issued certificate",
+      "when": "Rename profile; expire course; attempt other-user PDF; revoke certificate",
+      "then": "Original name remains; owner can download after expiry; unauthorized gets 404; after revocation metadata remains and PDF returns 409.",
+      "layer": "integration",
+      "requirements": [
+        "FR-10"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-036",
+      "title": "Report fixture reconciliation",
+      "given": "Offering A fixed fixture at fixtures.now",
+      "when": "Query report and CSV",
+      "then": "assigned=4, not_started=2, in_progress=1, completed=1, overdue=3, completion_rate=25, average_progress=41.7.",
+      "layer": "integration",
+      "requirements": [
+        "FR-12"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-037",
+      "title": "Empty and filtered reports",
+      "given": "No matching enrollment or completed time filter",
+      "when": "Query report",
+      "then": "Empty denominator returns null; completed filters exclude incomplete; summary uses all matching records not just one page.",
+      "layer": "integration",
+      "requirements": [
+        "FR-12"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-038",
+      "title": "CSV injection and scope",
+      "given": "Learner name begins whitespace then = and manager A token",
+      "when": "Export CSV including manipulated org filter",
+      "then": "Dangerous field prefixed with quote and RFC4180 escaped; foreign org filter denied; no chat/response body column.",
+      "layer": "integration",
+      "requirements": [
+        "FR-02",
+        "FR-12"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-039",
+      "title": "Authorized retrieval",
+      "given": "A learner and B-only source chunks",
+      "when": "Ask course question attempting to retrieve B course",
+      "then": "Only pinned authorized version chunks enter provider input; B text and other conversations absent.",
+      "layer": "integration",
+      "requirements": [
+        "FR-02",
+        "FR-13"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-040",
+      "title": "Valid tutor output",
+      "given": "Retrieved source IDs and useful course question",
+      "when": "Provider returns explanation/example with valid subset citations",
+      "then": "Validated answer shown with server-built class links; example labeled illustrative.",
+      "layer": "integration",
+      "requirements": [
+        "FR-13"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-041",
+      "title": "Invalid/unsupported tutor output",
+      "given": "Empty sources or fabricated citation/refused/incomplete JSON",
+      "when": "Ask question",
+      "then": "Empty corpus returns unsupported without call; invalid model response fails visibly, invents no citation, does not block class progress.",
+      "layer": "integration",
+      "requirements": [
+        "FR-13",
+        "FR-14"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-042",
+      "title": "Tutor prompt injection",
+      "given": "Course text contains instruction to expose secrets or alter progress",
+      "when": "Ask for example",
+      "then": "Text treated as data; no secrets/tools supplied; no progress writes; reviewed output stays within learning scope.",
+      "layer": "evaluation",
+      "requirements": [
+        "FR-13"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-043",
+      "title": "Tutor concurrency and budget",
+      "given": "Near monthly budget, duplicate request ID, daily limit",
+      "when": "Issue concurrent/retried requests",
+      "then": "Atomic reservation prevents overspend under configured rates; duplicate pending yields 409; quota exhausted 429; no repeat provider invocation.",
+      "layer": "integration",
+      "requirements": [
+        "FR-13"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-044",
+      "title": "Tutor timeout and privacy",
+      "given": "Model timeout and own prior chat",
+      "when": "Refresh request; manager attempts history",
+      "then": "Existing failure/pending status retrieved without auto-send; unknown cost reservation retained; manager gets 404.",
+      "layer": "integration",
+      "requirements": [
+        "FR-13",
+        "FR-14"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-045",
+      "title": "Reminder priority and daily cap",
+      "given": "Amber overdue and inactive, one second due enrollment",
+      "when": "Run scheduler twice at local noon",
+      "then": "One highest-priority learning outbox event/user/local date; duplicate run makes no new send; pending Dana receives none.",
+      "layer": "integration",
+      "requirements": [
+        "FR-11"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-046",
+      "title": "Reminder date/time rules",
+      "given": "Local date at due-3, due day, overdue and 08:59/09:00",
+      "when": "Evaluate rules with fixed clock including DST timezone",
+      "then": "Only correct local date/rule eligible in 09:00\u201317:59; no duplicate local-day send after DST offset change.",
+      "layer": "unit",
+      "requirements": [
+        "FR-11"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-047",
+      "title": "Completion and preference suppression",
+      "given": "Outbox pending, learner completes or opts out/revokes access",
+      "when": "Dispatcher claims then rechecks before provider call",
+      "then": "Pending learning mail suppressed; no provider call; already-dispatched email cannot be recalled.",
+      "layer": "integration",
+      "requirements": [
+        "FR-11"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-048",
+      "title": "Email uncertain send",
+      "given": "Provider timeout after possible acceptance",
+      "when": "Retry within window then recover at 23h+",
+      "then": "Same key/payload within window; at cutoff uncertain, no blind resend; daily slot retained.",
+      "layer": "integration",
+      "requirements": [
+        "FR-11",
+        "FR-14"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-049",
+      "title": "Email webhook ordering",
+      "given": "Valid delivered callback before provider ID save; duplicate event; forged signature",
+      "when": "Process and reconcile callbacks",
+      "then": "One event record; reconciliation reaches delivered; accepted callback cannot downgrade it; forged event 401/no write.",
+      "layer": "integration",
+      "requirements": [
+        "FR-11"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-050",
+      "title": "Cron authentication",
+      "given": "GET scheduler with user session, bad secret and correct CRON_SECRET",
+      "when": "Invoke routes",
+      "then": "Only correct Bearer secret runs; job persisted; normal read routes do not mutate.",
+      "layer": "integration",
+      "requirements": [
+        "FR-11"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-051",
+      "title": "Operations redaction",
+      "given": "Failed invitation with action link in private outbox payload",
+      "when": "Admin opens operations, inspect logs/browser bundle",
+      "then": "Status available; signed link/cookie/key/prompt/response body absent.",
+      "layer": "integration",
+      "requirements": [
+        "FR-14"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-052",
+      "title": "Published media real check",
+      "given": "Supplied real video/captions uploaded privately",
+      "when": "Play/seek/renew at 390px and desktop; reload resume",
+      "then": "Actual media plays with captions; expired URL reauthorizes without losing position; no public object URL.",
+      "layer": "manual",
+      "requirements": [
+        "FR-07",
+        "FR-08"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-053",
+      "title": "Accessible UI states",
+      "given": "All primary forms and class player",
+      "when": "Keyboard navigate; trigger empty/loading/validation/provider errors",
+      "then": "Visible focus, labels, retained inputs and live save/error status; no keyboard trap; course works if tutor fails.",
+      "layer": "manual",
+      "requirements": [
+        "FR-07",
+        "FR-14"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-054",
+      "title": "End-to-end demo",
+      "given": "Controlled manager/admin/learner and real provider credentials/assets",
+      "when": "Follow demo script",
+      "then": "Publish\u2192grant\u2192invite\u2192enroll\u2192learn\u2192response\u2192certificate\u2192report works; real controlled reminder/tutor verified; mocked-only features disclosed incomplete.",
+      "layer": "e2e",
+      "requirements": [
+        "FR-01",
+        "FR-03",
+        "FR-06",
+        "FR-10",
+        "FR-11",
+        "FR-12",
+        "FR-13"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-055",
+      "title": "Bulk import validation",
+      "given": "CSV with duplicates, bad email and foreign context",
+      "when": "Preview then apply valid rows",
+      "then": "Preview identifies issues; explicit apply idempotent; manager cannot assign foreign org/role; output reconciles counts.",
+      "layer": "integration",
+      "requirements": [
+        "FR-03"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-056",
+      "title": "New version isolation",
+      "given": "Published version with existing enrollments",
+      "when": "Clone draft, edit content, publish version 2",
+      "then": "Existing learners keep original IDs/requirements/media; new assignment can select v2; no silent migration.",
+      "layer": "integration",
+      "requirements": [
+        "FR-06"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-057",
+      "title": "Retention and budget ledger",
+      "given": "Chat >30 days, current month usage, raw progress events",
+      "when": "Run retention job",
+      "then": "Expired text/links removed; progress/certificates remain; durable no-text usage ledger preserves monthly accounting.",
+      "layer": "integration",
+      "requirements": [
+        "FR-14"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-058",
+      "title": "Backup restore",
+      "given": "Disposable test target and database/asset backups",
+      "when": "Restore and verify learner record and referenced media",
+      "then": "Acknowledged progress/certificate recover and asset bytes exist; documented RPO<=24h and recovery steps measured.",
+      "layer": "manual",
+      "requirements": [
+        "FR-14"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-059",
+      "title": "Forty-user load",
+      "given": "Realistic 40 synthetic learners with seeded program",
+      "when": "Exercise concurrent dashboard/progress and report reads",
+      "then": "No lost acknowledged updates/isolation failures; measure p95 data operation<1s and dashboard usable<3s on stated network; report failures instead of assuming pass.",
+      "layer": "load",
+      "requirements": [
+        "FR-08",
+        "FR-12",
+        "FR-14"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-060",
+      "title": "Pilot gate",
+      "given": "All pilot tasks implemented and content/manager ready",
+      "when": "Run full release checklist before real cohort onboarding",
+      "then": "All mandatory scenario evidence present; manager can operate without DB changes; unresolved critical security/progress defect blocks release.",
+      "layer": "manual",
+      "requirements": [
+        "FR-14"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-061",
+      "title": "Transcript and content evaluation",
+      "given": "Real nine-video course source text",
+      "when": "Review 12 real questions: 5 explanations,4 examples,3 unsupported plus adversarial cases",
+      "then": "Owner finds explanations/examples useful and grounded; no fabricated sources or unauthorized content; failures recorded for correction.",
+      "layer": "evaluation",
+      "requirements": [
+        "FR-13"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-062",
+      "title": "Signed URL reauthorization",
+      "given": "Previously authorized download key and now revoked grant",
+      "when": "Replay original Idempotency-Key to download authorization",
+      "then": "Replay rechecks access and rejects; never returns a newly valid URL from stale permission.",
+      "layer": "integration",
+      "requirements": [
+        "FR-15"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-063",
+      "title": "Soft date bulk update",
+      "given": "One valid and one invalid selected enrollment",
+      "when": "Update offering dates and explicit selected enrollments",
+      "then": "All-or-nothing validation; no completed schedule changed; omitted enrollments retain copied dates, current offering/grant hard gates still apply.",
+      "layer": "integration",
+      "requirements": [
+        "FR-05"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-064",
+      "title": "Foreign Origin mutation",
+      "given": "Valid session cookie, attacker Origin",
+      "when": "POST a learning/admin mutation",
+      "then": "403 before state change; trusted same-origin route works; signed provider webhooks use separate verification.",
+      "layer": "integration",
+      "requirements": [
+        "FR-02"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-065",
+      "title": "Profile removal preserves history",
+      "given": "Multi-org learner removed from A",
+      "when": "Read own summaries/certificates and learn in B",
+      "then": "A learning blocked, A history owned still visible, B and personal entitlement unaffected.",
+      "layer": "integration",
+      "requirements": [
+        "FR-15"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-066",
+      "title": "Learner navigation states",
+      "given": "Owned, blocked and absent fixture enrollments",
+      "when": "Open dashboard and class/outline routes",
+      "then": "Owned enrollment renders correct outline; empty/blocked states are clear; unauthorized IDs denied; no completion is caused by GET.",
+      "layer": "e2e",
+      "requirements": [
+        "FR-07",
+        "FR-08"
+      ],
+      "status": "not_run"
+    },
+    {
+      "id": "AC-067",
+      "title": "Tutor interaction states",
+      "given": "Class tutor drawer and injected success/unsupported/failure responses",
+      "when": "Send question and observe pending, completed and failed requests",
+      "then": "Pending indicator shown; source links validated; example labeled; input retained on failure; navigation/progress unaffected.",
+      "layer": "e2e",
+      "requirements": [
+        "FR-13"
+      ],
+      "status": "not_run"
+    }
+  ]
+}

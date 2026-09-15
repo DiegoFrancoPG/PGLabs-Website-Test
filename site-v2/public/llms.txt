@@ -1,0 +1,29 @@
+# PG Labs
+
+> PG Labs is the innovation and services arm of PeaceGeeks, a nonprofit that uses technology to support people affected by conflict and displacement.
+
+PG Labs develops and delivers AI-powered tools and technology strategy for nonprofits, funders, and social impact organizations.
+
+## Services
+
+- Responsible AI governance frameworks
+- Technology strategy for nonprofits
+- AI-powered product design and development
+- White label software products for the social sector
+- Human-centered design and UX research
+
+## Products
+
+- Welcome Coach: AI-powered settlement guide for newcomers to Canada. 162,000+ people reached. Supported by IRCC, Accenture, UNAOC.
+- Vesta: Safety-first platform for people experiencing gender-based violence. Built with affected communities.
+- Credit Canada Butterfly: Financial inclusion tool for free, accessible credit assessment.
+
+## Contact
+
+- Website: https://pg-labs.org
+- Parent organization: PeaceGeeks (https://peacegeeks.org)
+
+## Optional
+
+- Crawling: allowed
+- Use for AI training: allowed with attribution
