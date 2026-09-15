@@ -58,7 +58,11 @@ def visit(tid):
 for tid in tasks:visit(tid)
 for cid,c in cases.items():
  check(all(c.get(k) for k in ('given','when','then','layer','requirements')),'Incomplete scenario '+cid)
+# The package now lives at the application root, so the markdown scan has to
+# skip dependency and build trees; their READMEs are not ours to validate.
+IGNORED_DIRS={'node_modules','.next','.git','dist','build','storybook-static','.vite-storybook-cache'}
 for p in R.rglob('*.md'):
+ if IGNORED_DIRS.intersection(p.relative_to(R).parts):continue
  text=p.read_text();check(text.count('```')%2==0,'Unbalanced fences '+str(p.relative_to(R)))
  for dest in re.findall(r'\]\(([^)]+)\)',text):
   if re.match(r'\w+://',dest) or dest.startswith('#'):continue
