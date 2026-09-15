@@ -113,6 +113,18 @@ Two things the upgrade required:
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET` are in `.env.example` but not yet in `lib/env.ts`'s core schema. Promote them as the features that use them land — Auth at T04, jobs at T21 — so the schema always describes what the app actually requires.
 - `scripts/db-reset-test.mjs` expects `supabase/config.toml`. T02 should `supabase init`, add the M01 migration, and add the Supabase CLI as a dev dependency so the script runs from a clean checkout.
 
+## D-03 — public entry point into PGLearn
+
+Not a specification task; the third decision in the integration plan. Added while T02 was blocked on a database, because it needs none.
+
+- `/learning` — public overview of PGLearn, linked from the masthead and footer.
+- **Every claim traces to spec/01's confirmed product requirements.** spec/01 says "Do not invent product requirements", so the page carries no pricing (payments are deferred), no outcome or mastery claim, and no accreditation language (ADR-11: "no accreditation claim").
+- **No sign-up call to action**, because ADR-05 disables public sign-up. Both calls to action lead to `/contact`. The Sign in link joins the masthead at T05, when `/login` exists — linking to it now would ship a 404.
+- Four Playwright tests hold that boundary, including negative assertions that the page never says "sign up", "free trial", "accredit" or "mastery".
+- `SectionHeading` always renders `h2`, so the hero `h1` is written by hand, as every other marketing page does. The page had no `h1` until an e2e test caught it.
+
+**The copy is mine and needs your review.** It is accurate against the specification, but it is marketing copy for your platform and someone at PG Labs should own the wording.
+
 ## Update this section after each implementation task
 
 - Task ID and status:

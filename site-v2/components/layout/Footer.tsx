@@ -19,6 +19,7 @@ const QUICK_LINKS = [
   { label: "Home", href: "/" },
   { label: "Services", href: "/services" },
   { label: "AI Readiness", href: "/ai-readiness" },
+  { label: "Learning", href: "/learning" },
   { label: "Work", href: "/work" },
   { label: "About", href: "/about" },
 ];
