@@ -90,7 +90,7 @@
     {
       "id": "T02",
       "title": "Create schema migration and constraint tests",
-      "status": "todo",
+      "status": "in_progress",
       "release": "demo",
       "depends_on": [
         "T01"
@@ -118,8 +118,12 @@
         "npm run db:reset:test",
         "npm run test:integration -- database-constraints"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "M01 authored and verified against the contract without a database. Applying it, and therefore AC-002/AC-003 and tests/schema-smoke.sql, is blocked on a development Supabase project. Hosted dev project chosen over the local Docker stack at the user's direction; db:reset:test must be relaxed to permit one designated remote dev host before it can run, and that is a deliberate recorded change.",
+      "evidence": [
+        "supabase/migrations/20260915000001_m01_schema.sql generated from contracts/schema.sql",
+        "tests/unit/migration-fidelity.test.ts: 5 tests passing, asserting the migration reproduces the contract DDL exactly, touches no auth object, creates no policy or grant, and defines no RPC",
+        "NOT YET APPLIED to any database; AC-002 and AC-003 remain not_run"
+      ]
     },
     {
       "id": "T03",
