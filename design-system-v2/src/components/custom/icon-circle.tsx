@@ -1,5 +1,5 @@
 import * as React from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "../../lib/utils";
 
 /*
  * v2 icon holders are squared to match the rest of the geometry, with a

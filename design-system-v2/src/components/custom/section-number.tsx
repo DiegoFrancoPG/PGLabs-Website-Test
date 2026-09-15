@@ -1,5 +1,5 @@
 import * as React from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "../../lib/utils";
 
 /*
  * Chapter breaks in the deck are marked with a two-digit Playfair numeral

@@ -1,8 +1,8 @@
 # PGLearn × site-v2 — integration plan
 
-Status: **proposed, awaiting approval**. Written 15 September 2026.
+Status: **approved**. Written 15 September 2026. Baseline committed (`76d4cca`) and **T00 complete** — see `HANDOFF.md` for evidence.
 Adapts `PGLearn/pglearn-implementation/` (spec v1.0) onto the existing `site-v2` Next.js app.
-No application code has been written yet. Every PGLearn task in `tasks.json` is still `todo`.
+T01–T30 are all still `todo`; T00 (added by this plan) is done.
 
 ---
 
@@ -100,9 +100,7 @@ This is real work the spec does not budget for → **new task T00** (below).
 
 ## 6. Dependency and tooling changes
 
-**Blocking problem:** `site-v2/node_modules` is a **symlink to `../site/node_modules`** and `site-v2` has **no `package-lock.json`**. ADR-01 and T01 require an exact committed lockfile that all subsequent agents reuse. First action of T01: replace the symlink with a real install and commit `site-v2/package-lock.json`.
-
-Also stale: `next.config.mjs` has `transpilePackages: ["../design-system"]` pointing at the **v1** design system, while `tsconfig.json` aliases resolve to `design-system-v2`. Fix to `../design-system-v2`.
+**Resolved in T00.** Both `site-v2/node_modules` *and* `design-system-v2/node_modules` were symlinks into the v1 trees, and neither package had a lockfile. Both now have real installs and committed lockfiles. `next.config.mjs`'s stale `transpilePackages: ["../design-system"]` was removed — the build does not need it.
 
 Additions (exact patched versions resolved and pinned at T01 per ADR-01 — the spec's date does not freeze safe versions):
 
@@ -127,7 +125,7 @@ The spec's dependency graph is unchanged. Two tasks are inserted and T01/T12/T23
 
 | Task | Change |
 |---|---|
-| **T00 (new)** | Split root layout into `(marketing)`/`(platform)`, fix `next.config.mjs`, real install + committed lockfile, add the DS-v2 components from §5. Gate: marketing site renders byte-identically to today. |
+| **T00** ✅ | Split root layout into `(marketing)`/`(platform)`, fix `next.config.mjs`, real install + committed lockfile, add the DS-v2 components from §5. Gate: marketing site renders byte-identically to today. |
 | **T01** | As specified, adapted: `app/` not `src/app/`, `lib/clock`, `/api/v1/health`, test harness, env validation. AC-001. |
 | T02–T11 | **Unchanged.** Schema M01, triggers M02, RPC M03, service functions + storage M04, fixtures M05; identity, orgs, cohorts, content, uploads, publication, enrollment. These are pure backend and are entirely indifferent to the site merge. |
 | **T12** | Learner dashboard/class experience built on DS-v2 inside `(platform)`, not on a fresh Tailwind slate/indigo baseline. |
@@ -180,8 +178,13 @@ Adapters and clearly-labelled fixtures get built while these arrive. Per ADR-17,
 
 ---
 
-## 11. First three steps on approval
+## 11. Progress
 
-1. `git add` + commit the current `site-v2` / `design-system-v2` / `PGLearn` baseline; confirm `npm run build` passes today.
-2. Move the spec package from `PGLearn/pglearn-implementation/` to `site-v2/` root (README step 1: the spec lives at the root of the application repo), merging `AGENTS.md` with repo rules. Run `python3 verify_spec.py`.
-3. Execute **T00**, then **T01**, recording evidence and the D-01/D-02 contract changes in `HANDOFF.md` and `tasks.json`.
+1. ✅ Baseline committed as `76d4cca` on branch `pglearn-integration`; `npm run build` verified passing first.
+2. ✅ **T00 complete.** Evidence in `HANDOFF.md`. Six problems in the baseline were found and fixed along the way — see *Problems found and fixed*.
+3. ⬜ Move the spec package from `PGLearn/pglearn-implementation/` to `site-v2/` root (README step 1: the spec lives at the root of the application repo), merging `AGENTS.md` with repo rules.
+4. ⬜ **T01**, which must first resolve the Next.js 14 → 16 upgrade (see §6).
+
+### Open decision carried into T01
+
+`next@14.2.35` is the newest 14.x, but the entire 14 line is unpatched — npm's remediation is `next@16.3.5`, which also implies React 18 → 19. ADR-01 assigns version resolution to T01. This should be settled before any platform UI is built on top of it.

@@ -1,46 +1,9 @@
-import { type ClassValue, clsx } from "clsx";
-import { extendTailwindMerge } from "tailwind-merge";
-
 /*
- * Our type scale uses named keys (text-h2, text-stat-sm, text-lede …) rather
- * than Tailwind's built-in t-shirt sizes. tailwind-merge can't tell those from
- * text-colour utilities, so out of the box it treats `text-stat-sm` as a colour
- * and silently drops it the moment a real colour follows:
+ * `cn` lives in the design system, because the font-size conflict group it
+ * configures is derived from the design system's own type scale.
  *
- *   twMerge("text-stat-sm text-white")  ->  "text-white"   // size lost
- *
- * Registering the scale in the font-size group keeps size and colour in
- * separate conflict groups, so both survive.
+ * This file used to hold a byte-identical copy. Keeping the duplicate meant
+ * two tailwind-merge instances in the bundle (~8 kB) and two places to update
+ * whenever the scale changes, so the site re-exports the one implementation.
  */
-const FONT_SIZES = [
-  "display",
-  "display-sm",
-  "h1",
-  "h1-sm",
-  "h2",
-  "h2-sm",
-  "h3",
-  "h4",
-  "stat",
-  "stat-lg",
-  "stat-sm",
-  "lede",
-  "body-lg",
-  "body",
-  "body-sm",
-  "eyebrow",
-  "label",
-  "source",
-];
-
-const twMerge = extendTailwindMerge({
-  extend: {
-    classGroups: {
-      "font-size": [{ text: FONT_SIZES }],
-    },
-  },
-});
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+export { cn } from "@ds/lib/utils";

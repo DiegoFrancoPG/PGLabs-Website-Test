@@ -9,6 +9,38 @@
   "completion_rule": "All task acceptance IDs exercised with evidence. For explicitly cross-task checks, record partial evidence and dependency; never mark the full scenario passed early. Release gate requires full real checks.",
   "tasks": [
     {
+      "id": "T00",
+      "title": "Prepare site-v2 as the PGLearn application shell",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [],
+      "requirements": [],
+      "read": [
+        "spec/04-ui.md",
+        "spec/05-integrations-operations.md"
+      ],
+      "implementation_targets": [
+        "app/(marketing) and app/(platform) route groups; root layout reduced to document shell",
+        "real node_modules and committed package-lock.json for site-v2 and design-system-v2",
+        "design-system-v2 components required by spec/04 (Alert, Checkbox, Dialog, Progress, Select, Skeleton, Table, Tabs)"
+      ],
+      "acceptance_ids": [],
+      "operation_ids": [],
+      "checks": [
+        "npm run build",
+        "npx tsc --noEmit (design-system-v2)",
+        "rendered-HTML parity diff against baseline 76d4cca"
+      ],
+      "notes": "Added by the site-v2 integration plan (site-v2/plans/pglearn-integration-plan.md, outside this package until it is relocated to the application root); not part of specification v1.0. Records deviations D-01 (repository layout) and D-02 (design system) from ADR-01 and ADR-16.",
+      "evidence": [
+        "branch pglearn-integration; baseline commit 76d4cca",
+        "npm run build: 7 marketing routes prerendered static, no errors",
+        "DOM parity vs baseline: 6 marketing pages identical except JSON-LD moved head->body (payload byte-identical, 501 bytes)",
+        "generated CSS delta vs baseline: one added rule (.min-h-screen) from the platform shell",
+        "all 8 new design-system components compiled and rendered via a temporary /ds-smoke route, since removed"
+      ]
+    },
+    {
       "id": "T01",
       "title": "Bootstrap repository and shared contracts",
       "status": "todo",
