@@ -245,13 +245,19 @@ Introducing committed fixture data broke 30 integration tests that had quietly a
 2. **AC-064's evidence is the difference between two status codes.** A foreign-Origin PATCH returns 403 while the identical same-origin request returns 401. That ordering is the actual security property: a valid session cookie replayed from another site is refused before the handler runs, so there is no state change to undo.
 3. **A learner cannot promote themselves by lying in their own JWT.** A session whose claims assert `is_admin` and `user_role=platform_admin` still reads `platform_admin: false`, because the flag is read from `app.platform_admins`, never from a claim.
 
-### Pre-existing gap: site-v2 has no mobile navigation
+### Pre-existing gap: no mobile navigation — RESOLVED
 
-The masthead nav is `hidden md:flex` and there is **no mobile menu anywhere in the site**. At 390px, Services, AI Readiness, Work, About and Learning are unreachable from the masthead; only the logo and the contact button remain. They are still reachable from the footer, which is why `/learning` is not orphaned.
+The masthead nav was `hidden md:flex` with no mobile menu anywhere in the site, so at 390px every section was unreachable from the header; only the footer carried them. That predates PGLearn but blocked spec/04's 390px requirement for the way into the platform.
 
-This predates PGLearn and was not introduced here, but it matters: spec/04 requires the interface verified at 390px, and this is the marketing half of that. The e2e suite asserts current behaviour at both widths and pins the masthead as desktop-only, so adding a mobile menu later will fail that test and force the expectation to be updated deliberately.
+Fixed after T04 at the user's direction. `components/layout/Navbar.tsx` now collapses the links behind a disclosure below `md`:
 
-**Decision needed:** whether adding a mobile menu is in scope. It is marketing-site work, not a PGLearn task, so it was not done unasked.
+- A **disclosure, not a modal dialog**. The panel is short and does not trap the page, so it needs no focus trap and no scroll lock to be correct — less machinery to get wrong.
+- `aria-expanded` and `aria-controls` on the button, an accessible name that changes with state, a 44px touch target, Escape to close with focus returned to the button, and full keyboard operation.
+- The panel lives **inside** `<nav>`, because it is navigation. It was briefly a sibling, which is what the first test run caught.
+- The call to action moves into the panel below `md`: at 390px it cannot sit beside the logo, which is why the header was already cramped.
+- Closing happens on the link's click, not in a `useEffect` watching `pathname` — React 19's lint rightly rejects setting state in an effect for this, since it cascades renders.
+
+Eight e2e tests cover it at 390px, including keyboard-only operation, focus return and a check that the page does not overflow horizontally. Desktop rendering is unchanged: same links, same CTA, same classes.
 
 ### Notes for T05
 
