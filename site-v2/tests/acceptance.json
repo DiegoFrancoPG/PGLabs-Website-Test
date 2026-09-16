@@ -286,7 +286,8 @@
       "requirements": [
         "FR-15"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/integration/progress.test.ts — revoking the grant mid-session makes the next heartbeat fail with PGL22/ACCESS_UNAVAILABLE carrying reason 'revoked', while the 30 seconds already recorded stay in played_ranges. AC-062 already covers the download-renewal half."
     },
     {
       "id": "AC-024",
@@ -298,7 +299,8 @@
       "requirements": [
         "FR-08"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/e2e/resume.spec.ts — position 125000 acknowledged in one browser context is restored by start_playback in a SECOND context with its own cookie jar and sign-in; the card's link points back at the same class; coverage stays 0 and nothing completes. Seeking a real video element to 125s still needs the client's media."
     },
     {
       "id": "AC-025",
@@ -310,7 +312,8 @@
       "requirements": [
         "FR-08"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/unit/progress.test.ts — [0,539999) incomplete, 540000 exactly complete, an overlapping replay adds zero, and the threshold is integer arithmetic."
     },
     {
       "id": "AC-026",
@@ -322,7 +325,8 @@
       "requirements": [
         "FR-08"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/unit/progress.test.ts — a seek to 590000 with a plausible 10s interval credits 10000ms and leaves the class incomplete although the position is at the end."
     },
     {
       "id": "AC-027",
@@ -334,7 +338,8 @@
       "requirements": [
         "FR-08"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/integration/progress.test.ts — an identical replay returns current progress with no new event and no activity, a new event at an old sequence returns accepted=false/stale_sequence unchanged, and the same event id with a changed body raises 23505 (409)."
     },
     {
       "id": "AC-028",
@@ -346,7 +351,8 @@
       "requirements": [
         "FR-08"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/integration/progress.test.ts and tests/e2e/resume.spec.ts — tab B's start supersedes A; A's next heartbeat is PGL28/SESSION_SUPERSEDED over the database and 409 SESSION_SUPERSEDED over HTTP, and cannot move the resume point B set."
     },
     {
       "id": "AC-029",
@@ -358,7 +364,8 @@
       "requirements": [
         "FR-08"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/unit/progress.test.ts (27 cases) and tests/integration/progress.test.ts — an interval longer than elapsed x rate + 1000 is refused as INVALID_PROGRESS/PGL29 with no state change, and the server's own clock overrides a client's elapsed_ms."
     },
     {
       "id": "AC-030",
@@ -370,7 +377,8 @@
       "requirements": [
         "FR-08"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/integration/progress.test.ts and tests/e2e/resume.spec.ts — reading the text class twice leaves completion null; Mark as complete sets content and class complete and counts one required class; replaying the same event_id records nothing more."
     },
     {
       "id": "AC-031",

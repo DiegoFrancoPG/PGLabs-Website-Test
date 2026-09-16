@@ -505,6 +505,52 @@ The class page renders the body, outline position, handout list and previous/nex
 - `getByText("You haven't…")` with an ASCII apostrophe silently never matches a page using a typographic one.
 - `getByText` matches **substrings, case-insensitively** by default, so a bare `"Required"` also matched the progress line's "3 of 3 required classes complete". Badge assertions need `{ exact: true }`.
 
+## T13 — Durable playback, text progress and resume
+
+- **Status:** done. AC-023 through AC-030 pass. Real-media playback remains blocked.
+- **Checks:** 130 unit, 218 integration, 79 e2e; lint, typecheck, build, `verify_spec.py`, `db:reset:test`.
+
+### Three SQLSTATEs of our own, and a correction to T09 and T12
+
+spec/05 names error codes that no standard SQLSTATE describes, and the dispatcher's only channel back to the application is the error it raises. Three custom classes now carry them:
+
+| SQLSTATE | Code | Status |
+| --- | --- | --- |
+| `PGL22` | `ACCESS_UNAVAILABLE` | 422 |
+| `PGL28` | `SESSION_SUPERSEDED` | 409 |
+| `PGL29` | `INVALID_PROGRESS` | 422 |
+
+`PGL22` also corrects an earlier mistake. T09's `authorize_download` and T12's `get_learning_class` raised `22023`, so a learner whose access had been revoked was told the **request** was invalid. spec/05 is explicit: "after ownership is established, blocked learning returns ACCESS_UNAVAILABLE with an availability reason in fields". Both now raise `PGL22` with the reason (`revoked`, `not_started`, `expired`, …) in the error's `DETAIL`, which `lib/rpc.ts` turns into `fields: [{path: "availability", …}]`.
+
+### A position is not coverage
+
+The distinction the whole of ADR-09 rests on. `position_ms` is where the playhead is; `played_ranges` (an `int8multirange`) is what was actually watched. Seeking to the end sets a position and earns nothing. Replaying the same three minutes ten times is three minutes, because a multirange union normalises overlaps — a sum would have said thirty.
+
+Completion is `coverage * 100 >= duration_ms * 90`, integer arithmetic on both sides, so no duration's threshold depends on a float being exact.
+
+### What makes a claimed interval believable
+
+Each heartbeat carries an interval of media time and a claim about how long it took. The bound is `min(elapsed_ms, max(0, server_now − last_received_at) + 2000) × rate + 1000`, capped at 60 s. The middle term is the important one: a client that claims fifteen seconds elapsed but whose last beat arrived three seconds ago is believed for three seconds, not fifteen. The server's clock wins.
+
+The same rule is written twice on purpose — in `lib/progress.ts` and in the migration. The database is the authority; the module exists so the rule can be tested exhaustively (27 unit cases) and so the player can pre-validate rather than send something it knows will be refused.
+
+### The event id is the idempotency key
+
+`record_progress` does **not** use `app.idempotency_lookup`. The heartbeat carries its own `event_id`, and `learning_events` has it as a primary key, so the database already decides replay: same id and same body returns current progress with no new credit and no activity; same id with a different body is a `23505` conflict. Routing it through the generic table as well would give two answers to one question.
+
+`start_playback` **does** use the generic mechanism, and must: a retried start that opened a second session would supersede the session its own first attempt opened.
+
+### Completion in one place
+
+`app.settle_completion(enrollment, class, t)` is the atomic helper the task asks for. It decides class completion (content **and** exercise, per ADR-08), recomputes required classes, and on the last one sets the enrollment's `completed_at`, inserts the certificate snapshot `ON CONFLICT DO NOTHING`, and queues the certificate email — all in the transaction that earned it. T14's exercise path will call the same function, so the two routes into completion cannot disagree.
+
+The certificate stores the learner's name and the program title **as they were**. A later rename cannot alter what was earned.
+
+### Two test traps this task exposed
+
+- The integration tests run inside a rolled-back transaction, where `now()` never moves. Every heartbeat therefore looked simultaneous and the plausibility bound allowed only the 2 s of clock slack. The helper backdates `last_received_at` to let time pass. It also revealed that ten minutes of media at fifteen seconds a beat is forty round trips to a hosted database — the long tests now play at rate 2 in sixty-second beats, the most a single heartbeat may ever claim, and the suite went from 198 s to 66 s.
+- A Playwright `test.skip(condition)` stops the **tests** but not `beforeAll`/`afterAll`. The mobile project, every test of which was skipped, was still running this spec's cleanup and deleting the playback session out from under the desktop run. The hooks now carry the same guard. The spec also moved off Amber onto the `personal` learner, because `learning-navigation.spec.ts` asserts Amber has no progress and the two files run in parallel against one database.
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -522,6 +568,7 @@ The class page renders the body, outline position, handout list and previous/nex
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
+- T13: playback sessions, heartbeats, coverage, text completion and the completion/certificate chain; AC-023 to AC-030 passed. Three custom SQLSTATEs added; T09 and T12 corrected to return ACCESS_UNAVAILABLE rather than VALIDATION_ERROR. Real-media playback still blocked.
 - T12: learner dashboard, outline and class shell; AC-066 passed. Un-onboarded sign-in gap found and fixed.
 - T11: offerings, enrollment, date boundaries and bulk date updates; AC-020, AC-021, AC-022, AC-063, AC-065 passed and AC-012 closed.
 - T10: publication validation, in-transaction chunk indexing and the published freeze; AC-018 and AC-019 passed.

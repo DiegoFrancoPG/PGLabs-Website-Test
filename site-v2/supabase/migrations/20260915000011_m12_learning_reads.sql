@@ -90,7 +90,7 @@ BEGIN
   IF availability <> 'available' THEN
     -- spec/05: after ownership is established, blocked learning returns
     -- ACCESS_UNAVAILABLE carrying the reason.
-    RAISE EXCEPTION 'access unavailable: %', availability USING ERRCODE = '22023';
+    RAISE EXCEPTION 'access unavailable: %', availability USING ERRCODE = 'PGL22', DETAIL = availability;
   END IF;
 
   SELECT * INTO cp FROM app.class_progress WHERE enrollment_id = e.id AND class_id = c.id;

@@ -186,7 +186,7 @@ BEGIN
     IF availability <> 'available' THEN
       -- spec/05: after ownership is established, blocked learning returns
       -- ACCESS_UNAVAILABLE with the reason.
-      RAISE EXCEPTION 'access unavailable: %', availability USING ERRCODE = '22023';
+      RAISE EXCEPTION 'access unavailable: %', availability USING ERRCODE = 'PGL22', DETAIL = availability;
     END IF;
   END IF;
 

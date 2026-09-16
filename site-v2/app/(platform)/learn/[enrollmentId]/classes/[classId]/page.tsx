@@ -4,6 +4,9 @@ import { redirect } from "next/navigation";
 import { verifiedUser } from "@/lib/auth";
 import { getEnrollment, getLearningClass } from "@/features/learning/learning";
 import { RpcError } from "@/lib/rpc";
+import { ClassPlayer } from "@/components/learning/ClassPlayer";
+import { MarkTextComplete } from "@/components/learning/MarkTextComplete";
+import { HandoutLink } from "@/components/learning/HandoutLink";
 import { Alert } from "@ds/components/ui/alert";
 import { Badge } from "@ds/components/ui/badge";
 import { Button } from "@ds/components/ui/button";
@@ -38,7 +41,7 @@ export default async function ClassPage({
     ]);
   } catch (err) {
     if (err instanceof RpcError && err.code === "NOT_FOUND") return <Unavailable />;
-    if (err instanceof RpcError && err.code === "VALIDATION_ERROR") {
+    if (err instanceof RpcError && err.code === "ACCESS_UNAVAILABLE") {
       // Ownership is established but access is blocked, so the outline still
       // reads — the learner is told why rather than shown a dead end.
       return <Blocked enrollmentId={enrollmentId} />;
@@ -52,6 +55,7 @@ export default async function ClassPage({
   const next = index >= 0 && index < ordered.length - 1 ? ordered[index + 1] : null;
 
   const handouts = detail.assets.filter((a) => a.role === "handout");
+  const captionAsset = detail.assets.find((a) => a.role === "caption" && a.state === "ready");
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
@@ -73,15 +77,30 @@ export default async function ClassPage({
       </div>
 
       {detail.class.kind === "text" ? (
-        <article className="mt-8 whitespace-pre-wrap text-body-lg">{detail.class.body_md}</article>
+        <>
+          <article className="mt-8 whitespace-pre-wrap text-body-lg">
+            {detail.class.body_md}
+          </article>
+          {/* AC-030: reading is not completing. */}
+          <MarkTextComplete
+            enrollmentId={enrollmentId}
+            classId={classId}
+            complete={detail.progress.content_complete}
+          />
+        </>
+      ) : detail.class.primary_asset_id && detail.class.duration_ms ? (
+        <ClassPlayer
+          enrollmentId={enrollmentId}
+          classId={classId}
+          kind={detail.class.kind}
+          durationMs={Number(detail.class.duration_ms)}
+          primaryAssetId={detail.class.primary_asset_id}
+          captionAssetId={captionAsset?.id ?? null}
+        />
       ) : (
-        /*
-         * The player itself is T13: it needs the signed playback URL, the
-         * caption track and the progress heartbeat, none of which exist yet.
-         * A placeholder is shown rather than a control that does nothing.
-         */
+        // Published content always has both, so this is a draft preview.
         <Alert variant="info" className="mt-8">
-          The {detail.class.kind} player arrives with playback and progress recording.
+          This class has no media yet.
         </Alert>
       )}
 
@@ -91,9 +110,9 @@ export default async function ClassPage({
           <ul className="mt-3 flex flex-col gap-2">
             {handouts.map((asset) => (
               <li key={asset.id} className="text-body-sm">
-                {/* spec/04 shows name, type and size. Downloads are authorized
-                    one at a time, so the link is built at T13 alongside playback. */}
-                {asset.original_name}{" "}
+                {/* spec/04 shows name, type and size. The URL is minted on the
+                    click, because authorization is re-evaluated every time. */}
+                <HandoutLink assetId={asset.id} enrollmentId={enrollmentId} name={asset.original_name} />{" "}
                 <span className="text-steel-500">
                   ({asset.mime_type}, {Math.ceil(Number(asset.bytes) / 1024)} KB)
                 </span>

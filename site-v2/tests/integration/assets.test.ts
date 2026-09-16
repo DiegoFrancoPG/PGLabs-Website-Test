@@ -329,7 +329,7 @@ describe.skipIf(!hasDatabase)("AC-062 download authorization is never replayed",
        * authorization is evaluated on every call, so replaying a key that once
        * worked cannot hand back a usable link after the permission is withdrawn.
        */
-      expect(await sqlStateOf(client, rpc("authorize_download", payload))).toBe("22023");
+      expect(await sqlStateOf(client, rpc("authorize_download", payload))).toBe("PGL22");
     });
   });
 
@@ -346,7 +346,7 @@ describe.skipIf(!hasDatabase)("AC-062 download authorization is never replayed",
         await sqlStateOf(client, rpc("authorize_download", {
           asset_id: assetId, enrollment_id: enrollmentId, preview: false,
         }))
-      ).toBe("22023");
+      ).toBe("PGL22");
     });
   });
 

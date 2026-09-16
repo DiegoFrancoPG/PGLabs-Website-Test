@@ -638,7 +638,7 @@
     {
       "id": "T13",
       "title": "Implement durable playback, text progress and resume",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T12"
@@ -677,8 +677,19 @@
         "npm run test:integration -- progress",
         "npm run test:e2e -- resume"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "Playback, progress and completion live in one database transaction per heartbeat (spec/03 §4 steps 1-7). The rules are also written as pure functions in lib/progress.ts so they can be tested exhaustively and so the player can pre-validate; the database remains the authority. Three SQLSTATEs were added for conditions spec/05 names but no standard class describes: PGL22 ACCESS_UNAVAILABLE (with the availability reason in DETAIL, now used by T09 and T12 too, which had been returning VALIDATION_ERROR), PGL28 SESSION_SUPERSEDED and PGL29 INVALID_PROGRESS. app.settle_completion is the atomic class/program completion helper the task asks for, and T14 will call the same function so the two paths cannot disagree. Real-media playback — an actual video element seeking and reporting intervals — is still blocked on the client's nine videos; everything here is exercised through the real API and the real player's own logic.",
+      "evidence": [
+        "130 unit + 218 integration + 79 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-023 grant revoked mid-session: next heartbeat refused, prior progress retained",
+        "AC-024 cross-session resume at 125000ms in a second browser context, completing nothing",
+        "AC-025 coverage threshold exact at 540000 of 600000, overlapping replay credits nothing",
+        "AC-026 a seek credits only what could have been played, not the span skipped",
+        "AC-027 replay, stale sequence and changed-body conflict all behave as specified",
+        "AC-028 two tabs: 409 SESSION_SUPERSEDED for the old one, over the database and over HTTP",
+        "AC-029 implausible intervals refused with no state change, server clock over client's",
+        "AC-030 text completes only on the explicit POST, never on a GET",
+        "certificate and its outbox record are inserted in the same transaction that completes the program"
+      ]
     },
     {
       "id": "T14",
