@@ -78,17 +78,78 @@ function signed(body: string, id: string, timestamp: number) {
 }
 
 
+/*
+ * spec/03: "Eligible sending hours are 09:00 through 17:59 local." The fixture
+ * profiles live in UTC, so a suite run after 18:00 UTC plans nothing — and this
+ * spec failed for exactly that reason, at 18:04, with the product behaving
+ * correctly.
+ *
+ * A test whose result depends on the hour it is run is worse than no test: it
+ * passes all morning and then accuses the scheduler of being broken. So the
+ * fixtures are moved, for the duration of this spec, to a real timezone where
+ * it is currently mid-afternoon — which is what a learner somewhere in the
+ * world always is.
+ *
+ * This does not weaken what is tested. The window itself, and the DST-correct
+ * arithmetic behind it, are tested in tests/unit/schedule.test.ts and
+ * tests/integration/outbox.test.ts, where the clock can be named rather than
+ * waited for.
+ */
+const ZONES = [
+  "UTC",
+  "Europe/London",
+  "Europe/Berlin",
+  "Africa/Nairobi",
+  "Asia/Dubai",
+  "Asia/Kolkata",
+  "Asia/Tokyo",
+  "Australia/Sydney",
+  "Pacific/Auckland",
+  "America/Sao_Paulo",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "Pacific/Honolulu",
+];
+
+function zoneWhereItIsAfternoon(): string {
+  for (const zone of ZONES) {
+    const hour = Number(
+      new Intl.DateTimeFormat("en-GB", { timeZone: zone, hour: "numeric", hour12: false }).format(
+        new Date()
+      )
+    );
+    // Comfortably inside 09:00–17:59, so a run that straddles the hour does not
+    // fall out of the window halfway through.
+    if (hour >= 10 && hour <= 16) return zone;
+  }
+  // Somewhere on earth it is always mid-afternoon; this cannot happen.
+  throw new Error("no timezone is in the sending window, which is impossible");
+}
+
+async function setFixtureTimezone(zone: string) {
+  await db(async (client) => {
+    await client.query("UPDATE app.profiles SET timezone = $1", [zone]);
+  });
+}
+
 test.describe("AC-050 the scheduler endpoint", () => {
   test.describe.configure({ mode: "serial" });
   test.skip(({ viewport }) => (viewport?.width ?? 1440) < 768, "shared database state; desktop only");
 
   // The spec runs in its own "scheduler" project (playwright.config.ts), which
   // is the only one that executes it, so the hooks run unconditionally.
-  const desktopOnly = async () => {
+  test.beforeAll(async () => {
     await clearOutbox();
-  };
-  test.beforeAll(desktopOnly);
-  test.afterAll(desktopOnly);
+    await setFixtureTimezone(zoneWhereItIsAfternoon());
+  });
+  test.afterAll(async () => {
+    await clearOutbox();
+    // Back to the fixture's own timezone, or the next suite would find a
+    // database that does not match tests/fixtures.json.
+    await setFixtureTimezone("UTC");
+  });
 
   test("refuses a request with no secret at all", async ({ request }) => {
     const response = await request.get("/api/v1/jobs/reminders");
