@@ -72,7 +72,8 @@ test.describe("AC-035 the certificate page", () => {
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Certificate of completion");
     await expect(page.getByText("Cora", { exact: true })).toBeVisible();
     await expect(page.getByText("AI Foundations")).toBeVisible();
-    await expect(page.getByText("PGLearn", { exact: true })).toBeVisible();
+    // Scoped to the issuer field: the shell's wordmark is also "PGLearn".
+    await expect(page.getByRole("definition").filter({ hasText: "PGLearn" })).toBeVisible();
     // The verification identity is the UUID (spec/03), shown in full.
     await expect(page.getByText(CERT_CORA)).toBeVisible();
     await expect(page.getByText("Valid", { exact: true })).toBeVisible();

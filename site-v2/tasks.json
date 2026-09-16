@@ -1077,7 +1077,7 @@
     {
       "id": "T23",
       "title": "Integrate responsive admin/manager/learner UI",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T16",
@@ -1105,8 +1105,19 @@
         "npm run test:e2e -- primary-flows",
         "Manual keyboard/layout check at 390px and desktop using labeled fixture media"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "One shell, built from get_me: a learner sees their own navigation, a manager of one organization sees it named, a manager of several must choose, and an admin sees the admin items. It is a convenience and not a control — every screen re-establishes the caller's rights from the database.\n\nTwo things the work exposed. First, a contract gap: `Program` carries only latest_published_version_id and no operation lists a program's versions, so an author who navigates away from a draft cannot find it again. clone_version — declared in the contract, previously unimplemented — now answers 'give me this program's draft', returning an existing one rather than creating a second. It does NOT copy content: spec/04 defers version cloning, and an asset's storage_key is UNIQUE so a copied class could not carry its media.\n\nSecond, an authorization assumption that was wrong: list_programs deliberately answers a MANAGER too, because a manager needs to know what they may assign. The admin pages had inferred admin rights from a refusal, so a manager could open /admin/programs. They now establish platform_admin from get_me. The API refused every write regardless, but the screen should never have rendered.",
+      "evidence": [
+        "577 unit and integration, 128 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "the shell gives each role its own navigation, with aria-current on the page in view",
+        "a manager is refused /admin/programs, /admin/organizations and /admin/individuals",
+        "the catalog, a program, its draft and its published version are all reachable and correct",
+        "a published version renders read-only: no publish, no add-module, disabled fields",
+        "publishing an incomplete draft lists what is missing rather than refusing with one message",
+        "individuals are shown with no organization invented for them; personal report rows are labelled",
+        "the cohort roster states that adding somebody does not assign them anything",
+        "clone_version tested: one draft at a time, idempotent, audited, admin-only, content not copied",
+        "AC-053 partially automated — labels, keyboard traversal, live regions — and recorded blocked for the manual half"
+      ]
     },
     {
       "id": "T24",

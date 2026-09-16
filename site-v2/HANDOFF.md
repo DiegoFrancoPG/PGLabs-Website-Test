@@ -3,10 +3,10 @@
 ## Current state
 
 - Specification version: 1.0, 15 September 2026.
-- Application implementation: T00–T22 done (including T03B). T23–T30 todo.
-- Active task: none. Start T23.
-- Last completed application task: T22.
-- Acceptance scenarios passing: 55 of 67.
+- Application implementation: T00–T23 done (including T03B). T24–T30 todo.
+- Active task: none. Start T24.
+- Last completed application task: T23.
+- Acceptance scenarios passing: 55 of 67; AC-042 and AC-053 blocked with their automated halves recorded.
 - **AC-017 remains partial, blocked on real media.**
 - **AC-042 is blocked** on `OPENAI_API_KEY`; four of its five claims are tested and recorded in `tests/evaluation/tutor-synthetic-course.md`.
 - **Real outbound email is blocked** on `RESEND_API_KEY`, `EMAIL_FROM` and a verified sender. Everything around it — scheduling, claiming, retrying, webhook verification and reconciliation — is implemented and tested against the database and the real routes.
@@ -719,6 +719,43 @@ The `OperationStatus` DTO has no payload field, the handlers select columns expl
 
 Added to the four from T17–T19: a parameter named `payload` against `notification_outbox.payload`, and a variable named `kind` against its `kind` column. The rule was already written down and I broke it twice more. It is now stated at the top of both migrations: **parameters take `p_`, and no variable is named after a column it sits beside.**
 
+## T23 — The admin and manager screens
+
+- **Status:** done. **AC-053 is blocked** on its manual half; what a machine can check is automated.
+- **Checks:** unit, integration and e2e all green; lint, typecheck, build, `verify_spec.py`, `db:reset:test`.
+
+### A contract gap, and what was done about it
+
+`Program` carries only `latest_published_version_id`, and **no operation lists a program's versions**. So an author who creates a draft, navigates away and comes back has no way to find it again — the id exists only in the response that created it.
+
+`clone_version` was declared in the contract (`POST /programs/{program_id}/versions`) and had no handler. It now answers *"give me this program's draft"*: an existing draft is **returned** rather than a second one created, which makes it the way back to work in progress and keeps one draft per program.
+
+It does **not** copy the previous version's content. spec/04 lists "new draft version cloning" under "Deferred to later releases", and an asset's `storage_key` is `UNIQUE` — a copied class could not carry its media without moving the stored object or inventing a second reference to it. So a new draft starts empty, and that is a recorded limitation rather than a half-built feature.
+
+### An authorization assumption that was wrong
+
+The admin pages inferred admin rights from a refusal: call `list_programs`, and treat `FORBIDDEN` as "not an administrator". But `list_programs` **deliberately answers a manager too** — a manager needs to know which programmes they may assign. So a manager could open `/admin/programs` and see the catalog with New program and Archive controls.
+
+Every write behind those controls was refused by the database, so nothing could actually be done. But the screen should never have rendered, and the fix is the general lesson: **establish a right, do not infer it from the absence of a refusal.** The admin pages now read `platform_admin` from `get_me`.
+
+Caught by an e2e test that signed in as a manager and asserted the admin routes were unavailable.
+
+### What is automated about AC-053, and what is not
+
+Automated: every visible control on the admin screens has an accessible name (a label's `htmlFor`, an `aria-label` or an `aria-labelledby` — a placeholder is explicitly not accepted); focus moves through the page under Tab without trapping; `aria-current` marks the navigation item in view; the editor carries an `aria-live` region for save and error summaries.
+
+Not automated, and needing a person: whether the focus ring is actually visible against each background, whether each error message reads sensibly to somebody who did not write it, and whether input survives a real provider failure. Recorded as **blocked**, not passed.
+
+### The browser upload path is not yet exercised
+
+T09 uploaded through the server with synthetic files. The file picker added here does what spec/02 requires — the bytes go straight to storage and never through a serverless function — but that path has not run against real storage from a real browser, because there is no real media yet.
+
+Two details it gets right by construction and one that needs checking with a real file: the signed URL already carries its token as a query parameter, so no `Authorization` header is sent (the token is a storage grant, not a bearer credential); `x-upsert` matches the reservation; and whether the response codes and CORS behave as expected is what the client's first video will tell us. Recorded against AC-052.
+
+### Reordering is up/down, not drag
+
+spec/04 asks for up and down controls. That is not a simplification — a drag handle is unusable from a keyboard without a great deal of extra work, and two buttons with `aria-label="Move Module 1 up"` are operable by everybody on the first try.
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -736,6 +773,7 @@ Added to the four from T17–T19: a parameter named `payload` against `notificat
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
+- T23: the application shell with role navigation, and the admin and manager screens — catalog, version editor with upload and publish, organizations, individuals, platform reports, cohort rosters and assignment. clone_version implemented to close a contract gap; admin pages corrected to establish rather than infer admin rights. AC-053 partially automated, recorded blocked.
 - T20-T22: reminder eligibility with real timezone handling, the outbox state machine, Resend and webhook verification, the hourly cron, and redacted operations; AC-045 to AC-051 passed. PGL46 added for DELIVERY_UNCERTAIN. Real outbound email still blocked on a provider key.
 - T17-T19: tutor retrieval and privacy, the model adapter with budget reservation and settlement, and the drawer; AC-039, AC-040, AC-041, AC-043, AC-044, AC-067 passed and AC-042 recorded blocked pending OPENAI_API_KEY. PGL43/44/45 added.
 - T16: scoped reporting, real cursor pagination and the CSV export; AC-036, AC-037, AC-038 passed. PGL42 added for EXPORT_LIMIT; the enroll_multi_a fixture ambiguity resolved in favour of expected_report.

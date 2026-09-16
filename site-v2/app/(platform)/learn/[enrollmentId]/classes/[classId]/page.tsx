@@ -10,6 +10,7 @@ import { HandoutLink } from "@/components/learning/HandoutLink";
 import { ExerciseForm } from "@/components/learning/ExerciseForm";
 import { TutorDrawer } from "@/components/learning/TutorDrawer";
 import { getExerciseCompletion, type ExerciseSaved } from "@/features/learning/exercises";
+import { AppShell } from "@/components/layout/AppShell";
 import { Alert } from "@ds/components/ui/alert";
 import { Badge } from "@ds/components/ui/badge";
 import { Button } from "@ds/components/ui/button";
@@ -75,6 +76,7 @@ export default async function ClassPage({
   }
 
   return (
+    <AppShell active="learn">
     <main className="mx-auto max-w-3xl px-6 py-16">
       <p className="text-body-sm">
         <Link
@@ -176,6 +178,7 @@ export default async function ClassPage({
         )}
       </nav>
     </main>
+    </AppShell>
   );
 }
 

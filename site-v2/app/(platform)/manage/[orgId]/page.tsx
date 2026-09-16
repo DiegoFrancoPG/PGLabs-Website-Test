@@ -4,6 +4,9 @@ import { redirect } from "next/navigation";
 import { verifiedUser } from "@/lib/auth";
 import { RpcError } from "@/lib/rpc";
 import { listOrganizations } from "@/features/organizations/organizations";
+import { listCohorts } from "@/features/organizations/cohorts";
+import { AppShell } from "@/components/layout/AppShell";
+import { NewCohort } from "@/components/manage/NewCohort";
 import { reportEnrollments } from "@/features/reporting/reports";
 import { Alert } from "@ds/components/ui/alert";
 import { Button } from "@ds/components/ui/button";
@@ -27,10 +30,12 @@ export default async function ManagePage({ params }: { params: Promise<{ orgId: 
 
   let report;
   let organizations;
+  let cohorts;
   try {
-    [report, organizations] = await Promise.all([
+    [report, organizations, cohorts] = await Promise.all([
       reportEnrollments({ organization_id: orgId }),
       listOrganizations(100),
+      listCohorts(orgId),
     ]);
   } catch (err) {
     // The database refuses an organization the caller does not manage, so this
@@ -45,7 +50,8 @@ export default async function ManagePage({ params }: { params: Promise<{ orgId: 
   const { summary } = report;
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-16">
+    <AppShell active="manage">
+    <main className="mx-auto max-w-4xl px-6 py-12">
       <h1 className="font-display text-h2-sm text-ink-800">{organization?.name ?? "Organization"}</h1>
       <p className="mt-2 text-body-sm text-steel-500">
         Learning across this organization. Individual records are on the reports screen.
@@ -76,11 +82,37 @@ export default async function ManagePage({ params }: { params: Promise<{ orgId: 
         </Button>
       </div>
 
-      {/* Cohort management is its own screen and its own task. */}
-      <Alert variant="info" className="mt-8">
-        Cohort and roster management arrives with the organization screens.
-      </Alert>
+      <section className="mt-12 border-t border-steel-200 pt-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-h4 text-ink-800">Cohorts</h2>
+          <NewCohort organizationId={orgId} />
+        </div>
+
+        {cohorts.items.length === 0 ? (
+          <p className="mt-3 text-body-sm text-steel-500">
+            No cohorts yet. A cohort is a group of learners who are assigned the same programme on
+            the same dates.
+          </p>
+        ) : (
+          <ul className="mt-4 flex flex-col gap-3">
+            {cohorts.items.map((cohort) => (
+              <li key={cohort.id}>
+                <Link
+                  href={`/manage/${orgId}/cohorts/${cohort.id}`}
+                  className="text-body-lg text-brand-600 underline underline-offset-4"
+                >
+                  {cohort.name}
+                </Link>
+                {cohort.archived_at && (
+                  <span className="ml-2 text-body-sm text-steel-500">archived</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </main>
+    </AppShell>
   );
 }
 

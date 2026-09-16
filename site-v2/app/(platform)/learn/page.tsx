@@ -9,6 +9,7 @@ import {
   type Enrollment,
 } from "@/features/learning/learning";
 import { isOverdue } from "@/lib/schedule";
+import { AppShell } from "@/components/layout/AppShell";
 import { signOut } from "../login/actions";
 import { Button } from "@ds/components/ui/button";
 import { Badge } from "@ds/components/ui/badge";
@@ -151,23 +152,10 @@ export default async function LearnPage() {
   const now = new Date().toISOString();
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-16">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-h2-sm text-ink-800">Your learning</h1>
-          <p className="mt-2 text-body-sm text-steel-500">{me.profile.email}</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/settings">Settings</Link>
-          </Button>
-          <form action={signOut}>
-            <Button type="submit" variant="subtle" size="sm">
-              Sign out
-            </Button>
-          </form>
-        </div>
-      </div>
+    <AppShell active="learn">
+    <main className="mx-auto max-w-3xl px-6 py-12">
+      <h1 className="font-display text-h2-sm text-ink-800">Your learning</h1>
+      <p className="mt-2 text-body-sm text-steel-500">{me.profile.email}</p>
 
       {enrollments.length === 0 ? (
         <p className="mt-12 text-body-lg">You haven&rsquo;t been assigned a program yet.</p>
@@ -184,6 +172,7 @@ export default async function LearnPage() {
         </div>
       )}
     </main>
+    </AppShell>
   );
 }
 

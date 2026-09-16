@@ -684,7 +684,8 @@
         "FR-07",
         "FR-14"
       ],
-      "status": "not_run"
+      "status": "blocked",
+      "evidence": "tests/e2e/admin.spec.ts covers what a machine can check: every visible control on the admin screens is reachable by an accessible name (a label's htmlFor, aria-label or aria-labelledby — a placeholder is not accepted), focus moves through the page under Tab without trapping, aria-current marks the current navigation item, and the editor carries an aria-live region for save and error summaries. What remains is judgement and needs a person: whether the focus ring is actually visible against each background, whether each error message reads sensibly, and whether input is retained across a real provider failure. Recorded as blocked rather than passed, per AGENTS.md."
     },
     {
       "id": "AC-054",

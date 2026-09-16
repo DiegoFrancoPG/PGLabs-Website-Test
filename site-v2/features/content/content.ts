@@ -129,8 +129,73 @@ export async function updateProgram(
   return programSchema.parse(await callRpc("update_program", { program_id: programId, ...patch }));
 }
 
-export async function getVersion(versionId: string) {
-  return callRpc("get_version", { version_id: versionId });
+/* contracts/api.json's Exercise, for the version editor. */
+export const exerciseSchema = z.object({
+  id: z.string().uuid(),
+  class_id: z.string().uuid(),
+  instructions_md: z.string().min(1).max(10000),
+});
+
+/*
+ * VersionDetail: the whole draft in one read, which is what the editor needs —
+ * a screen that fetched modules, then classes, then exercises would show a
+ * half-built outline while it waited.
+ */
+export const versionDetailSchema = z.object({
+  version: versionSchema,
+  modules: z.array(moduleSchema),
+  classes: z.array(classSchema),
+  exercises: z.array(exerciseSchema),
+  assets: z.array(
+    z.object({
+      id: z.string().uuid(),
+      class_id: z.string().uuid(),
+      role: z.enum(["primary", "handout", "caption", "transcript"]),
+      original_name: z.string(),
+      mime_type: z.string(),
+      bytes: z.union([z.number(), z.string()]),
+      state: z.enum(["pending", "ready", "failed"]),
+      error_code: z.string().nullable(),
+    })
+  ),
+});
+
+export type VersionDetail = z.infer<typeof versionDetailSchema>;
+export type Program = z.infer<typeof programSchema>;
+export type ClassRow = z.infer<typeof classSchema>;
+export type ModuleRow = z.infer<typeof moduleSchema>;
+
+/**
+ * The program's draft, created on first use.
+ *
+ * contracts/api.json calls this clone_version. It returns an EXISTING draft
+ * rather than making a second one, which is what makes it the way back to work
+ * in progress: `Program` carries only `latest_published_version_id`, and no
+ * operation lists a program's versions, so without this an author who
+ * navigated away could not find their draft again.
+ */
+export async function draftVersion(programId: string, requestId: string) {
+  return z
+    .object({ version: versionSchema, created: z.boolean() })
+    .parse(await callRpc("clone_version", { request_id: requestId, program_id: programId }));
+}
+
+export async function getVersion(versionId: string): Promise<VersionDetail> {
+  return versionDetailSchema.parse(await callRpc("get_version", { version_id: versionId }));
+}
+
+/**
+ * Publishing. The handler returns its refusal as DATA — a list of issues —
+ * rather than as an error, because the draft is intact and the author needs
+ * every problem at once rather than the first one.
+ */
+export interface PublishResult {
+  version: { id: string; state: string; published_at: string | null };
+  issues: { path: string; message: string }[];
+}
+
+export async function publishVersion(versionId: string): Promise<PublishResult> {
+  return callRpc<PublishResult>("publish_version", { version_id: versionId });
 }
 
 export const updateVersion = (versionId: string, patch: z.infer<typeof versionPatchSchema>) =>

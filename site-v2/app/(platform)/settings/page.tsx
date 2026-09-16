@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { verifiedUser } from "@/lib/auth";
 import { getMe } from "@/features/identity/me";
 import { SettingsForm } from "./settings-form";
+import { AppShell } from "@/components/layout/AppShell";
 
 export const metadata: Metadata = { title: "Settings" };
 
@@ -18,9 +19,11 @@ export default async function SettingsPage() {
   const timezones = Intl.supportedValuesOf("timeZone");
 
   return (
+    <AppShell active="settings">
     <main className="mx-auto max-w-2xl px-6 py-16">
       <h1 className="font-display text-h2-sm text-ink-800">Settings</h1>
       <SettingsForm profile={me.profile} timezones={timezones} />
     </main>
+    </AppShell>
   );
 }

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { verifiedUser } from "@/lib/auth";
 import { RpcError } from "@/lib/rpc";
 import { getCertificate } from "@/features/learning/certificates";
+import { AppShell } from "@/components/layout/AppShell";
 import { Alert } from "@ds/components/ui/alert";
 import { Badge } from "@ds/components/ui/badge";
 import { Button } from "@ds/components/ui/button";
@@ -51,6 +52,7 @@ export default async function CertificatePage({
   const revoked = certificate.revoked_at !== null;
 
   return (
+    <AppShell active="learn">
     <main className="mx-auto max-w-2xl px-6 py-16">
       <p className="text-body-sm">
         <Link href="/learn" className="text-brand-600 underline underline-offset-4">
@@ -101,6 +103,7 @@ export default async function CertificatePage({
         )}
       </div>
     </main>
+    </AppShell>
   );
 }
 
