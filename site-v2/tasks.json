@@ -504,7 +504,7 @@
     {
       "id": "T10",
       "title": "Implement publication and frozen content",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T09"
@@ -531,8 +531,16 @@
       "checks": [
         "npm run test:integration -- publication"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "publish_version validates, indexes chunks and flips state in ONE transaction, per spec/03. Chunking is done in SQL rather than the application so it derives from the stored source text inside that transaction; sending chunks in the request would index whatever the caller chose to send. A failed validation returns its issues as data rather than raising, so the draft is untouched and the route turns them into 422 PUBLISH_INCOMPLETE with per-field entries. The published editor UI is T23.",
+      "evidence": [
+        "80 unit + 181 integration + 65 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-018: a complete draft publishes and its source text is indexed in the same transaction; every rule refuses with a field-specific path — all-optional version, missing source text, video without captions, module with no classes, non-contiguous positions, exercise on an optional class, handout still uploading",
+        "AC-018: all problems are reported at once rather than the first, and a refusal leaves state and chunk count byte-identical to before",
+        "AC-018: publication is admin-only, and republishing is idempotent — published_at does not move and nothing is reindexed",
+        "AC-019: 11 separate edits to a published version are each refused 23514 RUNNING AS THE TABLE OWNER, not through a handler — rename, revert to draft, delete, add/rename/delete a module, edit/delete a class, make a class optional, add an asset, edit an exercise",
+        "AC-019: the required-class denominator and a fingerprint of all source text are unchanged after attempting every destructive edit; adding a class to a published version is refused, which is what stops an enrolled learner's percentage silently dropping",
+        "chunking verified in the database: 1500-character maximum respected, identical chunks deduped within a class, and character-based substring keeps UTF-8 sequences intact"
+      ]
     },
     {
       "id": "T11",

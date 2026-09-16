@@ -3,10 +3,10 @@
 ## Current state
 
 - Specification version: 1.0, 15 September 2026.
-- Application implementation: T00–T09 done (including T03B). T10–T30 todo.
-- Active task: none. Start T10.
-- Last completed application task: T09.
-- Acceptance scenarios passing: 17 of 67 — AC-001 to AC-011, AC-013 to AC-016, AC-062 and AC-064.
+- Application implementation: T00–T10 done (including T03B). T11–T30 todo.
+- Active task: none. Start T11.
+- Last completed application task: T10.
+- Acceptance scenarios passing: 19 of 67 — AC-001 to AC-011, AC-013 to AC-016, AC-018, AC-019, AC-062 and AC-064.
 - **AC-012 is partial, blocked on T11. AC-017 is partial, blocked on real media.**
 - Specification validation: `python3 verify_spec.py` PASS — 66 operations, 70 schemas, 31 acyclic tasks. This validates the package, not the application.
 - Inputs outstanding: actual media/source content, final course details, Resend and OpenAI credentials with sender setup, and the certificate issuer string (see below). A development database is configured.
@@ -427,6 +427,31 @@ The route calls `finalize_upload` twice: once with `inspect: true` to read the r
 
 Folded into the same action rather than given its own, because spec/02 requires the allowlist to correspond to `operationId` values and there is no operation for reading back a reservation. The dispatcher test would have rejected a new action; it caught this while it was still a draft.
 
+## T10 — Publication and frozen content
+
+- **Status:** done. AC-018 and AC-019 pass.
+- **Checks:** 80 unit, 181 integration, 65 e2e; lint, typecheck, build, `verify_spec.py`, `db:reset:test`.
+
+### Chunking is done in SQL, on purpose
+
+spec/03 requires publication to be "one transaction after validation and chunk indexing". The chunker is therefore a PL/pgSQL function, so the chunks derive from the **stored** source text inside that transaction. Computing them in the application and sending them in the request would index whatever the caller chose to send, which is not the same thing at all.
+
+`substring()` counts characters rather than bytes, so spec/05's "keep UTF-8 boundaries intact" holds by construction — a byte-oriented split is exactly what would break it.
+
+### A refusal is data, not an exception
+
+`publish_version` returns its issues rather than raising. The draft is untouched either way, and the caller needs **every** problem at once: spec/04 has the editor list missing fields per class, and one error at a time would make preparing a nine-video course a guessing game. The route turns a non-empty issue list into 422 `PUBLISH_INCOMPLETE` with the per-field entries the contract expects.
+
+### AC-019 is tested as the table owner, not through a handler
+
+Eleven destructive edits — rename, revert to draft, delete, add or remove a module, edit or delete a class, make a class optional, add an asset, edit an exercise — are each refused while running with **database privileges**, not via the API. spec/02 is explicit that "RLS alone does not secure a buggy privileged function", so the freeze has to hold against direct SQL or it does not hold.
+
+The test that says the most: adding a class to a published version is refused, and the required-class count is unchanged afterwards. If that edit were possible, **every enrolled learner's percentage would silently drop** — that is the concrete harm, rather than immutability as an abstraction.
+
+### One check is unreachable, deliberately
+
+`publication_issues` validates class and module titles, but the schema's `CHECK` already makes an empty title impossible to store. The validation stays as a second line; a test that tried to exercise it was rewritten to use failures that can actually occur.
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -444,6 +469,7 @@ Folded into the same action rather than given its own, because spec/02 requires 
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
+- T10: publication validation, in-transaction chunk indexing and the published freeze; AC-018 and AC-019 passed.
 - T09: uploads, caption conversion and download authorization; AC-015, AC-016, AC-062 passed with synthetic files. AC-017 partial and real-media checks blocked pending client assets.
 - T08: content authoring, ordering and the reorder deferral; AC-014 passed. Dispatcher completeness now tested against the live database.
 - T07: cohorts, cohort membership and catalog grants; AC-013 passed, AC-012 partial pending T11. Enrollment guard corrected so cancellation survives a lapsed membership.
