@@ -26,6 +26,10 @@ const U = {
   grantOrg: "0459023a-6a55-56cf-b516-1476b9054b8b",
   offering: "65999d80-6d61-5239-8300-529875cbc1e6",
   enrollment: "f1961d6a-d742-5300-bd9a-a9fa80d6ae07",
+  // A second, still-draft version of the same program. Content constraints are
+  // exercised here because M02 freezes everything under a published version.
+  vDraft: "aa11bb22-cc33-4d44-8e55-ff6677889900",
+  moduleDraft: "bb22cc33-dd44-4e55-8f66-001122334455",
 };
 
 /** The fixture graph from tests/schema-smoke.sql, which never leaves the transaction. */
@@ -44,6 +48,13 @@ INSERT INTO app.modules(id,version_id,title,position) VALUES('${U.module}','${U.
 INSERT INTO app.classes(id,module_id,version_id,title,position,kind,duration_ms) VALUES
   ('${U.videoClass}','${U.module}','${U.vShared}','Video',0,'video',600000);
 INSERT INTO app.exercises(id,class_id,instructions_md) VALUES('${U.exercise}','${U.videoClass}','Practice');
+-- Draft sibling version, for the content rules that only apply before publication.
+INSERT INTO app.program_versions(id,program_id,version_number,title) VALUES('${U.vDraft}','${U.shared}',2,'Shared v2 draft');
+INSERT INTO app.modules(id,version_id,title,position) VALUES('${U.moduleDraft}','${U.vDraft}','Draft module',0);
+INSERT INTO app.classes(module_id,version_id,title,position,kind,body_md) VALUES('${U.moduleDraft}','${U.vDraft}','Draft text',0,'text','Read');
+-- An offering needs a PUBLISHED version (M02), so v1 is published here. Every
+-- statement above had to run first: publication freezes the content.
+UPDATE app.program_versions SET state='published', published_at=now() WHERE id='${U.vShared}';
 INSERT INTO app.program_grants(id,program_id,organization_id,starts_at,ends_at) VALUES
   ('${U.grantOrg}','${U.shared}','${U.orgA}','2026-09-01Z','2026-11-01Z');
 INSERT INTO app.cohort_offerings(id,cohort_id,organization_id,program_id,version_id,grant_id,starts_at,due_at) VALUES
@@ -73,11 +84,11 @@ describe.skipIf(!hasDatabase)("AC-002 schema constraints", () => {
     ["cohort member belonging to a different organization", "23503",
       `INSERT INTO app.cohort_members(cohort_id,organization_id,user_id) VALUES('${U.cohort}','${U.orgB}','${U.personal}')`],
     ["class attached to a module from another version", "23503",
-      `INSERT INTO app.classes(module_id,version_id,title,position,kind) VALUES('${U.module}','${U.vB}','Bad',2,'text')`],
+      `INSERT INTO app.classes(module_id,version_id,title,position,kind) VALUES('${U.moduleDraft}','${U.vB}','Bad',2,'text')`],
     ["two classes at the same position", "23505",
-      `INSERT INTO app.classes(module_id,version_id,title,position,kind) VALUES('${U.module}','${U.vShared}','Bad',0,'text')`],
+      `INSERT INTO app.classes(module_id,version_id,title,position,kind) VALUES('${U.moduleDraft}','${U.vDraft}','Bad',0,'text')`],
     ["text class carrying a media duration", "23514",
-      `INSERT INTO app.classes(module_id,version_id,title,position,kind,duration_ms) VALUES('${U.module}','${U.vShared}','Bad',2,'text',1000)`],
+      `INSERT INTO app.classes(module_id,version_id,title,position,kind,duration_ms) VALUES('${U.moduleDraft}','${U.vDraft}','Bad',2,'text',1000)`],
     ["duplicate enrollment in one offering", "23505",
       `INSERT INTO app.enrollments(user_id,program_id,version_id,grant_id,organization_id,offering_id,starts_at,due_at) VALUES('${U.amber}','${U.shared}','${U.vShared}','${U.grantOrg}','${U.orgA}','${U.offering}','2026-09-01Z','2026-09-20Z')`],
     ["enrollment due date moved onto its start", "23514",

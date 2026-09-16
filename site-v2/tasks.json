@@ -131,7 +131,7 @@
     {
       "id": "T03",
       "title": "Implement relationship guards and permission boundary",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T02"
@@ -154,10 +154,20 @@
       ],
       "operation_ids": [],
       "checks": [
-        "npm run test:integration -- database-security"
+        "npm run test:integration -- database-security",
+        "npm run db:reset:test"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "M02 predicates and triggers, M03 user dispatcher, M04 service entrypoints and private bucket. Deliberate strengthening beyond spec/02's wording: INSERT is blocked on modules/classes/exercises/assets of a published version, not only UPDATE/DELETE, since ADR-07 makes published versions immutable. content_chunks keeps INSERT allowed because spec/05 creates chunks during the publication transaction. Handler allowlist currently holds get_me only; each later task adds its own actions.",
+      "evidence": [
+        "tests/integration/database-security.test.ts: 20 tests passing (AC-004 12, AC-005 8)",
+        "AC-004: actor derived from auth.uid() only — payloads carrying user_id, actor_id, sub, role or is_admin are ignored, verified for all five shapes",
+        "AC-004: unknown action, SQL-injection-shaped action and wrong-case action all return the same 42501 as an unauthorized one, so the dispatcher cannot enumerate operations; row counts unchanged after rejection",
+        "AC-004: anon and authenticated denied EXECUTE on pglearn_job and pglearn_provision; learner denied EXECUTE on app.handle_get_me, app.actor_active and app.can_learn",
+        "AC-004: pglearn_rpc is the ONLY function in public executable by a browser role; all three entrypoints are SECURITY DEFINER with search_path=\"\"",
+        "AC-005: offering with org A grant and org B cohort rejected 23514, leaving zero offerings and zero enrollments; draft version and grant-outliving access also rejected",
+        "AC-005: grant subject immutable while dates/status stay editable; published version content frozen against UPDATE, DELETE and INSERT; unknown timezone rejected 22023",
+        "Full suite: 27 unit + 55 integration passing; db:reset:test applies M01-M04 cleanly"
+      ]
     },
     {
       "id": "T04",

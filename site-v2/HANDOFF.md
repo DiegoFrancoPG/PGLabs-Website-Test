@@ -3,9 +3,9 @@
 ## Current state
 
 - Specification version: 1.0, 15 September 2026.
-- Application implementation: T00, T01 and T02 done. T03–T30 todo.
-- Active task: none. Start T03.
-- Last completed application task: T02.
+- Application implementation: T00–T03 done. T04–T30 todo.
+- Active task: none. Start T04.
+- Last completed application task: T03.
 - Specification validation: `python3 verify_spec.py` PASS — 66 operations, 70 schemas, 31 acyclic tasks. This validates the package, not the application.
 - Inputs outstanding: actual media/source content, final course details, Resend and OpenAI credentials with sender setup, and the certificate issuer string (see below). A development database is configured.
 
@@ -165,6 +165,39 @@ spec/02's migration sequence lists **M05 — test/demo fixtures via explicit see
 
 Consequence: **AC-001 remains `not_run`.** Its first two clauses hold — the app shell builds, and reset creates the schema — but "deterministic fixtures" has nothing to create them. This needs either an explicit decision to fold M05 into T03, or a new task. It should not be left to be discovered at T24.
 
+## T03 — Relationship guards and permission boundary
+
+- **Task ID and status:** T03, done.
+- **Acceptance IDs exercised:** AC-004 and AC-005, both fully, against a real database as the real browser roles.
+- **Files changed:** `supabase/migrations/20260915000002_m02_guards.sql`, `..._m03_rpc.sql`, `..._m04_service.sql`, `tests/integration/database-security.test.ts`, `tests/integration/database-constraints.test.ts` (fixture restructured).
+- **Commands and results:** `npm run db:reset:test` applies M01–M04 cleanly; 27 unit and 55 integration tests passing; lint, typecheck, build and `verify_spec.py` all pass.
+- **Real integrations exercised:** yes — every security test runs as `anon` or `authenticated` with a `request.jwt.claims` subject, which is how Supabase presents a session to Postgres. spec/02 asks for exactly this: "Tests must call RPC directly using user JWTs as well as through application routes."
+- **Next unblocked task:** T04.
+
+### What the boundary now guarantees
+
+- `pglearn_rpc` is the **only** function in `public` that any browser role can execute. Verified by querying `has_function_privilege` across the whole schema rather than by inspection.
+- The actor comes from `auth.uid()` alone. Payloads carrying `user_id`, `actor_id`, `sub`, `role` or `is_admin` are ignored — all five shapes are tested.
+- An unknown action, an injection-shaped action and a wrong-case action all return the same `42501` as an unauthorized one, so the dispatcher cannot be used to enumerate which operations exist.
+- All three entrypoints are `SECURITY DEFINER` with `search_path=""` exactly, asserted rather than assumed.
+- The internal `app.*` predicates and handlers are unreachable from a browser role.
+
+### Deliberate strengthening beyond spec/02's wording
+
+spec/02 says "any UPDATE/DELETE of published version content … is rejected". **INSERT is blocked too** for modules, classes, exercises and assets, because ADR-07 makes published versions immutable and adding a class to one would mutate it.
+
+`content_chunks` is the deliberate exception and keeps INSERT allowed: spec/05 creates chunks *during* the publication transaction, so blocking them would make publication impossible. The precision of spec/02's wording appears to be exactly this reason.
+
+### tests/schema-smoke.sql no longer applies after M02
+
+Its own header scopes it: "These checks cover reference DDL only, not missing RPC/triggers/application behavior." Its fixture builds an offering on a **draft** version, which M02 now correctly rejects, so it fails from M02 onward by design.
+
+It passed 32/32 against M01 at T02 and that evidence stands. The living replacement is `tests/integration/database-constraints.test.ts`, whose fixture now publishes a version before creating offerings and keeps a second draft version for the content rules. **Do not "fix" the smoke test** — it is a vendored M01 artifact.
+
+### Handler allowlist is intentionally almost empty
+
+`pglearn_rpc` dispatches `get_me` and nothing else. The allowlist is deny-by-default, so each later task adds only the actions it implements. That is why an unimplemented operation and a nonexistent one are indistinguishable from outside, which is the desired property.
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -182,4 +215,5 @@ Consequence: **AC-001 remains `not_run`.** Its first two clauses hold — the ap
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
+- T03: M02–M04 applied; AC-004 and AC-005 passed as real browser roles. Published-version INSERT blocked beyond spec's letter; schema-smoke.sql retired to M01-only.
 - T02: M01 applied to a hosted development project; AC-002 and AC-003 passed against a real database. Remote-reset deviation from spec/02 recorded. M05 found unowned.
