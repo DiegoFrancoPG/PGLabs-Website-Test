@@ -3,10 +3,10 @@
 ## Current state
 
 - Specification version: 1.0, 15 September 2026.
-- Application implementation: T00–T11 done (including T03B). T12–T30 todo.
-- Active task: none. Start T12.
-- Last completed application task: T11.
-- Acceptance scenarios passing: 25 of 67. **AC-012 is now closed.**
+- Application implementation: T00–T12 done (including T03B). T13–T30 todo.
+- Active task: none. Start T13.
+- Last completed application task: T12.
+- Acceptance scenarios passing: 26 of 67.
 - **AC-017 remains partial, blocked on real media.**
 - Specification validation: `python3 verify_spec.py` PASS — 66 operations, 70 schemas, 31 acyclic tasks. This validates the package, not the application.
 - Inputs outstanding: actual media/source content, final course details, Resend and OpenAI credentials with sender setup, and the certificate issuer string (see below). A development database is configured.
@@ -479,6 +479,32 @@ A date change also cannot outrun the grant: after moving the due date, revoking 
 
 `can_report` matches a manager only through a non-null `organization_id`. A personal enrollment has none, so it cannot appear in an organisation's reporting by construction — not because a filter remembered to exclude it. And every change manager A makes in their own organisation leaves the multi-organisation learner's row in B byte-identical.
 
+## T12 — Learner dashboard and class experience
+
+- **Status:** done. AC-066 passes.
+- **Checks:** 103 unit, 203 integration, 77 e2e; lint, typecheck, build, `verify_spec.py`, `db:reset:test`.
+
+### "No completion is caused by GET" is enforced, not intended
+
+The three read handlers are declared `STABLE`. Postgres will not let a stable function write, so a GET cannot mark a class done however the route behaves. The e2e test opens every one of a learner's classes **twice** and asserts `required_completed` is still 0 afterwards.
+
+### A real gap the tests exposed
+
+Signing in as somebody who has **not accepted their invitation** crashed `/learn`. `get_me` is onboarding-exempt so it answered, but `list_my_enrollments` is not, and the refusal surfaced as a broken page.
+
+That refusal is correct — spec/03's "neither gains access before acceptance". What was wrong was the page. `/learn` now checks `onboarded_at` first and shows a Finish setting up your account state.
+
+spec/04 says an unaccepted invitation should "resume invitation flow", but **the contract has no operation for listing your own invitations** — only `GET /invitations/{id}`. So the person is pointed back at the link they were emailed rather than guessed at. Worth revisiting if that operation is ever added.
+
+### Placeholders are marked, not faked
+
+The class page renders the body, outline position, handout list and previous/next. The player (T13), the exercise response form (T14) and the tutor drawer (T19) each show a short note saying what arrives with them, rather than a disabled control that looks broken.
+
+### Two test-locator traps worth remembering
+
+- `getByText("You haven't…")` with an ASCII apostrophe silently never matches a page using a typographic one.
+- `getByText` matches **substrings, case-insensitively** by default, so a bare `"Required"` also matched the progress line's "3 of 3 required classes complete". Badge assertions need `{ exact: true }`.
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -496,6 +522,7 @@ A date change also cannot outrun the grant: after moving the due date, revoking 
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
+- T12: learner dashboard, outline and class shell; AC-066 passed. Un-onboarded sign-in gap found and fixed.
 - T11: offerings, enrollment, date boundaries and bulk date updates; AC-020, AC-021, AC-022, AC-063, AC-065 passed and AC-012 closed.
 - T10: publication validation, in-transaction chunk indexing and the published freeze; AC-018 and AC-019 passed.
 - T09: uploads, caption conversion and download authorization; AC-015, AC-016, AC-062 passed with synthetic files. AC-017 partial and real-media checks blocked pending client assets.

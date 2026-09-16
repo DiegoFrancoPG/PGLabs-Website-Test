@@ -1,8 +1,17 @@
 import { updateEnrollment, enrollmentPatchSchema } from "@/features/content/enrollment";
-import { mutateRoute } from "@/lib/route";
+import { getEnrollment } from "@/features/learning/learning";
+import { readRoute, mutateRoute } from "@/lib/route";
 
-/* operationId update_enrollment. get_enrollment is T12. */
+/* operationIds get_enrollment and update_enrollment. */
 export const dynamic = "force-dynamic";
+
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ enrollment_id: string }> }
+) {
+  const { enrollment_id } = await params;
+  return readRoute(request, () => getEnrollment(enrollment_id));
+}
 
 export async function PATCH(
   request: Request,

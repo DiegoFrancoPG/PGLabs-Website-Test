@@ -13,3 +13,13 @@ Read README.md, spec/01-decisions.md and HANDOFF.md first. Then read the current
 - Task completion evidence must state files/commit, commands, outcomes and limitations. Update tasks.json and HANDOFF.md before ending or transferring work. Avoid placing private learner content in evidence.
 - Specification validation command: `python3 verify_spec.py`. T01 must establish application scripts: `npm run lint`, `npm run typecheck`, `npm run test:unit`, `npm run test:integration`, `npm run test:e2e`, `npm run build` and `npm run db:reset:test`. Do not claim these scripts exist before T01 implements them.
 - Do not mark the overall demo/pilot gate complete because individual UI pages render. Follow the explicit gate tasks.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

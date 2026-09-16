@@ -597,7 +597,7 @@
     {
       "id": "T12",
       "title": "Build learner dashboard and class experience",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T11"
@@ -625,8 +625,15 @@
       "checks": [
         "npm run test:e2e -- learning-navigation"
       ],
-      "notes": "Resume persistence is implemented and verified in T13; this task proves navigation, scoped reads and UI states only.",
-      "evidence": []
+      "notes": "Dashboard, outline and class shell built on design-system-v2 per D-02. The three read handlers are declared STABLE, so Postgres will not let them write — which is how AC-066's 'no completion is caused by GET' is guaranteed rather than merely intended. The player is T13, the exercise form T14 and the tutor drawer T19; each has a marked placeholder rather than a control that does nothing.",
+      "evidence": [
+        "103 unit + 203 integration + 77 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-066: the dashboard renders counts, percentage and due date from the fixture learners — Ben at 2 of 3 and 66.7%, Cora completed at 100% with View completion and no Overdue badge, Amber overdue",
+        "AC-066: a learner with nothing assigned sees spec/04's exact wording; the outline groups by module with required and complete labels",
+        "AC-066: another learner's enrollment, a nonexistent id, and a class reached through someone else's enrollment all return 'not available' with no detail leaked — the body is asserted not to contain the other learner's name",
+        "AC-066: opening every class twice by GET leaves required_completed at 0 and progress at 0 percent; the class API returns class_complete false",
+        "a learner's dashboard never lists another learner's enrollment, checked against the API response"
+      ]
     },
     {
       "id": "T13",

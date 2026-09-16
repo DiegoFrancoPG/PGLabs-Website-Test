@@ -83,9 +83,20 @@ test.describe("AC-009 an existing account accepts through the interface", () => 
     await signIn(page, "dana@example.invalid");
     await page.waitForURL("**/learn");
 
-    // No password setup anywhere in the journey for an existing account.
+    // The point of this test: an existing account goes nowhere near password
+    // setup. AC-009's "existing user signs in and accepts without password
+    // reset."
     expect(page.url()).not.toContain("set-password");
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Your learning");
+
+    /*
+     * She has not accepted yet, so she is told to finish rather than shown a
+     * dashboard. Every action beyond her own profile is refused until she does,
+     * which is the access boundary working — "neither gains access before
+     * acceptance".
+     */
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(
+      "Finish setting up your account"
+    );
   });
 
   test("shows the invitation with its organization and role, and accepts it", async ({ page }) => {

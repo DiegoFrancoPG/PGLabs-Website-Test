@@ -820,7 +820,7 @@
         "FR-07",
         "FR-08"
       ],
-      "status": "not_run"
+      "status": "passed"
     },
     {
       "id": "AC-067",
