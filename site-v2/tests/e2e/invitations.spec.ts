@@ -1,8 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { createClient } from "@supabase/supabase-js";
-
 /*
  * AC-009, through the real interface: an existing verified account signs in,
  * sees its invitation, and accepts — with no password reset anywhere in the
@@ -33,11 +31,6 @@ const DANA = fixtures.ids.dana;
 const ORG_A = fixtures.ids.org_a;
 const ADMIN = fixtures.ids.admin;
 const INVITATION = "f3000001-0000-4000-8000-000000000000";
-
-const service = createClient(config.NEXT_PUBLIC_SUPABASE_URL, config.SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { autoRefreshToken: false, persistSession: false },
-  db: { schema: "public" },
-});
 
 /** Puts Dana back to invited-and-not-onboarded, with one pending invitation. */
 async function givePendingInvitation() {

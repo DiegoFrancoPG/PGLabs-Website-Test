@@ -3,10 +3,10 @@
 ## Current state
 
 - Specification version: 1.0, 15 September 2026.
-- Application implementation: T00–T05 done (including T03B). T06–T30 todo.
-- Active task: none. Start T06.
-- Last completed application task: T05.
-- Acceptance scenarios passing: AC-001 to AC-009 and AC-064.
+- Application implementation: T00–T06 done (including T03B). T07–T30 todo.
+- Active task: none. Start T07.
+- Last completed application task: T06.
+- Acceptance scenarios passing: 12 of 67 — AC-001 to AC-011 and AC-064.
 - Specification validation: `python3 verify_spec.py` PASS — 66 operations, 70 schemas, 31 acyclic tasks. This validates the package, not the application.
 - Inputs outstanding: actual media/source content, final course details, Resend and OpenAI credentials with sender setup, and the certificate issuer string (see below). A development database is configured.
 
@@ -302,6 +302,36 @@ Two related defects were fixed at the same time, both mine:
 - Creating invitations is T06; T05 implements acceptance. Tests create pending invitations directly.
 - `delivery_status` reads from the outbox and reports `pending` until T21 sends anything.
 
+## T06 — Organization and invitation administration
+
+- **Status:** done. AC-010 and AC-011 pass.
+- **Checks:** 44 unit, 101 integration, 65 e2e; lint, typecheck, build, `verify_spec.py`, `db:reset:test`.
+- All six operations ship with `/api/v1` routes and feature services. **Admin organization forms are not built** — the API and services are, and UI integration is T23.
+
+### Idempotency is a shared mechanism, and authorization runs first
+
+`app.idempotency_records` now backs every mutating handler that takes a `request_id`. spec/05 is explicit that "cached success is not an access bypass", so each handler **authorizes before consulting the replay cache**. A caller who has since lost permission gets refused even when replaying a key that once worked.
+
+The canonical hash sorts keys and excludes `request_id`, so the same intent hashes identically regardless of key order; a different body under the same key is a conflict rather than a silent replay.
+
+### The last-manager trigger was firing too late
+
+M02 declared it `DEFERRABLE INITIALLY DEFERRED`, so it only raised at COMMIT — the handler returned success and the failure surfaced afterwards, detached from the statement that caused it. It is now `INITIALLY IMMEDIATE`, so a refused change fails on its own statement with a precise error. Still `DEFERRABLE`, so a caller who genuinely needs to remove before adding can `SET CONSTRAINTS ALL DEFERRED`; adding first and removing second needs nothing special.
+
+**This was only visible because a test asserted the error, not the outcome.** A test checking "the manager is still there" would have passed against the deferred version too.
+
+### A false pass worth remembering when writing e2e tests
+
+Playwright's `page.request` does **not** send an `Origin` header, and `proxy.ts` rejects a cookie-authenticated mutation without one. Every POST in the new suite was returning 403 — including the tests that *expected* 403, which were passing for entirely the wrong reason and proving nothing about authorization.
+
+Those tests now send `Origin` explicitly. Any future e2e test that posts through `page.request` must do the same, or it is testing the Origin rule and nothing else.
+
+### Auth and Postgres are reconciled, not transacted
+
+`createInvitation` establishes the Auth identity first — idempotently by normalized email — then does the database work, idempotently by request id. A crash between the two leaves an Auth identity with no invitation, which is harmless and reconciled by the next attempt, because spec/03 is clear that "pending Auth identity alone grants no learning access".
+
+The action link is never returned from the service. Tests assert the real HTTP response body contains no `action_link`, `hashed_token`, `email_otp` or verify URL.
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -319,6 +349,7 @@ Two related defects were fixed at the same time, both mine:
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
+- T06: organizations, memberships and invitation creation; AC-010 and AC-011 passed. Idempotency mechanism added; last-manager trigger corrected to fire immediately.
 - T05: invitation acceptance and password recovery; AC-008 and AC-009 passed against real Auth. Fixture accounts created through the Auth admin API; db:reset:test became three-phase.
 - T04: session verification, profile services, Origin rule and admin bootstrap; AC-006, AC-007, AC-064 passed. Mobile navigation gap recorded.
 - T03B: M05 fixtures seeded and verified against expected_report; AC-001 closed.

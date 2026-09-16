@@ -118,6 +118,31 @@ END $$;
 -- ---------------------------------------------------------------------------
 
 /*
+ * One place that shapes contracts/api.json's Invitation, shared by the read,
+ * create and resend handlers so they cannot drift from each other.
+ */
+CREATE FUNCTION app.invitation_json(inv app.invitations)
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $$
+DECLARE delivery text;
+BEGIN
+  SELECT o.status INTO delivery
+    FROM app.notification_outbox o
+    WHERE o.user_id = inv.user_id AND o.kind = 'invitation'
+    ORDER BY o.created_at DESC LIMIT 1;
+
+  RETURN jsonb_build_object(
+    'id', inv.id,
+    'user_id', inv.user_id,
+    'organization_id', inv.organization_id,
+    'role', inv.role,
+    'status', CASE WHEN inv.status = 'pending' AND inv.expires_at <= now()
+                   THEN 'expired' ELSE inv.status END,
+    'expires_at', inv.expires_at,
+    'delivery_status', COALESCE(delivery, 'pending')
+  );
+END $$;
+
+/*
  * get_invitation returns contracts/api.json's Invitation, and only to the
  * person it was issued to.
  *
@@ -128,7 +153,7 @@ END $$;
  */
 CREATE FUNCTION app.handle_get_invitation(actor uuid, payload jsonb)
 RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $$
-DECLARE inv app.invitations; delivery text;
+DECLARE inv app.invitations;
 BEGIN
   IF NOT (payload ? 'invitation_id') THEN
     RAISE EXCEPTION 'invitation_id is required' USING ERRCODE = '22023';
@@ -140,23 +165,9 @@ BEGIN
   END IF;
 
   -- delivery_status comes from the outbox; an invitation created before any
-  -- send attempt simply has none yet.
-  SELECT o.status INTO delivery
-    FROM app.notification_outbox o
-    WHERE o.user_id = inv.user_id AND o.kind = 'invitation'
-    ORDER BY o.created_at DESC LIMIT 1;
-
-  RETURN jsonb_build_object(
-    'id', inv.id,
-    'user_id', inv.user_id,
-    'organization_id', inv.organization_id,
-    'role', inv.role,
-    -- An expired invitation reads as expired even if the row still says pending,
-    -- so the client never sees a stale "pending" it cannot act on.
-    'status', CASE WHEN inv.status = 'pending' AND inv.expires_at <= now() THEN 'expired' ELSE inv.status END,
-    'expires_at', inv.expires_at,
-    'delivery_status', COALESCE(delivery, 'pending')
-  );
+  -- send attempt simply has none yet. The shape itself is built by
+  -- app.invitation_json (M06), shared with the create and resend handlers.
+  RETURN app.invitation_json(inv);
 END $$;
 
 /*
@@ -269,6 +280,7 @@ GRANT EXECUTE ON FUNCTION public.pglearn_rpc(text, jsonb) TO authenticated;
 -- is the only thing that has established who the actor is.
 REVOKE ALL ON FUNCTION app.handle_get_me(uuid, jsonb) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION app.handle_update_me(uuid, jsonb) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION app.invitation_json(app.invitations) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION app.handle_get_invitation(uuid, jsonb) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION app.handle_accept_invitation(uuid, jsonb) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION app.action_allows_pending_onboarding(text) FROM PUBLIC, anon, authenticated;

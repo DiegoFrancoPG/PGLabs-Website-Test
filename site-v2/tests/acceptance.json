@@ -124,7 +124,7 @@
         "FR-03",
         "FR-14"
       ],
-      "status": "not_run"
+      "status": "passed"
     },
     {
       "id": "AC-011",
@@ -137,7 +137,7 @@
         "FR-02",
         "FR-03"
       ],
-      "status": "not_run"
+      "status": "passed"
     },
     {
       "id": "AC-012",

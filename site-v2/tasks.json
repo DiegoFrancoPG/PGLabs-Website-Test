@@ -301,7 +301,7 @@
     {
       "id": "T06",
       "title": "Implement organization and invitation administration",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T05"
@@ -335,8 +335,16 @@
       "checks": [
         "npm run test:integration -- organizations"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "All six operations implemented in M06 plus /api/v1 routes and feature services. Idempotency added as a shared mechanism over app.idempotency_records, with authorization deliberately running BEFORE any replay is returned. The M02 last-manager trigger was changed from INITIALLY DEFERRED to INITIALLY IMMEDIATE so a refused change fails on its own statement rather than at COMMIT. Admin organization forms are not built; the API and services are, and UI integration is T23.",
+      "evidence": [
+        "44 unit + 101 integration + 65 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-010: a create retried three times with one key returns an identical response and leaves exactly 1 invitation and 1 membership; the same key with a different body is refused 23505; resend expires the old row and issues a fresh one under 24 hours; a retried resend leaves only one pending invitation",
+        "AC-010: the response contains only the seven Invitation fields and no token, action_link, OTP or URL — asserted both at the RPC and over HTTP against the real response body",
+        "AC-010: an already-active member returns existing state instead of a second invitation",
+        "AC-011: removing or demoting the only active manager fails 23514 and the row is unchanged; the swap succeeds once a second manager is active",
+        "AC-011: a manager cannot invite a manager, cannot issue a personal invitation, cannot change any membership including their own, cannot act on another organization, and cannot create or edit an organization",
+        "AC-011: list_organizations is scoped by the database — admin sees both, each manager sees only theirs, verified at the RPC and over HTTP"
+      ]
     },
     {
       "id": "T07",

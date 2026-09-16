@@ -463,10 +463,18 @@ BEGIN
   RETURN COALESCE(NEW, OLD);
 END $$;
 
--- Deferred to statement end so a manager swap inside one transaction is legal.
+/*
+ * Checked immediately, so a refused change fails on the statement that caused
+ * it and the caller gets a precise error. INITIALLY DEFERRED would only raise
+ * at COMMIT, long after the handler had returned success.
+ *
+ * Still DEFERRABLE: a caller who genuinely needs to remove a manager before
+ * adding the replacement can SET CONSTRAINTS ALL DEFERRED for that
+ * transaction. Adding first and removing second needs nothing special.
+ */
 CREATE CONSTRAINT TRIGGER memberships_keep_manager
   AFTER UPDATE OR DELETE ON app.memberships
-  DEFERRABLE INITIALLY DEFERRED
+  DEFERRABLE INITIALLY IMMEDIATE
   FOR EACH ROW EXECUTE FUNCTION app.organization_keeps_manager();
 
 -- ---------------------------------------------------------------------------
