@@ -65,14 +65,24 @@ export function ClassEditor({
     try {
       const response = await fetch(`/api/v1/classes/${cls.id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        // Every mutation carries one (lib/route.ts requires it), so a double
+        // click or a retried request is one change rather than two.
+        headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
         body: JSON.stringify({
           title,
           kind,
           required,
-          // Only what this format actually has: the schema refuses a body on a
-          // media class and a duration on a text one.
-          ...(kind === "text" ? { body_md: body } : {}),
+          /*
+           * Only what this format actually has: the schema refuses a body on a
+           * media class and a duration on a text one.
+           *
+           * A text class's source text IS its body. spec/02 requires "every
+           * class has source text from body/transcript" before publication —
+           * from the body here, from the uploaded transcript for media — so
+           * saving the body sets both rather than asking an author to type the
+           * same words twice and leaving publication blocked when they don't.
+           */
+          ...(kind === "text" ? { body_md: body, source_text: body } : {}),
         }),
       });
       const json = await response.json();
@@ -81,7 +91,7 @@ export function ClassEditor({
       if (instructions.trim().length > 0) {
         const put = await fetch(`/api/v1/classes/${cls.id}/exercise`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
           body: JSON.stringify({ instructions_md: instructions }),
         });
         if (!put.ok) {
@@ -103,7 +113,10 @@ export function ClassEditor({
     setBusy(true);
     setError(null);
     try {
-      const response = await fetch(`/api/v1/classes/${cls.id}`, { method: "DELETE" });
+      const response = await fetch(`/api/v1/classes/${cls.id}`, {
+        method: "DELETE",
+        headers: { "Idempotency-Key": crypto.randomUUID() },
+      });
       if (!response.ok) {
         const failure = await response.json();
         throw new Error(failure?.error?.message ?? "It could not be removed.");

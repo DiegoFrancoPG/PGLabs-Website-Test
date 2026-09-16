@@ -17,9 +17,16 @@ import { Card } from "@ds/components/ui/card";
  * listing what is missing per class rather than refusing with one message.
  */
 
-async function send(path: string, method: string, body: unknown, idempotent = false) {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (idempotent) headers["Idempotency-Key"] = crypto.randomUUID();
+/*
+ * Every mutation carries an Idempotency-Key, without exception: lib/route.ts
+ * requires one on every non-GET, and a helper that made it optional is how
+ * three of these calls shipped without it.
+ */
+async function send(path: string, method: string, body: unknown) {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "Idempotency-Key": crypto.randomUUID(),
+  };
   const response = await fetch(path, { method, headers, body: JSON.stringify(body ?? {}) });
   const json = await response.json();
   if (!response.ok) {
@@ -74,7 +81,7 @@ export function VersionEditor({
     setStatus(null);
     setIssues([]);
     try {
-      await send(`/api/v1/versions/${detail.version.id}/publish`, "POST", {}, true);
+      await send(`/api/v1/versions/${detail.version.id}/publish`, "POST", {});
       setStatus("Published. This version is now read-only.");
       router.refresh();
     } catch (err) {
@@ -169,8 +176,7 @@ export function VersionEditor({
                     send(
                       `/api/v1/versions/${detail.version.id}/modules`,
                       "POST",
-                      { title: `Module ${modules.length + 1}` },
-                      true
+                      { title: `Module ${modules.length + 1}` }
                     ),
                   "Module added."
                 )
@@ -280,8 +286,7 @@ export function VersionEditor({
                               title: `Class ${classesFor(module.id).length + 1}`,
                               kind: "text",
                               required: true,
-                            },
-                            true
+                            }
                           ),
                         "Class added."
                       )

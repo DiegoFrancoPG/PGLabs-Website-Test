@@ -3,9 +3,10 @@
 ## Current state
 
 - Specification version: 1.0, 15 September 2026.
-- Application implementation: T00–T23 done (including T03B). T24–T30 todo.
-- Active task: none. Start T24.
-- Last completed application task: T23.
+- Application implementation: T00–T25 done (including T03B). T26–T30 todo.
+- Active task: none. Start T26.
+- Last completed application task: T25.
+- **Demo gate:** rehearsed and recorded in `tests/evaluation/demo-gate.md`. The journey works end to end; the tutor's answers and all outbound email are stubbed or queued for want of credentials.
 - Acceptance scenarios passing: 55 of 67; AC-042 and AC-053 blocked with their automated halves recorded.
 - **AC-017 remains partial, blocked on real media.**
 - **AC-042 is blocked** on `OPENAI_API_KEY`; four of its five claims are tested and recorded in `tests/evaluation/tutor-synthetic-course.md`.
@@ -756,6 +757,60 @@ Two details it gets right by construction and one that needs checking with a rea
 
 spec/04 asks for up and down controls. That is not a simplification — a drag handle is unusable from a keyboard without a great deal of extra work, and two buttons with `aria-label="Move Module 1 up"` are operable by everybody on the first try.
 
+## T24 — Cross-context verification
+
+- **Status:** done. AC-003, AC-004, AC-007, AC-021, AC-023, AC-032, AC-038, AC-039, AC-064 and AC-065 re-verified together against the finished surface.
+- **Checks:** unit, integration and e2e all green; lint, typecheck, build, `verify_spec.py`, `db:reset:test`.
+
+### A verification pass is only worth running if it can fail
+
+Each of these scenarios passed when it was written. The question T24 asks is different: **with everything that has been added since, does every route still obey the rules?** A test that re-asserts the same ten cases answers nothing.
+
+So the inventories are read rather than written: the operation list comes from `contracts/api.json`, the page list from walking `app/(platform)`, and the action list from `pg_get_functiondef` of the dispatcher itself. A route or an action added later appears in these tests without anybody remembering to add it.
+
+That caught two things.
+
+### Two contract operations had no route at all
+
+`GET /invitations/{invitation_id}` and `POST /invitations/{invitation_id}/accept` are declared in the contract and had **no API route**. The invitation page calls the feature service directly, because it renders on the server — so the flow worked, AC-009 passed, and nothing was visibly broken. But the two declared endpoints did not exist, and an operation nobody can call is not implemented.
+
+Both now exist. This is exactly the class of gap that only a sweep finds: every individual test passed because every individual test went through the page.
+
+### A wrong assumption in my own test
+
+I wrote the onboarding sweep assuming `update_me` was exempt before an invitation is accepted. It is not — spec/02 names the set exactly: *"except the own-account onboarding actions `get_me`, `get_invitation` and `accept_invitation`"*. The implementation was right and the test was wrong.
+
+Worth recording because of how it would have gone the other way: had I "fixed" the code to match the test, an un-onboarded account would have gained a write it should not have. A test written from memory rather than from the specification is how a wrong assumption becomes a passing check.
+
+### What the sweep says about what is missing
+
+`run_retention` is declared in the contract and not built — it is T28's. It is listed **by name** in the sweep's `NOT_YET_IMPLEMENTED` set rather than silently skipped, so the gap is stated, and so shipping it without removing the entry fails loudly.
+
+## T25 — The demo gate, rehearsed
+
+- **Status:** done. **AC-054 is blocked**, and `tests/evaluation/demo-gate.md` is the disclosure its own wording requires.
+- **Checks:** unit, integration and e2e all green; lint, typecheck, build, `verify_spec.py`, `db:reset:test`.
+
+### The journey found three defects that every other test had passed over
+
+`tests/e2e/demo-journey.spec.ts` does the whole thing once, through the interface: author a programme, publish it, grant it, make a cohort, assign it with dates, sign in as the learner, complete it, collect the certificate and its PDF, and see it in the manager's report and CSV.
+
+It found three things wrong with code written at T23 — each of which would have failed in front of the client:
+
+1. **The class editor could not save.** Every mutation route requires an `Idempotency-Key`. `ClassEditor`, `ArchiveProgram` and three calls in `VersionEditor` sent none. The version editor's `send()` helper took an `idempotent = false` parameter, which is exactly how it happened: an optional safety measure is one that gets left off. The helper now always sends one.
+
+2. **A text class could never be published.** Publication requires source text on every class, and nothing ever set it for a text class — so the "Needs source text" badge was permanent and Publish always refused. Saving the body now sets both, which is what spec/02's *"every class has source text from body/transcript"* means when the class *is* the body.
+
+3. **Assignment was refused every time.** `AssignProgram` sent `organization_id` and `program_id`, which `OfferingCreate` does not have — the cohort and the grant carry them between them. The API rejects unknown keys rather than ignoring them, so every assignment failed validation.
+
+What they have in common is worth stating: the T23 tests exercised **navigation and rendering**, and all three defects were in **writes**. A page that renders correctly and refuses every save looks entirely healthy from the outside.
+
+### Why AC-054 is blocked and not passed
+
+Its "then" has two halves. The first — publish → grant → invite → enrol → learn → response → certificate → report — passes, for real. The second is *"real controlled reminder/tutor verified"*, and neither can be: the tutor answers from a stub because there is no model key, and no email is sent because there is no provider key or verified sender.
+
+The same clause also says *"mocked-only features disclosed incomplete"*, which is why the gate record exists and why this is recorded as blocked. A gate that passes with its integrations stubbed is not a gate.
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -773,6 +828,8 @@ spec/04 asks for up and down controls. That is not a simplification — a drag h
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
+- T25: the demo gate rehearsed end to end and recorded in tests/evaluation/demo-gate.md; AC-054 blocked on the tutor and email credentials. Three T23 defects found and fixed — all of them writes that the rendering tests could not see.
+- T24: cross-context verification driven by the contract, the filesystem and the dispatcher's own source. Two contract operations found to have no route (get_invitation, accept_invitation) and implemented; one wrong assumption in a test corrected against spec/02.
 - T23: the application shell with role navigation, and the admin and manager screens — catalog, version editor with upload and publish, organizations, individuals, platform reports, cohort rosters and assignment. clone_version implemented to close a contract gap; admin pages corrected to establish rather than infer admin rights. AC-053 partially automated, recorded blocked.
 - T20-T22: reminder eligibility with real timezone handling, the outbox state machine, Resend and webhook verification, the hourly cron, and redacted operations; AC-045 to AC-051 passed. PGL46 added for DELIVERY_UNCERTAIN. Real outbound email still blocked on a provider key.
 - T17-T19: tutor retrieval and privacy, the model adapter with budget reservation and settlement, and the drawer; AC-039, AC-040, AC-041, AC-043, AC-044, AC-067 passed and AC-042 recorded blocked pending OPENAI_API_KEY. PGL43/44/45 added.

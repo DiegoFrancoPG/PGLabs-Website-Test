@@ -10,6 +10,7 @@ import { listOfferings } from "@/features/content/enrollment";
 import { listPrograms } from "@/features/content/content";
 import { AppShell } from "@/components/layout/AppShell";
 import { InviteLearner } from "@/components/manage/InviteLearner";
+import { ImportRoster } from "@/components/manage/ImportRoster";
 import { AssignProgram } from "@/components/manage/AssignProgram";
 import { Alert } from "@ds/components/ui/alert";
 import { Badge } from "@ds/components/ui/badge";
@@ -95,8 +96,10 @@ export default async function CohortPage({
             below, because it carries dates.
           </p>
 
-          <div className="mt-4">
+          <div className="mt-4 flex flex-wrap items-start gap-3">
             <InviteLearner organizationId={orgId} cohortId={cohortId} />
+            {/* The same two commands, for a whole spreadsheet at once. */}
+            <ImportRoster organizationId={orgId} cohortId={cohortId} />
           </div>
 
           {members.items.length === 0 ? (
@@ -178,7 +181,6 @@ export default async function CohortPage({
           ) : (
             <div className="mt-5">
               <AssignProgram
-                organizationId={orgId}
                 cohortId={cohortId}
                 grants={active.map((grant) => {
                   const program = programs.items.find((p) => p.id === grant.program_id);

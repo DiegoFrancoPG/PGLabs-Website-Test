@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { callRpc } from "@/lib/rpc";
+import { normalizeEmail } from "@/lib/email-address";
 import { serviceClient } from "@/lib/supabase/server";
 import { invitationSchema, type Invitation } from "@/features/identity/invitations";
 
@@ -29,14 +30,10 @@ export const inviteCreateSchema = z
 
 export type InviteCreate = z.infer<typeof inviteCreateSchema>;
 
-/**
- * spec/03: "Normalize email by trim + lowercase, without provider-specific
- * dot/plus rewriting." Rewriting dots or plus-addressing would silently merge
- * addresses their owners consider distinct.
- */
-export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
-}
+/* Defined in lib/email-address so browser code can use it without pulling this
+ * server module — and its service-role client — along with it. Re-exported
+ * here so existing callers are unchanged. */
+export { normalizeEmail };
 
 /** Finds the Auth account for an address, or creates one. Idempotent by email. */
 async function ensureAuthIdentity(email: string): Promise<string> {

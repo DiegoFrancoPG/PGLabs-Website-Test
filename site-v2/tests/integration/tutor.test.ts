@@ -511,19 +511,42 @@ describe.skipIf(!hasDatabase)("AC-043 two tabs racing for the last of the budget
 
     const spent = crypto.randomUUID();
     try {
-      // Room for exactly one more question.
-      await setup.query(
-        `INSERT INTO app.tutor_usage(request_id, user_id, period_start, reserved_usd, actual_usd, outcome)
-         VALUES ($1, $2, date_trunc('month', now() AT TIME ZONE 'UTC')::date, 0.0061, 0.0061, 'settled')`,
-        [spent, BEN]
+      /*
+       * The budget is PROJECT-wide, not per learner (spec/05: "configured
+       * project monthly budget"), so this test cannot assume the month is
+       * empty — anybody else's question counts, and this suite shares a
+       * database with the e2e specs.
+       *
+       * So it reads what the month has actually committed and sets a budget
+       * with room for exactly ONE more reservation. That is the condition the
+       * race needs, stated relative to reality rather than assumed.
+       *
+       * It failed once because of exactly this: a question asked elsewhere had
+       * already committed more than the fixed budget, and BOTH attempts were
+       * refused rather than one.
+       */
+      await setup.query("DELETE FROM app.tutor_usage WHERE user_id=$1", [BEN]);
+      const committed = Number(
+        (
+          await setup.query(
+            `SELECT COALESCE(sum(COALESCE(actual_usd, reserved_usd)), 0) AS spent
+               FROM app.tutor_usage
+              WHERE period_start = date_trunc('month', now() AT TIME ZONE 'UTC')::date
+                AND outcome <> 'not_invoked'`
+          )
+        ).rows[0].spent
       );
+      // One reservation is 8000 bytes at $0.25/M plus 2048 tokens at $2.00/M.
+      const reservation = 0.002 + 0.004096;
+      const budget = Number((committed + reservation + 0.000001).toFixed(6));
+      void spent;
 
       const attempt = async (client: Client) => {
         await client.query("BEGIN");
         await asUser(client, BEN);
         try {
           const out = await client.query(rpc("ask_tutor", ask({
-            enrollment_id: ENROLL_BEN, question: "Racing question?", budget: 0.0123,
+            enrollment_id: ENROLL_BEN, question: "Racing question?", budget,
           })));
           await client.query("COMMIT");
           return { ok: true as const, out: out.rows[0].out };
@@ -538,7 +561,7 @@ describe.skipIf(!hasDatabase)("AC-043 two tabs racing for the last of the budget
       const losers = [first, second].filter((r) => !r.ok);
 
       // One reservation, one refusal — never two reservations over the budget.
-      expect(winners).toHaveLength(1);
+      expect(winners, `codes: ${losers.map((l) => l.code).join(", ")}`).toHaveLength(1);
       expect(losers).toHaveLength(1);
       expect(["PGL45", "PGL43"]).toContain(losers[0].code);
 
@@ -549,7 +572,8 @@ describe.skipIf(!hasDatabase)("AC-043 two tabs racing for the last of the budget
             AND user_id = $1 AND outcome <> 'not_invoked'`,
         [BEN]
       );
-      expect(Number(total.rows[0].spent)).toBeLessThanOrEqual(0.0123);
+      // Exactly one reservation for this learner: the race produced one.
+      expect(Number(total.rows[0].spent)).toBeLessThanOrEqual(reservation + 0.000001);
     } finally {
       await setup.query("DELETE FROM app.tutor_usage WHERE user_id=$1", [BEN]);
       await setup.query(

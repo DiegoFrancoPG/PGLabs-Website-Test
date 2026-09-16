@@ -23,12 +23,12 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
       // The scheduler has its own project below, because it is the one spec
       // whose subject is global.
-      testIgnore: /jobs\.spec\.ts/,
+      testIgnore: /(jobs|demo-journey)\.spec\.ts/,
     },
     {
       name: "mobile-390",
       use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 } },
-      testIgnore: /jobs\.spec\.ts/,
+      testIgnore: /(jobs|demo-journey)\.spec\.ts/,
     },
     /*
      * The scheduler, alone and last.
@@ -39,12 +39,16 @@ export default defineConfig({
      * beside the others made three unrelated specs fail — not because either
      * was wrong, but because they disagreed about whose state it was.
      *
-     * `dependencies` makes this wait until the rest have finished, and a
-     * single worker keeps it from racing itself.
+     * The demo journey joins it for the same reason: it publishes a program,
+     * grants it, assigns it and completes it, which changes what several other
+     * specs would see while they were looking.
+     *
+     * `dependencies` makes these wait until the rest have finished, and a
+     * single worker keeps them from racing each other.
      */
     {
       name: "scheduler",
-      testMatch: /jobs\.spec\.ts/,
+      testMatch: /(jobs|demo-journey)\.spec\.ts/,
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
       dependencies: ["desktop-1440", "mobile-390"],
       fullyParallel: false,

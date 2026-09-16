@@ -26,7 +26,7 @@ export function ArchiveProgram({
     try {
       const response = await fetch(`/api/v1/programs/${programId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
         body: JSON.stringify({ archived: !archived }),
       });
       const json = await response.json();

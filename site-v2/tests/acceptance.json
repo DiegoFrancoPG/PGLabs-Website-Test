@@ -36,7 +36,8 @@
       "requirements": [
         "FR-02"
       ],
-      "status": "passed"
+      "status": "passed",
+      "evidence": " Re-verified at T24 across the whole surface: exactly one function is executable by the browser role (public.pglearn_rpc), the app schema grants it no table privileges at all, RLS is enabled on every app table, and the Data API cannot see app.profiles, app.enrollments, app.certificates or app.tutor_requests even with a key."
     },
     {
       "id": "AC-004",
@@ -48,7 +49,8 @@
       "requirements": [
         "FR-02"
       ],
-      "status": "passed"
+      "status": "passed",
+      "evidence": " Re-verified at T24 against EVERY dispatched action, read from the dispatcher's own source rather than a list: all 60+ refuse an unauthenticated caller with 28000, all refuse a suspended account with 42501, and only get_me, get_invitation and accept_invitation answer before an invitation is accepted — the exact set spec/02 names."
     },
     {
       "id": "AC-005",
@@ -86,7 +88,8 @@
       "requirements": [
         "FR-01"
       ],
-      "status": "passed"
+      "status": "passed",
+      "evidence": " Re-verified at T24 by sweeping every operation in contracts/api.json: each one that is not health, the scheduler or the webhook answers an anonymous caller with 401, and every page under app/(platform) sends an anonymous visitor to sign in."
     },
     {
       "id": "AC-008",
@@ -261,7 +264,8 @@
         "FR-02",
         "FR-05"
       ],
-      "status": "passed"
+      "status": "passed",
+      "evidence": " Re-verified at T24 through every action a manager may call: no personal enrollment appears in their report or their export, and neither body names the individual learner."
     },
     {
       "id": "AC-022",
@@ -287,7 +291,7 @@
         "FR-15"
       ],
       "status": "passed",
-      "evidence": "tests/integration/progress.test.ts — revoking the grant mid-session makes the next heartbeat fail with PGL22/ACCESS_UNAVAILABLE carrying reason 'revoked', while the 30 seconds already recorded stay in played_ranges. AC-062 already covers the download-renewal half."
+      "evidence": "tests/integration/progress.test.ts — revoking the grant mid-session makes the next heartbeat fail with PGL22/ACCESS_UNAVAILABLE carrying reason 'revoked', while the 30 seconds already recorded stay in played_ranges. AC-062 already covers the download-renewal half. Re-verified at T24 as a sweep: after the grant is revoked, get_learning_class, start_playback, complete_text, complete_exercise, authorize_download and ask_tutor are ALL refused, and what was already recorded is untouched."
     },
     {
       "id": "AC-024",
@@ -405,7 +409,7 @@
         "FR-09"
       ],
       "status": "passed",
-      "evidence": "tests/integration/exercise.test.ts — a failure injected after the insert leaves no response and no completion, and the retry afterwards succeeds exactly once; a retry with the same request id and body returns the first answer; another learner's enrollment and an exercise outside the pinned version are both 404; a different response after completion is PGL40/EXERCISE_ALREADY_COMPLETED and the saved text is untouched."
+      "evidence": "tests/integration/exercise.test.ts — a failure injected after the insert leaves no response and no completion, and the retry afterwards succeeds exactly once; a retry with the same request id and body returns the first answer; another learner's enrollment and an exercise outside the pinned version are both 404; a different response after completion is PGL40/EXERCISE_ALREADY_COMPLETED and the saved text is untouched. Re-verified at T24 as a sweep: Ben asking about Amber's enrollment, class, playback, exercise, certificate and tutor session is refused on every one."
     },
     {
       "id": "AC-033",
@@ -485,7 +489,7 @@
         "FR-12"
       ],
       "status": "passed",
-      "evidence": "tests/unit/csv.test.ts, tests/integration/reports.test.ts and tests/e2e/reports.spec.ts — a display name of '   =HYPERLINK(...)' is prefixed with an apostrophe and RFC4180-quoted, the check looking past leading whitespace; a manager asking for another organization is refused 403 on both report and export, and is bound to their own organization with no filter at all; the header is ReportRow's field order and carries no response, chat or time-spent column; personal enrollments are invisible to every manager."
+      "evidence": "tests/unit/csv.test.ts, tests/integration/reports.test.ts and tests/e2e/reports.spec.ts — a display name of '   =HYPERLINK(...)' is prefixed with an apostrophe and RFC4180-quoted, the check looking past leading whitespace; a manager asking for another organization is refused 403 on both report and export, and is bound to their own organization with no filter at all; the header is ReportRow's field order and carries no response, chat or time-spent column; personal enrollments are invisible to every manager. Re-verified at T24: a manager asking for another organization is 403 rather than filtered, and list_organizations answers a learner with 200 and an empty list — the refusal is in the contents, which discloses nothing."
     },
     {
       "id": "AC-039",
@@ -499,7 +503,7 @@
         "FR-13"
       ],
       "status": "passed",
-      "evidence": "tests/integration/tutor-retrieval.test.ts and tests/unit/tutor-prompt.test.ts — every retrieved chunk comes from the enrollment's pinned version; organization B's material, planted and then asked for verbatim, never appears as a source; a class outside the version, another learner's enrollment and a revoked grant are all 404; history is only this learner's completed exchanges for this enrollment, so neither Ben's conversation nor the learner's other programme reaches the prompt."
+      "evidence": "tests/integration/tutor-retrieval.test.ts and tests/unit/tutor-prompt.test.ts — every retrieved chunk comes from the enrollment's pinned version; organization B's material, planted and then asked for verbatim, never appears as a source; a class outside the version, another learner's enrollment and a revoked grant are all 404; history is only this learner's completed exchanges for this enrollment, so neither Ben's conversation nor the learner's other programme reaches the prompt. Re-verified at T24: the actor is derived from auth.uid() alone, and a payload carrying user_id, actor, actor_id or sub still answers as the caller."
     },
     {
       "id": "AC-040",
@@ -703,7 +707,8 @@
         "FR-12",
         "FR-13"
       ],
-      "status": "not_run"
+      "status": "blocked",
+      "evidence": "tests/e2e/demo-journey.spec.ts runs the whole journey through the real interface against the real database — author, publish, grant, cohort, roster, assign with dates, learner signs in and completes, certificate issued in the completing transaction, real PDF bytes, certificate email queued, manager's report at 100%, CSV export carrying the record and nothing the learner wrote, and the tutor drawer answering. Every step is real except the model behind the tutor.\n\nRecorded BLOCKED rather than passed because AC-054 also requires 'real controlled reminder/tutor verified': the tutor's answers come from lib/tutor/stub.ts (needs OPENAI_API_KEY) and no email is actually sent (needs RESEND_API_KEY, EMAIL_FROM and a verified sender). tests/evaluation/demo-gate.md is the disclosure AC-054's last clause asks for, and lists what remains.\n\nThe rehearsal found three defects that every existing test had passed over: the class editor sent no Idempotency-Key so it could not save; nothing set source_text for a text class so publication always refused; and AssignProgram sent two fields OfferingCreate does not have, so assignment was refused every time."
     },
     {
       "id": "AC-055",
@@ -825,7 +830,8 @@
       "requirements": [
         "FR-02"
       ],
-      "status": "passed"
+      "status": "passed",
+      "evidence": " Re-verified at T24 by sweeping every mutating operation in the contract: each refuses a foreign Origin with 403, before authentication is considered."
     },
     {
       "id": "AC-065",
@@ -837,7 +843,8 @@
       "requirements": [
         "FR-15"
       ],
-      "status": "passed"
+      "status": "passed",
+      "evidence": " Re-verified at T24: removing a learner's membership leaves their progress rows intact and keeps them reportable, while their own availability becomes membership_inactive."
     },
     {
       "id": "AC-066",

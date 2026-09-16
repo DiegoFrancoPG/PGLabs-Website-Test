@@ -32,12 +32,10 @@ interface Member {
 }
 
 export function AssignProgram({
-  organizationId,
   cohortId,
   grants,
   members,
 }: {
-  organizationId: string;
   cohortId: string;
   grants: Grant[];
   members: Member[];
@@ -67,9 +65,13 @@ export function AssignProgram({
         method: "POST",
         headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
         body: JSON.stringify({
+          /*
+           * The cohort and the grant carry the organization and the programme
+           * between them, so the contract's OfferingCreate has neither field —
+           * sending them is refused rather than ignored, which is the API
+           * rejecting unknown keys doing its job.
+           */
           cohort_id: cohortId,
-          organization_id: organizationId,
-          program_id: grant.programId,
           version_id: grant.versionId,
           grant_id: grant.id,
           starts_at: `${startsAt}T00:00:00.000Z`,
