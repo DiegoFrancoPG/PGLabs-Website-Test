@@ -453,7 +453,7 @@
     {
       "id": "T09",
       "title": "Implement private uploads, captions and file access",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T08",
@@ -488,8 +488,18 @@
       "checks": [
         "npm run test:integration -- assets"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "StorageProvider adapter, SRT-to-WebVTT conversion and the three asset operations, implemented and tested with SYNTHETIC files at the user's direction. AC-015, AC-016 and AC-062 pass. AC-017's conversion rules pass in full; its 'play generated VTT' clause and every real-media check remain BLOCKED on the nine client videos with their transcripts and captions, which fixtures.json itself says cannot be substituted. The finalize route makes two calls to the same allowlisted action — inspect, then record — because spec/02 requires the allowlist to correspond to operationId values and there is no operation for reading back a reservation.",
+      "evidence": [
+        "80 unit + 155 integration + 65 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-015: the storage key is composed in the DATABASE from version, class and asset ids, so a hostile filename cannot alter it; verified to be exactly six segments, correctly prefixed and free of '..'",
+        "AC-015: 22 unit tests on sanitization — traversal, percent-encoded separators, Windows paths, control characters, newlines, quotes and length padding all defused; learner and manager both refused 42501; upload into a published version refused 23514; retry returns one reservation",
+        "AC-016: a failed finalize records a stable error code and the asset never becomes the class's primary, which is what keeps publication blocked; a successful one promotes it and records duration; a primary whose MIME disagrees with the class kind is refused by the M02 trigger",
+        "AC-017 conversion: 14 unit tests — timestamps preserved exactly, overlapping cues kept in original order, end<=start rejected, negative and non-numeric timestamps rejected, cues beyond duration+2s rejected, CRLF and BOM handled, VTT positioning settings dropped",
+        "AC-017 safety: markup is never carried through rather than sanitized — no angle brackets or entities survive in cue text, and script contents are dropped instead of being left as subtitle text",
+        "AC-062: the IDENTICAL download request that succeeded while a grant was active is refused once it is revoked, and again once the window closes — authorization is evaluated on every call and no response is ever replayed from cache",
+        "AC-062: another learner's enrollment returns P0002 not 42501; a non-ready asset is refused; a learner asking for preview gets no route into draft content; a caption signs the normalized VTT, never the raw SRT",
+        "BLOCKED pending real media: playback of an actual MP4 with its caption track, and the T25 demo gate. No synthetic file can satisfy these."
+      ]
     },
     {
       "id": "T10",

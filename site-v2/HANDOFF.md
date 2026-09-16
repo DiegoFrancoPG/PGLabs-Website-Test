@@ -3,11 +3,11 @@
 ## Current state
 
 - Specification version: 1.0, 15 September 2026.
-- Application implementation: T00–T08 done (including T03B). T09–T30 todo.
-- Active task: none. Start T09.
-- Last completed application task: T08.
-- Acceptance scenarios passing: 14 of 67 — AC-001 to AC-011, AC-013, AC-014 and AC-064. **AC-012 is partial and blocked on T11.**
-- **T09 is the first task that needs real media from the client.**
+- Application implementation: T00–T09 done (including T03B). T10–T30 todo.
+- Active task: none. Start T10.
+- Last completed application task: T09.
+- Acceptance scenarios passing: 17 of 67 — AC-001 to AC-011, AC-013 to AC-016, AC-062 and AC-064.
+- **AC-012 is partial, blocked on T11. AC-017 is partial, blocked on real media.**
 - Specification validation: `python3 verify_spec.py` PASS — 66 operations, 70 schemas, 31 acyclic tasks. This validates the package, not the application.
 - Inputs outstanding: actual media/source content, final course details, Resend and OpenAI credentials with sender setup, and the certificate issuer string (see below). A development database is configured.
 
@@ -389,6 +389,44 @@ ADR-03 forbids building the dispatch from a table, so every migration that adds 
 
 `clone_version` appears on `/programs/{id}/versions` but belongs to **T27**, which is pilot scope. It has no handler, so it is refused exactly like any unknown action.
 
+## T09 — Private uploads, captions and file access
+
+- **Status:** done, with real-media checks BLOCKED. AC-015, AC-016 and AC-062 pass; **AC-017 is partial**.
+- **Checks:** 80 unit, 155 integration, 65 e2e; lint, typecheck, build, `verify_spec.py`, `db:reset:test`.
+- Built and tested with **synthetic files**, at the user's direction, so the pipeline could be finished before the client media arrives.
+
+### What is blocked, and why no test can close it
+
+`fixtures.json` says it plainly: "real media checks require actual assets." Still outstanding:
+
+- playback of an actual MP4 with its caption track attached;
+- AC-017's "play generated VTT" clause;
+- the T25 demo gate, which spec/01 says "a feature with only a mock is explicitly incomplete at".
+
+`tests/acceptance.json` therefore records **AC-017 as `not_run`**. Its conversion rules all pass; the playback half does not, and marking the scenario passed would misreport that.
+
+### The storage key is composed in the database
+
+A hostile filename cannot reach the path, because the path is not built where the filename arrives. `authorize_upload` composes `versions/{version}/classes/{class}/{asset}/{name}` from ids it holds itself, and the application sanitizes the basename before it ever gets there.
+
+The sanitizer is an **allowlist**, not a blocklist: anything outside `[A-Za-z0-9._-]` becomes an underscore, so there is no control character, separator, quote or encoding left that could alter a key. Runs of dots collapse to one, so `..` cannot appear even where it would be harmless.
+
+### Captions are not sanitized — markup is never carried through
+
+Cue text is reduced to plain text: tags removed, script and style contents dropped entirely, and entities **replaced rather than decoded**. Decoding would turn `&lt;` back into a real angle bracket and hand back the markup that was just removed, which is the classic way a sanitizer reintroduces what it stripped.
+
+Overlapping cues are preserved in their original order. Two people speaking at once is ordinary, and an implementation that sorted or de-overlapped would corrupt real subtitles — so the test asserts the order as written.
+
+### AC-062 is about what a replay must NOT do
+
+`authorize_download` is the one handler deliberately **not** idempotency-cached. Authorization runs on every call and the URL is minted afterwards, so a request that succeeded while a grant was active is refused once it is revoked. The test issues the identical request twice across a revocation and asserts the second one fails.
+
+### Finalization reads back what was reserved
+
+The route calls `finalize_upload` twice: once with `inspect: true` to read the reserved role, type, size and key, then again with the verdict. Neither side of the comparison comes from the request — spec/03 has finalization check the stored object *against what was reserved*, so trusting the caller for both would check nothing.
+
+Folded into the same action rather than given its own, because spec/02 requires the allowlist to correspond to `operationId` values and there is no operation for reading back a reservation. The dispatcher test would have rejected a new action; it caught this while it was still a draft.
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -406,6 +444,7 @@ ADR-03 forbids building the dispatch from a table, so every migration that adds 
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
+- T09: uploads, caption conversion and download authorization; AC-015, AC-016, AC-062 passed with synthetic files. AC-017 partial and real-media checks blocked pending client assets.
 - T08: content authoring, ordering and the reorder deferral; AC-014 passed. Dispatcher completeness now tested against the live database.
 - T07: cohorts, cohort membership and catalog grants; AC-013 passed, AC-012 partial pending T11. Enrollment guard corrected so cancellation survives a lapsed membership.
 - T06: organizations, memberships and invitation creation; AC-010 and AC-011 passed. Idempotency mechanism added; last-manager trigger corrected to fire immediately.
