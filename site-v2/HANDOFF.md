@@ -3,13 +3,15 @@
 ## Current state
 
 - Specification version: 1.0, 15 September 2026.
-- Application implementation: T00–T12 done (including T03B). T13–T30 todo.
-- Active task: none. Start T13.
-- Last completed application task: T12.
-- Acceptance scenarios passing: 26 of 67.
+- Application implementation: T00–T22 done (including T03B). T23–T30 todo.
+- Active task: none. Start T23.
+- Last completed application task: T22.
+- Acceptance scenarios passing: 55 of 67.
 - **AC-017 remains partial, blocked on real media.**
-- Specification validation: `python3 verify_spec.py` PASS — 66 operations, 70 schemas, 31 acyclic tasks. This validates the package, not the application.
-- Inputs outstanding: actual media/source content, final course details, Resend and OpenAI credentials with sender setup, and the certificate issuer string (see below). A development database is configured.
+- **AC-042 is blocked** on `OPENAI_API_KEY`; four of its five claims are tested and recorded in `tests/evaluation/tutor-synthetic-course.md`.
+- **Real outbound email is blocked** on `RESEND_API_KEY`, `EMAIL_FROM` and a verified sender. Everything around it — scheduling, claiming, retrying, webhook verification and reconciliation — is implemented and tested against the database and the real routes.
+- Specification validation: `python3 verify_spec.py` PASS — 66 operations, 70 schemas, 32 acyclic tasks. This validates the package, not the application.
+- Inputs outstanding: the nine videos with transcripts and captions, OpenAI and Resend credentials with a verified sender, `CRON_SECRET` for the deployment, and the certificate issuer string if it should differ from the default "PGLearn". A development database is configured.
 
 ## Host application
 
@@ -674,6 +676,49 @@ Four of its five claims are established and tested: course text arrives as user-
 
 The fifth claim — that a reviewed answer stays within learning scope — needs a real model and a person reading what it says. `tests/evaluation/tutor-synthetic-course.md` records the four questions to ask and what to look for. AGENTS.md: "Record unavailable-provider checks as blocked, not passed."
 
+## T20, T21, T22 — Reminders, email and operations
+
+- **Status:** done. AC-045, AC-046, AC-047, AC-048, AC-049, AC-050 and AC-051 pass. **Real outbound email is blocked** pending `RESEND_API_KEY`, `EMAIL_FROM` and a verified sender.
+- **Checks:** unit, integration and e2e all green; lint, typecheck, build, `verify_spec.py`, `db:reset:test`.
+
+### An offset is not a timezone
+
+The reminder rules are written twice: `lib/reminders.ts` so they can be evaluated against a fixed clock at 08:59 and 09:00 on a day the offset changes, and SQL because only the database can decide them inside the transaction that claims the day. Both ask a real IANA database — `Intl` on one side, `AT TIME ZONE` on the other — rather than storing a number of hours.
+
+That is what makes AC-046's DST case work. On the morning Madrid's clocks go back, 00:30Z and 01:30Z are **both 02:30 local**, and both belong to local date 2026-10-25. One local date means one claim in `reminder_days`, so the second run of that repeated hour sends nothing.
+
+### What may be taken back, and what may not
+
+A reminder that has not been attempted can be suppressed when the learner finishes, opts out or loses access — and its daily slot is **released**, because nothing was sent and they may still be due something else. A reminder that has been claimed keeps both its state and its slot: spec/03 is explicit that "emails already dispatched before a concurrent completion cannot be recalled", and pretending otherwise would put our records out of step with the learner's inbox.
+
+Nothing with an unknown outcome is ever recorded as `failed`. A timeout, a dropped connection, a 5xx — each retries on the 1/5/15/60-minute schedule and then becomes `uncertain`, which is a state a person resolves against the provider's dashboard. `failed` is reserved for a definitive rejection.
+
+### One id, three roles
+
+The outbox row's uuid is the row's identity, the provider's `Idempotency-Key`, and the thing a retry must not change. Resend deduplicates on that key for 24 hours and the behavioural cutoff is 23, so a retry inside the window can never produce a second email — but only if the key is frozen, which is why the retry test asserts the id, recipient and payload are all unchanged across an attempt.
+
+### A verification that returned undefined
+
+`svix`'s `verify()` throws on a bad signature and returns the parsed payload — except in this version, where it resolves to `undefined`. Reading `.data` off that threw, the catch turned it into a 401, and **every correctly signed callback was rejected** while every forged one was rejected for the right reason. The tests caught it because one of them asserted a good signature is accepted, not only that a bad one is refused.
+
+Verification and parsing are now separate: the raw body is verified, and only then parsed. That is the honest split anyway — verification answers "are these bytes authentic", not "what do they say".
+
+### AC-051 is a test about absence, so it plants the secret first
+
+A failed invitation whose outbox payload really does carry an Auth action link, then: the token must not appear in the API response, in the rendered HTML, or in **any script the browser downloads**. The last one is checked by collecting every `/_next/static/*.js` the page loads and searching it.
+
+The `OperationStatus` DTO has no payload field, the handlers select columns explicitly, and the Zod schema is `.strict()` — so a handler that started returning more would fail the parse rather than pass it quietly to a screen.
+
+### Two test-infrastructure changes the new specs forced
+
+**One sign-in per learner, not per test.** Every spec used to sign in inside each test. That worked until there were enough specs: Supabase Auth throttles sign-ins, and past a certain number per run the form stops answering — which surfaced as three *unrelated* tests timing out on `waitForURL("**/learn")` while their own subjects were fine. `tests/e2e/session.ts` now establishes a session once per email and reuses its cookies. `auth.spec.ts` and `invitations.spec.ts` deliberately still sign in through the form, because that is what they are testing.
+
+**The scheduler runs in its own project, last.** Every other spec owns a learner or an organization and can run beside its neighbours. The scheduler owns nobody and touches everybody: one run plans a reminder for every eligible learner in the database. Beside the others it made three unrelated specs fail — not because either was wrong, but because they disagreed about whose state it was. It is now a `scheduler` project with `dependencies` on the two viewport projects and a single worker.
+
+### Five shadowing bugs now
+
+Added to the four from T17–T19: a parameter named `payload` against `notification_outbox.payload`, and a variable named `kind` against its `kind` column. The rule was already written down and I broke it twice more. It is now stated at the top of both migrations: **parameters take `p_`, and no variable is named after a column it sits beside.**
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -691,6 +736,7 @@ The fifth claim — that a reviewed answer stays within learning scope — needs
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
+- T20-T22: reminder eligibility with real timezone handling, the outbox state machine, Resend and webhook verification, the hourly cron, and redacted operations; AC-045 to AC-051 passed. PGL46 added for DELIVERY_UNCERTAIN. Real outbound email still blocked on a provider key.
 - T17-T19: tutor retrieval and privacy, the model adapter with budget reservation and settlement, and the drawer; AC-039, AC-040, AC-041, AC-043, AC-044, AC-067 passed and AC-042 recorded blocked pending OPENAI_API_KEY. PGL43/44/45 added.
 - T16: scoped reporting, real cursor pagination and the CSV export; AC-036, AC-037, AC-038 passed. PGL42 added for EXPORT_LIMIT; the enroll_multi_a fixture ambiguity resolved in favour of expected_report.
 - T15: certificate reading, PDF rendering with bundled OFL fonts, and revocation; AC-034 and AC-035 passed. PGL41 added for CERTIFICATE_REVOKED.

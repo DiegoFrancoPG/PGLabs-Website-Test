@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { signIn } from "./session";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -52,13 +53,6 @@ async function clearRevocation() {
   });
 }
 
-async function signIn(page: import("@playwright/test").Page, email: string) {
-  await page.goto("/login");
-  await page.getByLabel("Email address").fill(email);
-  await page.getByLabel("Password").fill(config.PGLEARN_TEST_PASSWORD);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL("**/learn");
-}
 
 test.describe("AC-035 the certificate page", () => {
   test.describe.configure({ mode: "serial" });

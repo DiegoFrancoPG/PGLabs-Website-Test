@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { signIn } from "./session";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -12,28 +13,10 @@ import path from "node:path";
  * than a failing assertion.
  */
 
-function env(): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const raw of readFileSync(path.join(__dirname, "../../.env.local"), "utf8").split("\n")) {
-    const line = raw.trim();
-    if (!line || line.startsWith("#") || !line.includes("=")) continue;
-    const [key, ...rest] = line.split("=");
-    out[key.trim()] = rest.join("=").trim();
-  }
-  return out;
-}
-const config = env();
 const fixtures = JSON.parse(readFileSync(path.join(__dirname, "../fixtures.json"), "utf8"));
 const { org_a: ORG_A, org_b: ORG_B, offering_a: OFFERING_A } = fixtures.ids;
 const EXPECTED = fixtures.expected_report;
 
-async function signIn(page: import("@playwright/test").Page, email: string) {
-  await page.goto("/login");
-  await page.getByLabel("Email address").fill(email);
-  await page.getByLabel("Password").fill(config.PGLEARN_TEST_PASSWORD);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL("**/learn");
-}
 
 test.describe("AC-036 and AC-038 the manager's reports", () => {
   test.skip(({ viewport }) => (viewport?.width ?? 1440) < 768, "covered at desktop width");

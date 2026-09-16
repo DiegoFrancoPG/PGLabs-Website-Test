@@ -21,10 +21,34 @@ export default defineConfig({
     {
       name: "desktop-1440",
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
+      // The scheduler has its own project below, because it is the one spec
+      // whose subject is global.
+      testIgnore: /jobs\.spec\.ts/,
     },
     {
       name: "mobile-390",
       use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 } },
+      testIgnore: /jobs\.spec\.ts/,
+    },
+    /*
+     * The scheduler, alone and last.
+     *
+     * Every other spec owns a learner or an organization and can run beside
+     * its neighbours. The scheduler owns nobody and touches everybody: one run
+     * plans a reminder for every eligible learner in the database. Running it
+     * beside the others made three unrelated specs fail — not because either
+     * was wrong, but because they disagreed about whose state it was.
+     *
+     * `dependencies` makes this wait until the rest have finished, and a
+     * single worker keeps it from racing itself.
+     */
+    {
+      name: "scheduler",
+      testMatch: /jobs\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
+      dependencies: ["desktop-1440", "mobile-390"],
+      fullyParallel: false,
+      workers: 1,
     },
   ],
   webServer: {
@@ -42,6 +66,14 @@ export default defineConfig({
        * production, per spec/05's ban on mock providers there.
        */
       PGLEARN_USE_FIXTURES: "tutor",
+      /*
+       * The scheduler's secret and the webhook's signing key, so AC-050 and
+       * AC-049 can exercise a correct secret, a wrong one and a forged
+       * signature against the real routes. Both are test values and neither
+       * unlocks anything outside this server.
+       */
+      CRON_SECRET: "test-cron-secret-do-not-reuse",
+      RESEND_WEBHOOK_SECRET: "whsec_dGVzdHNlY3JldGZvcnBnbGVhcm50ZXN0cw==",
     },
   },
 });

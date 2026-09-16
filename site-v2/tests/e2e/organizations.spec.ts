@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { signIn } from "./session";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -35,13 +36,6 @@ const fixtures = JSON.parse(readFileSync(path.join(__dirname, "../fixtures.json"
 const ORG_A = fixtures.ids.org_a;
 const ORG_B = fixtures.ids.org_b;
 
-async function signIn(page: import("@playwright/test").Page, email: string) {
-  await page.goto("/login");
-  await page.getByLabel("Email address").fill(email);
-  await page.getByLabel("Password").fill(config.PGLEARN_TEST_PASSWORD);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL("**/learn");
-}
 
 async function removeInvitee(email: string) {
   const { createClient } = await import("@supabase/supabase-js");

@@ -948,7 +948,7 @@
     {
       "id": "T20",
       "title": "Implement reminder eligibility and outbox claims",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T15"
@@ -977,13 +977,19 @@
         "npm run test:unit -- reminders",
         "npm run test:integration -- outbox"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "The rules are written twice on purpose: lib/reminders.ts so they can be evaluated against a fixed clock at 08:59 and 09:00 on the day an offset changes, and SQL because only the database can decide them inside the transaction that claims the day. Both use a real IANA timezone database rather than an offset, which is what makes the DST case work — on the morning Madrid's clocks go back, two different instants are the same wall-clock time on the same local date, and the daily claim catches the second. A suppressed message releases its day because nothing was sent; a message already claimed keeps it, because an email in flight cannot be recalled. Nothing with an unknown outcome is ever recorded as failed.",
+      "evidence": [
+        "AC-045 one message per learner per local day; a duplicate run plans nothing",
+        "AC-046 28 unit cases covering the window boundaries, each rule, and the DST-repeat day",
+        "AC-047 suppression before sending releases the day; a claimed message cannot be recalled",
+        "AC-048 1/5/15/60-minute backoff, uncertain at five attempts or 23 hours, slot retained",
+        "the scheduler is service-role only and refuses a browser role"
+      ]
     },
     {
       "id": "T21",
       "title": "Connect email, webhooks and cron",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T20",
@@ -1015,13 +1021,22 @@
         "npm run test:integration -- email",
         "Verify route/cron configuration and provider adapter with controlled test payloads; real mail gate is T25"
       ],
-      "notes": "Adapter tests may use explicit test doubles. Real controlled delivery is mandatory at T25.",
-      "evidence": []
+      "notes": "The adapter's whole job is to distinguish a definitive rejection from an uncertain one: a 4xx that is not 429 means the provider will never send it, and a timeout means nobody knows. The outbox treats those completely differently, so collapsing them into 'error' would silently send somebody two reminders or none. The outbox row's uuid is the provider's Idempotency-Key, which is why a retry must never mint a new one — Resend deduplicates for 24 hours and the behavioural cutoff is 23. The webhook is verified against the RAW body before anything is persisted, and the body is parsed only afterwards; this svix version's verify() returns undefined, so relying on its return value silently turned every valid callback into a 401 until the parse was separated from the verification.",
+      "evidence": [
+        "AC-049 dedupe by provider event id, no downgrade of delivered, terminal bounce, callback-before-save reconciliation",
+        "AC-049 forged, unsigned and tampered callbacks are 401 with nothing written",
+        "AC-050 only the correct Bearer secret runs the scheduler; a signed-in admin is refused",
+        "AC-050 ordinary GET routes write nothing; the cron response carries counts and no addresses",
+        "templates carry plain text and HTML, link only into the application, and contain no course content",
+        "real outbound email is BLOCKED pending RESEND_API_KEY, EMAIL_FROM and a verified sender",
+        "e2e suite reworked to one sign-in per learner after Auth throttling surfaced as unrelated timeouts",
+        "the scheduler runs in its own Playwright project, last and single-worker, because its effects are global"
+      ]
     },
     {
       "id": "T22",
       "title": "Implement redacted operations and configuration failures",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T21",
@@ -1050,8 +1065,14 @@
       "checks": [
         "npm run test:integration -- operations"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "AC-051 is a test about what is NOT there, so the test plants the secret first: a failed invitation whose payload really does carry an Auth action link, then asserts the token is absent from the API response, the rendered HTML and every script the browser downloads. The OperationStatus DTO has no payload field and the handlers select columns explicitly, so the link cannot arrive by being forgotten; the Zod schema is strict, so a handler that started returning more would fail rather than pass it to a screen. A failed message may be resent by somebody who has looked at it, and an uncertain one may not — that refusal is DELIVERY_UNCERTAIN and the button is not even rendered.",
+      "evidence": [
+        "AC-051 the planted action link is absent from the API, the HTML and every downloaded script",
+        "AC-051 the DTO is the contract's seven fields and the schema is strict",
+        "AC-048 a failed message may be resent once, audited; an uncertain one is refused DELIVERY_UNCERTAIN",
+        "configuration status shows configured/not_configured and never a key",
+        "the page and its API are refused to a manager and to a learner"
+      ]
     },
     {
       "id": "T23",

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { signIn } from "./session";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -12,28 +13,10 @@ import path from "node:path";
  * learners whose states were built for exactly this: Amber has started
  * nothing, Ben is part-way, Cora has finished.
  */
-function env(): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const raw of readFileSync(path.join(__dirname, "../../.env.local"), "utf8").split("\n")) {
-    const line = raw.trim();
-    if (!line || line.startsWith("#") || !line.includes("=")) continue;
-    const [key, ...rest] = line.split("=");
-    out[key.trim()] = rest.join("=").trim();
-  }
-  return out;
-}
-const config = env();
 const fixtures = JSON.parse(readFileSync(path.join(__dirname, "../fixtures.json"), "utf8"));
 const { enroll_amber: ENROLL_AMBER, enroll_cora: ENROLL_CORA, class_video: CLASS_VIDEO } =
   fixtures.ids;
 
-async function signIn(page: import("@playwright/test").Page, email: string) {
-  await page.goto("/login");
-  await page.getByLabel("Email address").fill(email);
-  await page.getByLabel("Password").fill(config.PGLEARN_TEST_PASSWORD);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL("**/learn");
-}
 
 test.describe("AC-066 learner navigation", () => {
   test.skip(({ viewport }) => (viewport?.width ?? 1440) < 768, "covered at desktop width");

@@ -1,0 +1,4 @@
+
+# Cached e2e sessions (tests/e2e/session.ts). Real cookies for fixture
+# accounts: never committed, and rewritten on every run.
+tests/.auth/

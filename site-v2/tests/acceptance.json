@@ -578,7 +578,8 @@
       "requirements": [
         "FR-11"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/integration/outbox.test.ts — at local noon the scheduler plans exactly one message for Amber, the overdue one, and claims her day; a second run at the same instant plans nothing. Dana, who has not accepted her invitation, and Cora, who has finished, receive none. A certificate notification the same day does not consume the learning slot."
     },
     {
       "id": "AC-046",
@@ -590,7 +591,8 @@
       "requirements": [
         "FR-11"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/unit/reminders.test.ts (28 cases) — 08:59 is outside the window and 09:00 inside, 17:59 inside and 18:00 outside, all in the learner's own timezone; due_soon is exactly three local days out, due_today holds at exactly the due moment and becomes overdue a millisecond later; on the morning Madrid's clocks go back, 00:30Z and 01:30Z are both 02:30 local on the same local DATE and yield one event key, so the daily claim catches the second."
     },
     {
       "id": "AC-047",
@@ -602,7 +604,8 @@
       "requirements": [
         "FR-11"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/integration/outbox.test.ts — a learner who finishes, opts out or loses access before the sender reaches their message has it suppressed with no provider call and her day released; a message already claimed for sending keeps its state and its claimed day, because an email in flight cannot be recalled."
     },
     {
       "id": "AC-048",
@@ -615,7 +618,8 @@
         "FR-11",
         "FR-14"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/integration/outbox.test.ts and tests/integration/operations.test.ts — retries back off 1, 5, 15 and 60 minutes with the same id, recipient and payload; at five attempts or twenty-three hours the message becomes 'uncertain' rather than failed, is not claimed again, and keeps its daily slot; an expired lease recovers without restarting the attempt count; an operator may resend a failed message but is refused with DELIVERY_UNCERTAIN for an unreconciled one."
     },
     {
       "id": "AC-049",
@@ -627,7 +631,8 @@
       "requirements": [
         "FR-11"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/integration/email-events.test.ts and tests/e2e/jobs.spec.ts — a verified callback records one event and marks the message delivered; a redelivery leaves one record and changes nothing; an 'accepted' arriving after 'delivered' cannot downgrade it while a bounce is terminal whenever it arrives; a callback that overtakes the provider id is retained and applied by reconciliation; a forged signature, a missing signature and a body altered after signing are each 401 with nothing written."
     },
     {
       "id": "AC-050",
@@ -639,7 +644,8 @@
       "requirements": [
         "FR-11"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/e2e/jobs.spec.ts and tests/unit/email.test.ts — no secret, a wrong secret, a prefix of the secret and a signed-in platform admin are all 401; the correct Bearer secret runs and its plan is in the database, not merely in the response; a second run plans nothing new; ordinary learner GET routes called twice write nothing. The comparison is constant-time and an unset secret never means 'anything goes'."
     },
     {
       "id": "AC-051",
@@ -651,7 +657,8 @@
       "requirements": [
         "FR-14"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/integration/operations.test.ts and tests/e2e/operations.spec.ts — a failed invitation whose outbox payload really does hold an Auth action link shows its kind, recipient, status, attempts and error on /admin/operations, while the token appears in neither the API response, the rendered HTML, nor any script the browser downloads; the DTO is exactly the contract's seven fields and the Zod schema is strict; a manager and a learner are refused both the page and the API."
     },
     {
       "id": "AC-052",

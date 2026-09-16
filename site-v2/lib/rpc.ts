@@ -37,6 +37,7 @@ export class RpcError extends Error {
  *   PGL43  a question already in flight    -> REQUEST_IN_PROGRESS
  *   PGL44  too many questions              -> RATE_LIMITED
  *   PGL45  the month's tutor budget is out -> TUTOR_BUDGET_EXCEEDED
+ *   PGL46  an unreconciled send             -> DELIVERY_UNCERTAIN
  *
  * The PGL classes are ours: SQLSTATE lets an implementation define its own
  * five-character codes, and these three are conditions spec/05 names that no
@@ -66,6 +67,7 @@ const SQLSTATE_TO_CODE: Record<string, ErrorCode> = {
   PGL43: "REQUEST_IN_PROGRESS",
   PGL44: "RATE_LIMITED",
   PGL45: "TUTOR_BUDGET_EXCEEDED",
+  PGL46: "DELIVERY_UNCERTAIN",
 };
 
 export async function callRpc<T>(action: string, payload: Record<string, unknown> = {}): Promise<T> {
@@ -116,6 +118,8 @@ function messageFor(code: ErrorCode): string {
       return "Too many questions just now. Try again shortly.";
     case "TUTOR_BUDGET_EXCEEDED":
       return "The tutor is unavailable for the rest of this month.";
+    case "DELIVERY_UNCERTAIN":
+      return "This message has no confirmed outcome. Check the provider before sending it again.";
     case "SESSION_SUPERSEDED":
       return "This program is playing in another tab.";
     case "INVALID_PROGRESS":

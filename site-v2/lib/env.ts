@@ -67,6 +67,14 @@ const optionalSchema = z.object({
   RESEND_API_KEY: z.string().min(1).optional(),
   RESEND_WEBHOOK_SECRET: z.string().min(1).optional(),
   EMAIL_FROM: z.string().email().optional(),
+  /*
+   * Who may actually be written to. spec/05 requires a controlled first send,
+   * and an allowlist is how a development database full of example.invalid
+   * addresses cannot become real mail to a real person.
+   */
+  EMAIL_TEST_ALLOWLIST: z.string().optional(),
+  /* The scheduler's shared secret. A user session never substitutes for it. */
+  CRON_SECRET: z.string().min(1).optional(),
   OPENAI_API_KEY: z.string().min(1).optional(),
   OPENAI_MODEL: z.string().min(1).default("gpt-5-mini"),
   TUTOR_MONTHLY_BUDGET_USD: z.coerce.number().positive().default(10),
