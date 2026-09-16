@@ -90,7 +90,7 @@
     {
       "id": "T02",
       "title": "Create schema migration and constraint tests",
-      "status": "in_progress",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T01"
@@ -118,11 +118,14 @@
         "npm run db:reset:test",
         "npm run test:integration -- database-constraints"
       ],
-      "notes": "M01 authored and verified against the contract without a database. Applying it, and therefore AC-002/AC-003 and tests/schema-smoke.sql, is blocked on a development Supabase project. Hosted dev project chosen over the local Docker stack at the user's direction; db:reset:test must be relaxed to permit one designated remote dev host before it can run, and that is a deliberate recorded change.",
+      "notes": "M01 applied to the designated development project. AC-002 and AC-003 fully exercised against a real PostgreSQL 17.6 instance. Note: no task in this ledger owns migration M05 (fixtures) from spec/02's migration sequence, so AC-001's 'deterministic fixtures' clause is still unmet and AC-001 stays not_run.",
       "evidence": [
-        "supabase/migrations/20260915000001_m01_schema.sql generated from contracts/schema.sql",
-        "tests/unit/migration-fidelity.test.ts: 5 tests passing, asserting the migration reproduces the contract DDL exactly, touches no auth object, creates no policy or grant, and defines no RPC",
-        "NOT YET APPLIED to any database; AC-002 and AC-003 remain not_run"
+        "supabase db push applied 20260915000001_m01_schema.sql; 32 tables in schema app, 69 indexes, 183 constraints",
+        "tests/schema-smoke.sql: 32/32 checks passed under ON_ERROR_STOP=1, then ROLLBACK",
+        "tests/integration/database-constraints.test.ts: 30 tests passing (AC-002 16 rejection cases + AC-003 role and policy checks)",
+        "AC-003 additionally verified against the live Data API: app.enrollments and app.profiles are unreachable over REST with the publishable key AND with the service role key, because schema app is not exposed",
+        "npm run db:reset:test verified end to end against the remote project: dropped, reapplied M01, smoke suite passes again afterwards",
+        "guard verified: refuses APP_ENV=production, APP_ENV=pilot, and any project ref other than the designated one"
       ]
     },
     {

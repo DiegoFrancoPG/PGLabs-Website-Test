@@ -3,11 +3,11 @@
 ## Current state
 
 - Specification version: 1.0, 15 September 2026.
-- Application implementation: T00 and T01 done. T02–T30 todo.
-- Active task: none. Start T02.
-- Last completed application task: T01.
+- Application implementation: T00, T01 and T02 done. T03–T30 todo.
+- Active task: none. Start T03.
+- Last completed application task: T02.
 - Specification validation: `python3 verify_spec.py` PASS — 66 operations, 70 schemas, 31 acyclic tasks. This validates the package, not the application.
-- Inputs outstanding: a Supabase project (or the local CLI stack) is now the first blocker — T02 cannot start without one. Then actual media/source content, final course details, service credentials and sender setup, and the certificate issuer string (see below).
+- Inputs outstanding: actual media/source content, final course details, Resend and OpenAI credentials with sender setup, and the certificate issuer string (see below). A development database is configured.
 
 ## Host application
 
@@ -125,6 +125,46 @@ Not a specification task; the third decision in the integration plan. Added whil
 
 **The copy is mine and needs your review.** It is accurate against the specification, but it is marketing copy for your platform and someone at PG Labs should own the wording.
 
+## Remote development database — deliberate deviation from spec/02
+
+spec/02 says development migrations "can reset only the explicitly designated local/test database" and to "never reset a remote pilot project as a verification shortcut."
+
+Development runs against the **hosted** Supabase project `kviqthksrpyyrduoiupg`, which the user has stated is also the intended proof-of-concept project. The risk was raised explicitly — repeated resets destroy everything in it — and the user chose this deliberately over a separate development project.
+
+**The condition this rests on:** nothing of value goes into that project until T02–T11 is finished. If content, test organizations or real accounts are added before then, a reset will destroy them without warning.
+
+`scripts/db-reset-test.mjs` permits a remote target only when it is named by ref in `PGLEARN_DEV_PROJECT_REF` and that ref matches the configured project — spec/02's "explicitly designated" database. It still refuses `APP_ENV=pilot` and `production`, refuses any other host, and refuses a mismatch between the designated ref and the configured one rather than guessing. `--yes` suppresses the CLI's own prompt, which an npm script cannot answer; the two opt-ins above are the protection instead.
+
+Costs that have already materialised: the integration suite takes ~56s against a remote database versus milliseconds locally, and one run failed on a transient disconnect before passing on retry.
+
+## T02 — Schema migration and constraint tests
+
+- **Task ID and status:** T02, done.
+- **Acceptance IDs exercised:** AC-002 and AC-003, both fully.
+- **Files changed:** `supabase/migrations/20260915000001_m01_schema.sql`, `supabase/config.toml`, `tests/integration/db.ts`, `tests/integration/database-constraints.test.ts`, `tests/unit/migration-fidelity.test.ts`, `scripts/db-reset-test.mjs`, `.env.example` untouched.
+- **Commands and results:**
+  - `supabase db push` — 32 tables in schema `app`, 69 indexes, 183 constraints.
+  - `tests/schema-smoke.sql` — 32/32 under `ON_ERROR_STOP=1`, then `ROLLBACK`.
+  - `npm run test:integration` — 35 tests passing.
+  - `npm run db:reset:test` — verified end to end against the remote project; dropped, reapplied M01, smoke suite passes again afterwards.
+- **Real integrations exercised:** yes — a real Supabase PostgreSQL 17.6 instance and the live Data API. No mocks.
+- **Unresolved failures / blocked checks:** none for T02. See the M05 gap below.
+- **Next unblocked task:** T03.
+
+### AC-003 went further than the smoke test
+
+`tests/schema-smoke.sql` checks `has_table_privilege`, which is privilege metadata. AC-003 says "including through Data API", so that was verified against the live REST endpoint as well: `app.enrollments` and `app.profiles` are unreachable with the publishable key **and** with the service role key, because schema `app` is not in the Data API's exposed schemas. That is the defense in depth spec/02 describes, confirmed rather than assumed.
+
+### A test that passed for the wrong reason
+
+The `class_progress` completion case initially passed while proving nothing: its `UPDATE` matched no row, because the fixture graph had no progress row yet. The suite now carries a guard that asserts every `UPDATE` case actually matches a row, so a vacuous pass fails.
+
+### Ledger gap: migration M05 is unowned
+
+spec/02's migration sequence lists **M05 — test/demo fixtures via explicit seed command**, with "deterministic totals and repeatable fixture seed" as its evidence. No task in `tasks.json` lists it as an implementation target. `tests/fixtures.json` exists with the expected report totals, and `supabase/seed.sql` does not.
+
+Consequence: **AC-001 remains `not_run`.** Its first two clauses hold — the app shell builds, and reset creates the schema — but "deterministic fixtures" has nothing to create them. This needs either an explicit decision to fold M05 into T03, or a new task. It should not be left to be discovered at T24.
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -142,3 +182,4 @@ Not a specification task; the third decision in the integration plan. Added whil
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
+- T02: M01 applied to a hosted development project; AC-002 and AC-003 passed against a real database. Remote-reset deviation from spec/02 recorded. M05 found unowned.
