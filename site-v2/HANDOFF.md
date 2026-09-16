@@ -570,6 +570,33 @@ The certificate stores the learner's name and the program title **as they were**
 
 `app.settle_completion` is called by both the heartbeat and the exercise. Whichever half of a class arrives second completes it, and neither path holds an opinion about the other. AC-033 is tested in both orders for that reason.
 
+## T15 — Certificates and the completion transaction
+
+- **Status:** done. AC-034 and AC-035 pass.
+- **Checks:** 156 unit, 244 integration, 84 e2e; lint, typecheck, build, `verify_spec.py`, `db:reset:test`.
+
+### Most of this task was already built
+
+`app.settle_completion` (T13) inserts the snapshot `ON CONFLICT DO NOTHING` and queues its notification in the transaction that earns it, and `certificates_immutable` (T02) has always refused to let a snapshot change. What T15 added is reading, the PDF, revocation — and a test that actually proves the atomicity claim.
+
+### A race needs two transactions
+
+AC-034 asks what happens when two final completions arrive at once. Two calls on one connection cannot answer that, however they are ordered: they are sequential by construction. The test therefore opens **two real connections** and submits from both at the same moment, which means it has to commit rather than roll back — it restores the fixture learner in a `finally` instead. Afterwards there is exactly one response, one `completed_at`, one certificate and one outbox record.
+
+### Empty boxes are worse than no certificate
+
+spec/03: "Bundle a licensed font supporting the actual learner names, including accented characters; do not silently replace unsupported characters."
+
+The fonts are committed under `assets/fonts` — Lora and Nunito Sans, SIL OFL 1.1, the same faces the site loads from Google — so a certificate does not depend on a CDN still serving the same bytes in ten years. The licences are committed beside them.
+
+Coverage is checked against the font's own character map through fontkit before anything is drawn. A name the font cannot render raises `CertificateFontError`, naming the characters, and nothing is produced. A certificate reading "□□ □□" for somebody's name would look official and be wrong; a 503 saying it cannot be produced yet is honest, and names what has to be added.
+
+### What revocation does and does not touch
+
+Revoked metadata stays readable — that is the point of recording a revocation rather than deleting a row. Only the PDF is refused, with 409 `CERTIFICATE_REVOKED`. One revoke is idempotent for the same reason; a **different** reason is refused rather than ignored, so an admin learns their reason was not the one recorded. Only a platform admin may revoke, although the learner and their organization's manager may both read.
+
+Reading is deliberately **not** gated on enrollment availability. spec/03 says "including after course access expiry", and a certificate that stops being readable when the course window closes would be worth nothing.
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -587,6 +614,7 @@ The certificate stores the learner's name and the program title **as they were**
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
+- T15: certificate reading, PDF rendering with bundled OFL fonts, and revocation; AC-034 and AC-035 passed. PGL41 added for CERTIFICATE_REVOKED.
 - T14: short-response exercises, Unicode-correct counting and read-only saved responses; AC-031, AC-032, AC-033 passed. PGL40 added for EXERCISE_ALREADY_COMPLETED.
 - T13: playback sessions, heartbeats, coverage, text completion and the completion/certificate chain; AC-023 to AC-030 passed. Three custom SQLSTATEs added; T09 and T12 corrected to return ACCESS_UNAVAILABLE rather than VALIDATION_ERROR. Real-media playback still blocked.
 - T12: learner dashboard, outline and class shell; AC-066 passed. Un-onboarded sign-in gap found and fixed.

@@ -738,7 +738,7 @@
     {
       "id": "T15",
       "title": "Implement certificates and completion transaction",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T14"
@@ -767,8 +767,17 @@
         "npm run test:integration -- certificates",
         "npm run test:e2e -- certificate"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "The issuing transaction was already built in T13 (app.settle_completion) and the immutability trigger in T02; this task added reading, the PDF and revocation, and verified the atomicity claim with two genuinely concurrent connections rather than two sequential calls. Fonts are bundled under assets/fonts (Lora and Nunito Sans, SIL OFL 1.1, the faces the site already uses) rather than fetched, so a certificate renders identically in ten years. spec/03's 'do not silently replace unsupported characters' is enforced with fontkit's own character map: a name the font cannot draw raises CertificateFontError and no document is produced, because a certificate with somebody's name rendered as empty boxes looks official and is wrong. PGL41 carries CERTIFICATE_REVOKED. Reading is deliberately not gated on enrollment availability — spec/03 says 'including after course access expiry'.",
+      "evidence": [
+        "156 unit + 244 integration + 84 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-034 two concurrent final completions leave one completion, one certificate and one notification",
+        "AC-035 a rename of the profile and the program does not rewrite the snapshot",
+        "AC-035 the owner downloads the PDF after the grant has expired",
+        "AC-035 another learner and another organization's manager get 404 for metadata and PDF alike",
+        "AC-035 revoked metadata stays visible; the PDF is 409 CERTIFICATE_REVOKED and the button is disabled",
+        "revocation is admin-only, reason 1-500 characters, idempotent for the same reason and refused for a different one",
+        "the PDF renders accented names and refuses rather than printing empty boxes for characters the font lacks"
+      ]
     },
     {
       "id": "T16",

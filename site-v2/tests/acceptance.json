@@ -431,7 +431,8 @@
       "requirements": [
         "FR-10"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/integration/certificates.test.ts — two genuinely concurrent connections submit the final completion at once; afterwards there is exactly one response, one enrollment completed_at, one certificate and one certificate outbox record. The test commits rather than rolling back, because a race needs two overlapping transactions, and restores the fixture learner afterwards."
     },
     {
       "id": "AC-035",
@@ -443,7 +444,8 @@
       "requirements": [
         "FR-10"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/integration/certificates.test.ts and tests/e2e/certificate.spec.ts — renaming the profile and the program leaves the snapshot's name and title unchanged; the owner reads and downloads it after the grant has expired; another learner and a manager of another organization get 404 for both metadata and PDF; after revocation the metadata and the banner stay visible while the PDF is 409 CERTIFICATE_REVOKED and the download button is disabled; a repeated revoke with the same reason is idempotent and a different reason is refused; only a platform admin may revoke."
     },
     {
       "id": "AC-036",

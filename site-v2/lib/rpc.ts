@@ -32,6 +32,7 @@ export class RpcError extends Error {
  *   PGL28  playback session superseded  -> SESSION_SUPERSEDED (custom class)
  *   PGL29  implausible progress claim   -> INVALID_PROGRESS   (custom class)
  *   PGL40  a second, different response  -> EXERCISE_ALREADY_COMPLETED
+ *   PGL41  the certificate was withdrawn -> CERTIFICATE_REVOKED
  *
  * The PGL classes are ours: SQLSTATE lets an implementation define its own
  * five-character codes, and these three are conditions spec/05 names that no
@@ -56,6 +57,7 @@ const SQLSTATE_TO_CODE: Record<string, ErrorCode> = {
   PGL28: "SESSION_SUPERSEDED",
   PGL29: "INVALID_PROGRESS",
   PGL40: "EXERCISE_ALREADY_COMPLETED",
+  PGL41: "CERTIFICATE_REVOKED",
 };
 
 export async function callRpc<T>(action: string, payload: Record<string, unknown> = {}): Promise<T> {
@@ -96,6 +98,8 @@ function messageFor(code: ErrorCode): string {
       return "This program is not available to you right now.";
     case "EXERCISE_ALREADY_COMPLETED":
       return "This exercise has already been completed.";
+    case "CERTIFICATE_REVOKED":
+      return "This certificate has been revoked.";
     case "SESSION_SUPERSEDED":
       return "This program is playing in another tab.";
     case "INVALID_PROGRESS":

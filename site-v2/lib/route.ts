@@ -72,6 +72,15 @@ export async function mutateRoute<S extends z.ZodTypeAny>(
   }
 }
 
+/*
+ * The error half of a route, for the one response that is not a JSON envelope:
+ * the certificate PDF. Its failures still have to be the same errors with the
+ * same codes, so they come from here rather than from a second implementation.
+ */
+export function errorResponse(err: unknown, requestId: string) {
+  return toResponse(err, requestId);
+}
+
 function toResponse(err: unknown, requestId: string) {
   if (err instanceof RpcError) return jsonError(err.code, err.message, requestId, err.fields);
   /*
