@@ -13,6 +13,7 @@
     "test:e2e": "playwright test",
     "db:reset:test": "node scripts/db-reset-test.mjs",
     "db:seed:generate": "node scripts/generate-seed.mjs",
+    "db:seed:auth": "node scripts/seed-auth-users.mjs",
     "verify:spec": "python3 verify_spec.py"
   },
   "dependencies": {

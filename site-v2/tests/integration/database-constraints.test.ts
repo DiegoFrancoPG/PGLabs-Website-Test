@@ -143,9 +143,11 @@ describe.skipIf(!hasDatabase)("AC-002 schema constraints", () => {
   it("leaves no partial row behind when a statement is rejected", async () => {
     await inRollback(async (client) => {
       await client.query(SEED);
-      const before = await client.query("SELECT count(*)::int AS n FROM app.program_grants");
+      // Scoped to this test's own program, not every grant in the database.
+      const countMine = `SELECT count(*)::int AS n FROM app.program_grants WHERE program_id='${U.shared}'`;
+      const before = await client.query(countMine);
       await sqlStateOf(client, `INSERT INTO app.program_grants(program_id,starts_at) VALUES('${U.shared}',now())`);
-      const after = await client.query("SELECT count(*)::int AS n FROM app.program_grants");
+      const after = await client.query(countMine);
       expect(after.rows[0].n).toBe(before.rows[0].n);
     });
   });

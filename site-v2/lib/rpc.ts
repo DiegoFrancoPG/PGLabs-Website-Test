@@ -24,13 +24,19 @@ export class RpcError extends Error {
  * SQLSTATE to stable error code. The database raises these deliberately:
  *   28000  no verified session          -> UNAUTHENTICATED
  *   42501  denied, or unknown action    -> FORBIDDEN
+ *   P0002  absent, or not the caller's  -> NOT_FOUND
  *   22023  invalid or unknown field     -> VALIDATION_ERROR
  *   23514  a business rule rejected it  -> CONFLICT
  *   0A000  handler not implemented yet  -> NOT_CONFIGURED
+ *
+ * spec/05 uses 404 for "nonexistent or other-user/other-organization target
+ * IDs", so P0002 deliberately covers both — the two are indistinguishable from
+ * outside, which is the point.
  */
 const SQLSTATE_TO_CODE: Record<string, ErrorCode> = {
   "28000": "UNAUTHENTICATED",
   "42501": "FORBIDDEN",
+  P0002: "NOT_FOUND",
   "22023": "VALIDATION_ERROR",
   "23514": "CONFLICT",
   "23505": "CONFLICT",
@@ -62,6 +68,8 @@ function messageFor(code: ErrorCode): string {
       return "Sign in to continue.";
     case "FORBIDDEN":
       return "Not permitted.";
+    case "NOT_FOUND":
+      return "Not found.";
     case "VALIDATION_ERROR":
       return "The request was not valid.";
     case "NOT_CONFIGURED":

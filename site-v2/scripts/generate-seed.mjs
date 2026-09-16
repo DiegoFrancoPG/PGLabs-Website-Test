@@ -50,19 +50,24 @@ w(
   "-- guards so it can only ever target a designated development database.",
   "--",
   "-- Contains no passwords and no real people: every address is @example.invalid,",
-  "-- a reserved TLD that cannot receive mail.",
+  "-- a reserved TLD that cannot receive mail. Auth accounts are created",
+  "-- separately by scripts/seed-auth-users.mjs before this runs.",
   "",
   "BEGIN;",
   ""
 );
 
-w("-- Auth identities. Email and id only; passwords are created at T05.");
-for (const p of fx.profiles) {
-  w(
-    `INSERT INTO auth.users(id, email) VALUES (${q(p.id)}, ${q(p.email)})`,
-    "  ON CONFLICT (id) DO NOTHING;"
-  );
-}
+w(
+  "-- Auth identities are NOT created here.",
+  "--",
+  "-- They are created through the Auth admin API by scripts/seed-auth-users.mjs,",
+  "-- which npm run db:reset:test runs before this file. Hand-writing auth.users",
+  "-- rows meant reproducing GoTrue's internal expectations — instance_id, aud,",
+  "-- role, and several token columns it scans into non-nullable strings — and",
+  "-- getting any of them wrong produced rows that existed in the table but were",
+  "-- invisible or unusable to Auth. spec/02 keeps the Auth schema untouched;",
+  "-- Auth owns those rows, this file owns app.*."
+);
 w("");
 
 w("-- Profiles. Dana is the only learner left un-onboarded, so the report can");

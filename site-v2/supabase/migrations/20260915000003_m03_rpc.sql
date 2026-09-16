@@ -112,6 +112,117 @@ BEGIN
   RETURN app.handle_get_me(actor, '{}'::jsonb);
 END $$;
 
+
+-- ---------------------------------------------------------------------------
+-- Invitations (T05)
+-- ---------------------------------------------------------------------------
+
+/*
+ * get_invitation returns contracts/api.json's Invitation, and only to the
+ * person it was issued to.
+ *
+ * spec/03: "accepting requires login as the verified matching user ... wrong
+ * account gets 404." An invitation belonging to somebody else is reported as
+ * missing rather than forbidden, so this cannot be used to discover that an
+ * invitation exists for another address.
+ */
+CREATE FUNCTION app.handle_get_invitation(actor uuid, payload jsonb)
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $$
+DECLARE inv app.invitations; delivery text;
+BEGIN
+  IF NOT (payload ? 'invitation_id') THEN
+    RAISE EXCEPTION 'invitation_id is required' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT * INTO inv FROM app.invitations WHERE id = (payload ->> 'invitation_id')::uuid;
+  IF NOT FOUND OR inv.user_id <> actor THEN
+    RAISE EXCEPTION 'not found' USING ERRCODE = 'P0002';
+  END IF;
+
+  -- delivery_status comes from the outbox; an invitation created before any
+  -- send attempt simply has none yet.
+  SELECT o.status INTO delivery
+    FROM app.notification_outbox o
+    WHERE o.user_id = inv.user_id AND o.kind = 'invitation'
+    ORDER BY o.created_at DESC LIMIT 1;
+
+  RETURN jsonb_build_object(
+    'id', inv.id,
+    'user_id', inv.user_id,
+    'organization_id', inv.organization_id,
+    'role', inv.role,
+    -- An expired invitation reads as expired even if the row still says pending,
+    -- so the client never sees a stale "pending" it cannot act on.
+    'status', CASE WHEN inv.status = 'pending' AND inv.expires_at <= now() THEN 'expired' ELSE inv.status END,
+    'expires_at', inv.expires_at,
+    'delivery_status', COALESCE(delivery, 'pending')
+  );
+END $$;
+
+/*
+ * accept_invitation.
+ *
+ * spec/03: "Only after a successful Auth password update and matching unexpired
+ * invitation acceptance set onboarded_at, active membership and accepted_at.
+ * Acceptance is idempotent; wrong account gets 404. Personal acceptance sets
+ * profile onboarding but creates no organization membership."
+ *
+ * The password update itself happens in Auth, before this is called. What this
+ * guarantees is the other half: nothing here grants access to an invitation
+ * that is not this user's, not pending, or out of date.
+ */
+CREATE FUNCTION app.handle_accept_invitation(actor uuid, payload jsonb)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = '' AS $$
+DECLARE inv app.invitations;
+BEGIN
+  IF NOT (payload ? 'invitation_id') THEN
+    RAISE EXCEPTION 'invitation_id is required' USING ERRCODE = '22023';
+  END IF;
+
+  -- Locked: two concurrent accepts of the same invitation must not both apply.
+  SELECT * INTO inv FROM app.invitations
+    WHERE id = (payload ->> 'invitation_id')::uuid FOR UPDATE;
+
+  IF NOT FOUND OR inv.user_id <> actor THEN
+    RAISE EXCEPTION 'not found' USING ERRCODE = 'P0002';
+  END IF;
+
+  -- Idempotent: a retry returns the same state rather than failing or
+  -- re-applying. spec/03 requires acceptance to be repeatable.
+  IF inv.status = 'accepted' THEN
+    RETURN app.handle_get_invitation(actor, payload);
+  END IF;
+
+  IF inv.status <> 'pending' THEN
+    RAISE EXCEPTION 'invitation is no longer pending' USING ERRCODE = '23514';
+  END IF;
+  IF inv.expires_at <= now() THEN
+    RAISE EXCEPTION 'invitation has expired' USING ERRCODE = '23514';
+  END IF;
+
+  UPDATE app.invitations SET status = 'accepted', accepted_at = now() WHERE id = inv.id;
+
+  -- Onboarding is set once and never moved.
+  UPDATE app.profiles SET onboarded_at = COALESCE(onboarded_at, now()) WHERE id = actor;
+
+  -- A personal invitation carries no organization, so it creates no membership.
+  IF inv.organization_id IS NOT NULL THEN
+    INSERT INTO app.memberships(organization_id, user_id, role, status)
+      VALUES (inv.organization_id, actor, inv.role, 'active')
+    ON CONFLICT (organization_id, user_id) DO UPDATE
+      SET status = 'active',
+          -- spec/03: "An active learner membership cannot be promoted by a
+          -- manager invitation." An existing active learner keeps their role.
+          role = CASE
+                   WHEN app.memberships.status = 'active' AND app.memberships.role = 'learner'
+                     THEN app.memberships.role
+                   ELSE excluded.role
+                 END;
+  END IF;
+
+  RETURN app.handle_get_invitation(actor, payload);
+END $$;
+
 -- ---------------------------------------------------------------------------
 -- The dispatcher
 -- ---------------------------------------------------------------------------
@@ -141,6 +252,8 @@ BEGIN
   CASE action
     WHEN 'get_me' THEN RETURN app.handle_get_me(actor, payload);
     WHEN 'update_me' THEN RETURN app.handle_update_me(actor, payload);
+    WHEN 'get_invitation' THEN RETURN app.handle_get_invitation(actor, payload);
+    WHEN 'accept_invitation' THEN RETURN app.handle_accept_invitation(actor, payload);
     ELSE RAISE EXCEPTION 'not permitted' USING ERRCODE = '42501';
   END CASE;
 END $$;
@@ -156,4 +269,6 @@ GRANT EXECUTE ON FUNCTION public.pglearn_rpc(text, jsonb) TO authenticated;
 -- is the only thing that has established who the actor is.
 REVOKE ALL ON FUNCTION app.handle_get_me(uuid, jsonb) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION app.handle_update_me(uuid, jsonb) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION app.handle_get_invitation(uuid, jsonb) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION app.handle_accept_invitation(uuid, jsonb) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION app.action_allows_pending_onboarding(text) FROM PUBLIC, anon, authenticated;

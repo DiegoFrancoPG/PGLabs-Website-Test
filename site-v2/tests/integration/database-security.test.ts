@@ -88,11 +88,16 @@ describe.skipIf(!hasDatabase)("AC-004 function privilege boundary", () => {
   it("makes no change when an unknown action is rejected", async () => {
     await inRollback(async (client) => {
       await client.query(SEED_LEARNER);
-      const before = await client.query("SELECT count(*)::int AS n FROM app.profiles");
+      /*
+       * Scoped to this test's own rows. A global count would read whatever
+       * another suite happened to be doing to the shared database.
+       */
+      const countProbe = "SELECT count(*)::int AS n FROM app.profiles WHERE email LIKE 'probe-%'";
+      const before = await client.query(countProbe);
       await asUser(client, LEARNER);
       await sqlStateOf(client, "SELECT public.pglearn_rpc('definitely_not_an_action')");
       await client.query("RESET ROLE");
-      const after = await client.query("SELECT count(*)::int AS n FROM app.profiles");
+      const after = await client.query(countProbe);
       expect(after.rows[0].n).toBe(before.rows[0].n);
     });
   });

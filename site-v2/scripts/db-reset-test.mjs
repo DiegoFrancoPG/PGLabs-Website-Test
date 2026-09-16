@@ -105,13 +105,42 @@ const label = isLocal ? "local" : `REMOTE project ${configuredRef}`;
 console.log(`Resetting ${label} (APP_ENV=${appEnv}) — this destroys all data in it.`);
 
 /*
- * --yes suppresses the CLI's own confirmation prompt, which cannot be answered
- * from an npm script. The protection is this file's two deliberate opt-ins
- * instead: APP_ENV must be development or test, and a remote target must be
- * named by ref in PGLEARN_DEV_PROJECT_REF. Both are checked above.
+ * Three phases, in this order for a reason.
+ *
+ *   1. Migrations only. --no-seed, because supabase/seed.sql references
+ *      auth.users through app.profiles' foreign key, and those rows do not
+ *      exist yet.
+ *   2. Auth accounts, through the Auth admin API. Auth owns auth.users; writing
+ *      those rows by hand meant reproducing GoTrue's internal expectations and
+ *      produced accounts that were invisible to it.
+ *   3. Application fixtures, which can now satisfy the foreign key.
+ *
+ * --yes suppresses the CLI's own confirmation prompt, which an npm script
+ * cannot answer. The protection is this file's two deliberate opt-ins instead:
+ * APP_ENV must be development or test, and a remote target must be named by ref
+ * in PGLEARN_DEV_PROJECT_REF.
  */
-const reset = spawnSync("supabase", ["db", "reset", "--db-url", dbUrl, "--yes"], {
+const reset = spawnSync("supabase", ["db", "reset", "--db-url", dbUrl, "--yes", "--no-seed"], {
   stdio: "inherit",
   cwd: root,
 });
-process.exit(reset.status ?? 1);
+if (reset.status !== 0) process.exit(reset.status ?? 1);
+
+const authSeed = spawnSync("node", [path.join(here, "seed-auth-users.mjs")], {
+  stdio: "inherit",
+  cwd: root,
+});
+if (authSeed.status !== 0) process.exit(authSeed.status ?? 1);
+
+const { Client } = await import("pg");
+const client = new Client({ connectionString: dbUrl, ssl: isLocal ? undefined : { rejectUnauthorized: false } });
+await client.connect();
+try {
+  await client.query(readFileSync(path.join(root, "supabase/seed.sql"), "utf8"));
+  console.log("Seeded application fixtures from supabase/seed.sql.");
+} catch (err) {
+  console.error(`seeding failed: ${err.message}`);
+  process.exitCode = 1;
+} finally {
+  await client.end();
+}

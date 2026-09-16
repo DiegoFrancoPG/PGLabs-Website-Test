@@ -7,29 +7,20 @@
 -- guards so it can only ever target a designated development database.
 --
 -- Contains no passwords and no real people: every address is @example.invalid,
--- a reserved TLD that cannot receive mail.
+-- a reserved TLD that cannot receive mail. Auth accounts are created
+-- separately by scripts/seed-auth-users.mjs before this runs.
 
 BEGIN;
 
--- Auth identities. Email and id only; passwords are created at T05.
-INSERT INTO auth.users(id, email) VALUES ('b35dfc4c-ebcb-5c9c-b6cb-63039f06d974', 'admin@example.invalid')
-  ON CONFLICT (id) DO NOTHING;
-INSERT INTO auth.users(id, email) VALUES ('263e5cfb-2724-5b43-a675-d36759b67d1d', 'manager_a@example.invalid')
-  ON CONFLICT (id) DO NOTHING;
-INSERT INTO auth.users(id, email) VALUES ('a1288183-f0cf-5b98-9fce-e445e4978786', 'manager_b@example.invalid')
-  ON CONFLICT (id) DO NOTHING;
-INSERT INTO auth.users(id, email) VALUES ('6dbad48c-f06b-5321-84d6-0b42d923296d', 'amber@example.invalid')
-  ON CONFLICT (id) DO NOTHING;
-INSERT INTO auth.users(id, email) VALUES ('c3fff508-6114-5ff3-986e-d75fe599c2bd', 'ben@example.invalid')
-  ON CONFLICT (id) DO NOTHING;
-INSERT INTO auth.users(id, email) VALUES ('699ddb9e-51d8-5f85-8512-9a5cb3f136ba', 'cora@example.invalid')
-  ON CONFLICT (id) DO NOTHING;
-INSERT INTO auth.users(id, email) VALUES ('2e24b9ee-5756-5e53-a3e6-cab38a00f1c8', 'dana@example.invalid')
-  ON CONFLICT (id) DO NOTHING;
-INSERT INTO auth.users(id, email) VALUES ('d132f5f4-a23c-51c2-81e3-3d81ea102b2b', 'personal@example.invalid')
-  ON CONFLICT (id) DO NOTHING;
-INSERT INTO auth.users(id, email) VALUES ('86aedbc4-2d82-5920-89d0-3a758d7794ff', 'multi@example.invalid')
-  ON CONFLICT (id) DO NOTHING;
+-- Auth identities are NOT created here.
+--
+-- They are created through the Auth admin API by scripts/seed-auth-users.mjs,
+-- which npm run db:reset:test runs before this file. Hand-writing auth.users
+-- rows meant reproducing GoTrue's internal expectations — instance_id, aud,
+-- role, and several token columns it scans into non-nullable strings — and
+-- getting any of them wrong produced rows that existed in the table but were
+-- invisible or unusable to Auth. spec/02 keeps the Auth schema untouched;
+-- Auth owns those rows, this file owns app.*.
 
 -- Profiles. Dana is the only learner left un-onboarded, so the report can
 -- show an invited person counted as assigned while still at 0%.

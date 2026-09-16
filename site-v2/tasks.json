@@ -258,7 +258,7 @@
     {
       "id": "T05",
       "title": "Implement invitation onboarding and password recovery",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T04"
@@ -288,8 +288,15 @@
         "npm run test:integration -- onboarding",
         "npm run test:e2e -- invitations"
       ],
-      "notes": "Real email acceptance also requires T21; local tests inject delivery adapter.",
-      "evidence": []
+      "notes": "Completes the second half of M05: fixture accounts now have passwords, created through the Auth admin API rather than by hand-written auth.users rows. db:reset:test became a three-phase command (migrations, Auth accounts, application fixtures) because app.profiles references auth.users and Auth owns those rows. Real email delivery is still T21; the invite link is redeemed here with its one-time token, which is what following the emailed link does.",
+      "evidence": [
+        "44 unit + 85 integration + 56 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-008: 9 integration tests — the invited person is onboarded and their membership activated exactly once; a retry returns identical state and does not move onboarded_at; another signed-in user gets P0002/404 for both read and accept and nothing changes; an expired invitation reads as expired and is refused; a personal invitation creates no membership; a manager invitation cannot promote an active learner",
+        "AC-009 new account, against REAL Supabase Auth with no mocks: invite creates an identity with no password; sign-in impossible before it; the one-time token establishes a session; a normal RPC is refused while un-onboarded while get_invitation still works; password set BEFORE onboarding; acceptance is what grants access; the chosen password then works from a clean client",
+        "AC-009 existing account, through the real UI: signs in with the password it already has, never visits set-password, sees organization and role, accepts, and the same password still works afterwards",
+        "password recovery returns byte-identical wording for a known and an unknown address, verified by comparing the two rendered responses",
+        "set-password refuses a visitor with no recovery session"
+      ]
     },
     {
       "id": "T06",
