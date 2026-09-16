@@ -3,9 +3,9 @@
 ## Current state
 
 - Specification version: 1.0, 15 September 2026.
-- Application implementation: T00–T25 done (including T03B). T26–T30 todo.
-- Active task: none. Start T26.
-- Last completed application task: T25.
+- Application implementation: T00–T26 done (including T03B). T27–T30 todo.
+- Active task: none. Start T27.
+- Last completed application task: T26.
 - **Demo gate:** rehearsed and recorded in `tests/evaluation/demo-gate.md`. The journey works end to end; the tutor's answers and all outbound email are stubbed or queued for want of credentials.
 - Acceptance scenarios passing: 55 of 67; AC-042 and AC-053 blocked with their automated halves recorded.
 - **AC-017 remains partial, blocked on real media.**
@@ -811,6 +811,102 @@ Its "then" has two halves. The first — publish → grant → invite → enrol 
 
 The same clause also says *"mocked-only features disclosed incomplete"*, which is why the gate record exists and why this is recorded as blocked. A gate that passes with its integrations stubbed is not a gate.
 
+## T26 — Bulk roster import
+
+- **Status:** done. AC-055 passes.
+- **Checks:** unit, integration and e2e all green; lint, typecheck, build, `verify_spec.py`, `db:reset:test`.
+
+### No new contract, as the task requires
+
+The apply calls `create_invitation` once per row and `add_cohort_members` once — the same commands a manager uses one person at a time. Nothing about importing four hundred people needs a mechanism that importing one does not.
+
+Each row's `Idempotency-Key` is **derived** from the file's content and the row's address rather than generated. Applying the same file twice is therefore the same request each time, not a second invitation — and invitations are idempotent by normalised email anyway, so there are two independent reasons a repeated import cannot duplicate anybody.
+
+### The preview is the plan
+
+Not an estimate of what might happen: apply acts on exactly the rows the preview showed, and every row — valid or not — is carried through, so somebody reading "3 of 6 will be imported" can see which three and why.
+
+The CSV parser is written out rather than `split(",")`, because a roster is precisely the file that contains `"Doe, Jane"`. It reads quoted commas, doubled quotes, CRLF and LF, a record spanning lines, a leading BOM, and a file with no header at all.
+
+### A mistake worth recording
+
+`lib/roster.ts` imported `normalizeEmail` from the invitation feature service. That service imports the **service-role** Supabase client, so the roster importer — which runs in the browser — pulled server-only code into the client bundle. The build refused it, correctly and loudly.
+
+`normalizeEmail` now lives in `lib/email-address.ts`, which is pure. The lesson is about direction: `lib/` may not import from `features/`, because `features/` is where the server lives.
+
+### Four of my expectations were wrong, and the code was right
+
+Writing the integration tests I assumed: a foreign cohort would be 404; `create_invitation` would take an email. Neither is so. A foreign cohort is **42501**, because the id came from the caller and "not permitted" discloses nothing they did not already have; and `create_invitation` takes a **user_id**, because the Auth identity is established first — spec/03's *"Auth and Postgres cannot be one distributed transaction"*.
+
+## T27 — A new version of something people are already learning
+
+- **Status:** done. AC-056 passes.
+- **Checks:** `npm run test:integration -- version-cloning` (11), full unit and integration suites, lint, typecheck, build, `verify_spec.py`, e2e.
+
+### What T23 deferred, and why this is the release that pays it
+
+T23 implemented `clone_version` as "give me this program's draft" and created that draft **empty**, recording the omission: spec/04 listed version cloning under deferred work, and an asset's `storage_key` is `UNIQUE`, so a copied class could not point at the media it came from.
+
+AC-056 is the scenario that makes the omission untenable — *"clone to new version, edit, publish, assign to new cohort"* — because an author who must retype a whole course is not cloning it. T27 clones the content: modules, classes, exercises, indexed chunks and media.
+
+### Independent identity is the property, not a side effect
+
+The task's own target says *"independent asset identity/requirements"*, and AC-056 spells out what it is for: *"existing learners keep original IDs/requirements/media."*
+
+So the clone shares **nothing** with its source. Every module, class, exercise, chunk and asset is a new row at a new id, and each file is copied to a new storage key derived from the new ids. A learner's progress rows point at the old class ids; nothing an author does in the draft can reach them — not renaming a class, not making an optional one required, not deleting the draft, which would otherwise take a published version's files with it.
+
+The integration tests ask this the other way round: is there any row, key or file the two versions still have in common? There is not.
+
+### Two phases, because storage is not in the transaction
+
+The database cannot wait on an object store, so the clone is split the way an upload already is — a reservation inside the transaction, a transfer outside it:
+
+1. `clone_version` copies everything the database owns and creates the new asset rows **pending**, at the keys their objects must land at. It returns the list of copies to perform.
+2. `draftVersion` performs each copy server-side in storage (`copyObject`, not download-and-re-upload: these are video files), then settles each asset through the `clone.finish` job.
+
+A file that does not copy leaves its asset `failed` with its reason. That is not a loose end but the correct outcome: publication refuses a class whose primary asset is not ready, so a half-copied clone cannot go live, and `ClassEditor` already shows the failed asset next to the class with "Upload it again."
+
+`clone.finish` goes through the service-role job dispatcher rather than `pglearn_rpc`, for the same reason `finalize_upload` does: it is an internal step of an operation the contract declares, and the user-facing allowlist must keep matching `contracts/api.json` operation for operation. It re-checks that the actor is a platform administrator, because `service_role` cannot read `auth.uid()`.
+
+### A contract conformance fix found on the way
+
+The clone route was returning `{version, created}` as its `data`. The contract's 201 carries a `Version` and `additionalProperties: false`. It now returns the version itself, and the clone's summary is not returned at all — it does not need to be, because every copied file is an asset row and `get_version` already reports each one's state on the screen the author lands on.
+
+## T28 — Retention, and the restore that has not been rehearsed
+
+- **Status:** done for AC-057. AC-058 stays **blocked**, with `tests/evaluation/restore-runbook.md` as the procedure it is blocked on performing.
+- **Checks:** `npm run test:integration -- retention` (10), the scheduler e2e project, lint, typecheck, build, `verify_spec.py`.
+
+### One statement per rule
+
+`app.job_retention_run` is one `DELETE` per rule from spec/05, in an order the foreign keys allow, each counting what it removed. It is deliberately not clever: a retention job that computed which rows to keep would become a second definition of what the product remembers, competing with the one in spec/05.
+
+Every rule deletes on the row's **own** timestamp, never on a parent's — so a learner who was active yesterday does not lose last year's events, and a dormant one does not keep them.
+
+The whole run reads one clock. A job that called `now()` per statement could keep a row under one rule and delete it under the next.
+
+### What it must not touch
+
+`class_progress`, `exercise_completions`, `certificates` and `enrollments` are named in no statement in the file, and a test asserts the counts are identical across a run that deleted chats and events. spec/05 has already said what must remain true afterwards: *"If a progress event was purged after 30 days, closed/superseded session and monotonic progress still prevent duplicate completion."* The normalized row is the record; the event was the evidence of one delivery of it.
+
+The tutor ledger is the subtle one. Chats go at 30 days and the ledger stays 180 — which only works because `tutor_usage.request_id` has no foreign key to `tutor_requests`. That absence is not an oversight in the schema; it is what lets month-end spend accounting survive the deletion of the chats it accounts for, and there is a test that deletes the chat and re-sums the month.
+
+### Auth links
+
+spec/05 requires purging expired auth links from the outbox. **This implementation never puts one there** — the invitation email links to our own application, and Auth sends its own action link — so the statement has nothing to find today. It runs anyway, because spec/05 permits the outbox to hold one temporarily, and a retention job that only purges what today's code writes would silently stop covering tomorrow's. The payload is stripped rather than the row deleted: the outbox row is the delivery record AC-050 reads.
+
+### The endpoint
+
+`/api/v1/jobs/retention` at `15 3 * * *`, added to `vercel.json` now that the handler exists, as spec/05 instructs. Same rule as the reminder scheduler and for a sharper reason: retention **deletes**, so a signed-in platform administrator cannot run it. The secret is the only caller.
+
+The response is the contract's `JobResult`, which declares `additionalProperties: false` — so the per-rule breakdown does not travel in it. It is written to `app.job_runs.counts`, where an operator looks at a run afterwards anyway and where it outlives the request.
+
+### AC-058 is blocked on doing it, not on writing it
+
+The runbook is complete: what to back up and why it is two separate things, the RPO/RTO targets, the rehearsal in a disposable project, and the verification that ends with a class actually **playing** — the step that fails when only the database was restored.
+
+It cannot be performed yet: the development project is on a plan with no daily backups, creating and deleting a second project needs authorisation, and the only media in the system is synthetic (AC-017, AC-052). A rehearsal that was not measured would not be evidence, so AC-058 is recorded blocked rather than assumed.
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -828,6 +924,9 @@ The same clause also says *"mocked-only features disclosed incomplete"*, which i
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
+- T28: retention implemented as one statement per rule with the nightly cron, and the restore runbook written. AC-057 passed; AC-058 blocked on a backup-bearing plan, a disposable project and real media.
+- T27: version cloning done properly — content, exercises, chunks and media, each at a new identity, with the file copies settled outside the transaction. AC-056 passed. The clone route corrected to return a Version, as the contract declares.
+- T26: bulk roster import — preview, explicit apply, derived per-row idempotency keys, and no new API contract. AC-055 passed. A server-only import in browser code caught by the build and moved to lib/email-address.
 - T25: the demo gate rehearsed end to end and recorded in tests/evaluation/demo-gate.md; AC-054 blocked on the tutor and email credentials. Three T23 defects found and fixed — all of them writes that the rendering tests could not see.
 - T24: cross-context verification driven by the contract, the filesystem and the dispatcher's own source. Two contract operations found to have no route (get_invitation, accept_invitation) and implemented; one wrong assumption in a test corrected against spec/02.
 - T23: the application shell with role navigation, and the admin and manager screens — catalog, version editor with upload and publish, organizations, individuals, platform reports, cohort rosters and assignment. clone_version implemented to close a contract gap; admin pages corrected to establish rather than infer admin rights. AC-053 partially automated, recorded blocked.

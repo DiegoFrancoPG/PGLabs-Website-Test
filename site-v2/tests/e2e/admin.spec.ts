@@ -86,11 +86,29 @@ async function removeDrafts() {
   });
   await client.connect();
   try {
+    /*
+     * A draft is no longer empty: T27 clones the published version's content
+     * into it, so everything that hangs off a class has to go before the
+     * modules can. Deleting in the other order fails on a foreign key, which
+     * would leave the draft behind and make the next run test something else.
+     */
+    const drafts = `SELECT id FROM app.program_versions WHERE program_id=$1 AND state='draft'`;
     await client.query(
-      `DELETE FROM app.modules WHERE version_id IN
-         (SELECT id FROM app.program_versions WHERE program_id=$1 AND state='draft')`,
+      `DELETE FROM app.assets WHERE class_id IN
+         (SELECT id FROM app.classes WHERE version_id IN (${drafts}))`,
       [PROGRAM]
     );
+    await client.query(`DELETE FROM app.content_chunks WHERE version_id IN (${drafts})`, [PROGRAM]);
+    await client.query(
+      `DELETE FROM app.exercises WHERE class_id IN
+         (SELECT id FROM app.classes WHERE version_id IN (${drafts}))`,
+      [PROGRAM]
+    );
+    await client.query(`UPDATE app.classes SET primary_asset_id=NULL WHERE version_id IN (${drafts})`, [
+      PROGRAM,
+    ]);
+    await client.query(`DELETE FROM app.classes WHERE version_id IN (${drafts})`, [PROGRAM]);
+    await client.query(`DELETE FROM app.modules WHERE version_id IN (${drafts})`, [PROGRAM]);
     await client.query("DELETE FROM app.program_versions WHERE program_id=$1 AND state='draft'", [
       PROGRAM,
     ]);
@@ -142,6 +160,16 @@ test.describe("AC-053 the admin screens are operable", () => {
     await page.getByRole("button", { name: "Open draft" }).click();
     await expect(page).toHaveURL(/\/versions\//);
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Version");
+
+    /*
+     * AC-056: the draft is a COPY of the published version, so the author
+     * starts from the course rather than from nothing. The classes are new
+     * rows — the learners on the published version are unaffected — but they
+     * carry the same titles, which is what makes this recognisable as "the
+     * next version of this course" on the screen.
+     */
+    await expect(page.getByText("Class: video")).toBeVisible();
+    await expect(page.getByText("Class: text")).toBeVisible();
 
     await page.getByRole("button", { name: "Add module" }).click();
     await expect(page.getByRole("heading", { name: /Module/ }).first()).toBeVisible();

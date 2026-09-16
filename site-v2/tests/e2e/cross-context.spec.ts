@@ -90,6 +90,7 @@ const UNAUTHENTICATED = new Set([
   "health", // a liveness probe, carrying no data about anybody
   "run_reminders", // the scheduler, behind CRON_SECRET instead
   "email_webhook", // the provider, behind a signature instead
+  "run_retention", // the nightly purge, behind CRON_SECRET instead
 ]);
 
 /*
@@ -97,9 +98,10 @@ const UNAUTHENTICATED = new Set([
  * what is missing rather than failing anonymously — and so shipping one
  * without removing it from here fails loudly.
  */
-const NOT_YET_IMPLEMENTED = new Set([
-  "run_retention", // T28
-]);
+// Every operation in the contract now has a route. The set stays, because the
+// sweep is written to be run against a partly built API and saying so is better
+// than a mysterious failure.
+const NOT_YET_IMPLEMENTED = new Set<string>([]);
 
 /** Every page under app/(platform), found on disk rather than listed here. */
 function platformPages(): string[] {

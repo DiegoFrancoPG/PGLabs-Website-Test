@@ -1224,7 +1224,7 @@
     {
       "id": "T26",
       "title": "Add validated bulk roster import",
-      "status": "todo",
+      "status": "done",
       "release": "pilot",
       "depends_on": [
         "T11",
@@ -1249,13 +1249,20 @@
       "checks": [
         "npm run test:integration -- bulk-import"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "No new API contract, as the task requires: the apply calls create_invitation once per row and add_cohort_members once — the same commands a manager uses one person at a time. Each row's Idempotency-Key is DERIVED from the file's content and the row's address rather than generated, so applying the same file again is the same request rather than a second invitation.\n\nThe preview is the plan, not an estimate: apply acts on exactly the rows it showed. The parser is written out rather than split(',') because a roster is precisely the file that contains \"Doe, Jane\".\n\nFour of my own expectations were wrong and the code was right: a foreign cohort is 42501 rather than 404 (the id came from the caller, so 'not permitted' discloses nothing), and create_invitation takes a user_id rather than an email because the Auth identity is established first — spec/03's 'Auth and Postgres cannot be one distributed transaction'.",
+      "evidence": [
+        "AC-055 preview: quoted commas, doubled quotes, CRLF, a BOM and no header all read correctly",
+        "AC-055 preview names each row's problems with its line number, and the counts reconcile",
+        "AC-055 apply is idempotent by request id and by the membership key, so a repeated file adds nobody twice",
+        "AC-055 a manager cannot import into another organization, nor import anybody as a manager",
+        "a roster containing an outsider is refused all-or-nothing, disclosing nothing about them",
+        "the import adds nobody to any programme: assignment stays a separate, dated decision"
+      ]
     },
     {
       "id": "T27",
       "title": "Add new-version cloning UI and checks",
-      "status": "todo",
+      "status": "done",
       "release": "pilot",
       "depends_on": [
         "T10"
@@ -1281,13 +1288,22 @@
       "checks": [
         "npm run test:integration -- version-cloning"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "T23 created an EMPTY draft and recorded the omission: spec/04 deferred version cloning and an asset's storage_key is UNIQUE, so a copied class could not point at its source's media. T27 is the release that pays it — the target 'independent asset identity/requirements' IS the answer to that problem: the clone owns its own asset rows at its own keys, and the bytes are copied.\n\nTwo phases, because storage cannot join the transaction: clone_version copies everything the database owns and creates the new assets pending at the keys their objects must land at; the application copies each file server-side and settles it through the clone.finish job. A file that does not copy leaves its asset failed, which blocks publication — a half-copied clone cannot go live, and the author is told which file to upload again.\n\nFound on the way: the clone route returned {version, created} as its data, but the contract's 201 carries a Version with additionalProperties: false. It now returns the version, and the clone's summary is not returned at all — get_version already reports each asset's state on the screen the author lands on.",
+      "evidence": [
+        "AC-056 every module, class, exercise, chunk and asset is cloned at a NEW id; no id is shared with the source",
+        "AC-056 titles, order, kind, requirement and body survive the clone unchanged",
+        "AC-056 each copied file gets its own storage key under the new version; no key collides with the source's",
+        "AC-056 copied assets are pending until the bytes arrive, so a half-copied clone cannot be published",
+        "AC-056 the published version and its learners are untouched: editing the draft does not reach it",
+        "AC-056 a second Open draft returns the existing draft and does not clone the content twice",
+        "clone.finish refuses a non-administrator (42501) and an asset of a published version (23514)",
+        "e2e: the admin opens a draft of the published programme and finds its classes already there"
+      ]
     },
     {
       "id": "T28",
       "title": "Implement retention and verify recovery",
-      "status": "todo",
+      "status": "done",
       "release": "pilot",
       "depends_on": [
         "T22"
@@ -1314,8 +1330,19 @@
         "npm run test:integration -- retention",
         "Perform restore rehearsal in disposable environment"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "The retention handler is one DELETE per rule from spec/05, in an order the foreign keys allow, each counting what it removed and all of them reading one clock. Every rule deletes on the row's OWN timestamp, never on a parent's, so an active learner does not lose old events and a dormant one does not keep them.\n\nThe subtle rule is the tutor ledger: chats go at 30 days and the ledger stays 180, which works only because tutor_usage.request_id has no foreign key to tutor_requests. That absence in the schema is what lets month-end accounting survive the deletion of the chats it accounts for, and a test deletes the chat and re-sums the month.\n\nspec/05's 'purge expired auth links' has nothing to find here: this implementation never puts an Auth action link in the outbox. The statement ships anyway, because spec/05 permits the outbox to hold one temporarily and a job that only purges what today's code writes would silently stop covering tomorrow's.\n\nAC-058 is blocked on performing the rehearsal, not on writing it: the development project has no daily backups, creating and deleting a second project needs authorisation, and the only media in the system is synthetic. tests/evaluation/restore-runbook.md is the procedure and names exactly what is missing.",
+      "evidence": [
+        "AC-057 a chat older than 30 days is removed, requests before sessions; a recent one is untouched",
+        "AC-057 an old session holding a recent question is kept — emptiness alone is not a reason to delete",
+        "AC-057 raw learning events go at 30 days, idempotency records at 30, rate windows at 35",
+        "AC-057 an auth link is stripped from a delivered message without losing the delivery record",
+        "AC-057 class_progress, exercise_completions, certificates and enrollments are identical across a run",
+        "AC-057 the month's spend still sums after the chats it accounted for are deleted; the ledger goes at 180 days",
+        "AC-057 the run is recorded in job_runs with its per-rule counts",
+        "AC-057 pglearn_job refuses a learner and a platform administrator alike (42501)",
+        "e2e: /api/v1/jobs/retention refuses no secret, a wrong secret and a signed-in administrator; a real run returns the contract's JobResult and changes no learner record",
+        "AC-058 blocked: tests/evaluation/restore-runbook.md written, with the measured rehearsal named as what is missing"
+      ]
     },
     {
       "id": "T29",

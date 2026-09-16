@@ -1,5 +1,8 @@
 import { z } from "zod";
 import { callRpc } from "@/lib/rpc";
+import { copyObject, playbackPathFromStorageKey } from "@/lib/storage";
+import { serviceClient } from "@/lib/supabase/server";
+import { verifiedUser } from "@/lib/auth";
 
 /* Mirrors the content schemas in contracts/api.json. */
 export const programSchema = z.object({
@@ -174,10 +177,99 @@ export type ModuleRow = z.infer<typeof moduleSchema>;
  * operation lists a program's versions, so without this an author who
  * navigated away could not find their draft again.
  */
-export async function draftVersion(programId: string, requestId: string) {
-  return z
-    .object({ version: versionSchema, created: z.boolean() })
+const copySchema = z.object({
+  asset_id: z.string().uuid(),
+  from: z.string(),
+  to: z.string(),
+  role: z.enum(["primary", "handout", "caption", "transcript"]),
+  from_playback: z.string().nullable(),
+  duration_ms: z.union([z.number(), z.string()]).nullable(),
+});
+
+export interface DraftVersionResult {
+  version: z.infer<typeof versionSchema>;
+  created: boolean;
+  /** How the media came across, so the author is told rather than surprised. */
+  assets: { copied: number; failed: number };
+}
+
+export async function draftVersion(
+  programId: string,
+  requestId: string
+): Promise<DraftVersionResult> {
+  const result = z
+    .object({
+      version: versionSchema,
+      created: z.boolean(),
+      copies: z.array(copySchema).default([]),
+    })
     .parse(await callRpc("clone_version", { request_id: requestId, program_id: programId }));
+
+  /*
+   * The second half of the clone, outside the transaction.
+   *
+   * AC-056 — "Existing learners keep original IDs/requirements/media" — is why
+   * this copies rather than shares: the draft's asset rows are new rows at new
+   * keys, so nothing an author does to them can reach the published version
+   * the current learners are enrolled against.
+   *
+   * Storage is a different system and cannot join the database transaction, so
+   * the rows were written PENDING and each one is settled here. A file that
+   * does not copy leaves its asset failed, which is exactly what blocks
+   * publication until somebody uploads it again — a half-cloned version cannot
+   * quietly go live.
+   */
+  const assets = { copied: 0, failed: 0 };
+  // Established once: verifiedUser() revalidates with the Auth server, and a
+  // version with forty files does not need forty round trips to learn the same
+  // answer.
+  const actor = result.copies.length > 0 ? await actorId() : "";
+  for (const copy of result.copies) {
+    let ok = false;
+    let playbackKey: string | null = null;
+    try {
+      ok = await copyObject(copy.from, copy.to);
+      if (ok && copy.from_playback) {
+        // The derived .vtt the player reads travels with its caption.
+        const derived = playbackPathFromStorageKey(copy.to);
+        playbackKey = (await copyObject(copy.from_playback, derived)) ? derived : null;
+      }
+    } catch {
+      ok = false;
+    }
+
+    await cloneJob({
+      actor,
+      asset_id: copy.asset_id,
+      ok,
+      error_code: ok ? null : "SOURCE_MISSING",
+      playback_key: playbackKey,
+      duration_ms: copy.duration_ms === null ? null : Number(copy.duration_ms),
+    });
+    if (ok) assets.copied += 1;
+    else assets.failed += 1;
+  }
+
+  return { version: result.version, created: result.created, assets };
+}
+
+async function actorId(): Promise<string> {
+  const user = await verifiedUser();
+  if (!user) throw new Error("clone_version requires a signed-in administrator");
+  return user.id;
+}
+
+/*
+ * clone.finish runs through the service-role job dispatcher rather than
+ * pglearn_rpc: it is an internal step of clone_version, the way finalize is an
+ * internal step of an upload, and the user-facing allowlist must keep matching
+ * contracts/api.json operation for operation. The handler re-checks that the
+ * actor is a platform administrator, because service_role cannot read auth.uid().
+ */
+async function cloneJob(payload: Record<string, unknown>): Promise<void> {
+  const supabase = serviceClient();
+  const { error } = await supabase.rpc("pglearn_job", { job: "clone.finish", payload });
+  if (error) throw new Error(`clone.finish failed: ${error.code ?? ""}`);
 }
 
 export async function getVersion(versionId: string): Promise<VersionDetail> {

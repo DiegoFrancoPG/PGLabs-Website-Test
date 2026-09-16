@@ -231,3 +231,25 @@ export async function signDownload(
 export async function removeObject(path: string): Promise<void> {
   await bucket().remove([path]);
 }
+
+/**
+ * Copying one object to another key, for version cloning (T27).
+ *
+ * An asset's storage_key is UNIQUE, so a cloned class cannot point at the
+ * source's object — AC-056 requires the new version to own its media outright,
+ * or deleting a draft would take a published version's files with it. The copy
+ * happens server-side in storage rather than by downloading and re-uploading:
+ * these are video files.
+ *
+ * Returns false rather than throwing when the source is not there, because a
+ * clone of forty classes must report which files need re-uploading rather than
+ * abandon the whole draft over one of them.
+ */
+export async function copyObject(from: string, to: string): Promise<boolean> {
+  if (from === to) return false;
+  const { error } = await bucket().copy(from, to);
+  if (!error) return true;
+  // Already copied — a retried clone is not a failure.
+  const status = (error as { statusCode?: string | number }).statusCode;
+  return String(status) === "409";
+}

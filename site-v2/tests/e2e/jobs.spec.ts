@@ -260,3 +260,76 @@ test.describe("AC-049 a forged callback", () => {
     );
   });
 });
+
+/*
+ * AC-057's other half: the endpoint the nightly purge runs behind.
+ *
+ * The rules themselves are tested in tests/integration/retention.test.ts, where
+ * rows can be given an age. What is tested here is the boundary — that the
+ * scheduler's secret is the only way in — and that a real run against a real
+ * database takes nothing a learner would miss.
+ */
+test.describe("AC-057 the retention endpoint", () => {
+  test.describe.configure({ mode: "serial" });
+  test.skip(({ viewport }) => (viewport?.width ?? 1440) < 768, "shared database state; desktop only");
+
+  test("refuses no secret, a wrong secret, and a signed-in administrator", async ({
+    request,
+    page,
+  }) => {
+    expect((await request.get("/api/v1/jobs/retention")).status()).toBe(401);
+
+    for (const wrong of ["nonsense", CRON_SECRET.slice(0, -1), `${CRON_SECRET}x`, ""]) {
+      const response = await request.get("/api/v1/jobs/retention", {
+        headers: { Authorization: `Bearer ${wrong}` },
+      });
+      expect(response.status()).toBe(401);
+    }
+
+    // spec/05: "user sessions do not substitute" — and retention deletes.
+    await signIn(page, "admin@example.invalid");
+    const asAdmin = await page.request.get("/api/v1/jobs/retention", { headers: { Origin: ORIGIN } });
+    expect(asAdmin.status()).toBe(401);
+  });
+
+  test("runs with the correct secret and keeps every learner record", async ({ request }) => {
+    const counts = async () =>
+      (
+        await db(async (client) =>
+          client.query(
+            `SELECT
+               (SELECT count(*)::int FROM app.class_progress) AS progress,
+               (SELECT count(*)::int FROM app.exercise_completions) AS exercises,
+               (SELECT count(*)::int FROM app.certificates) AS certificates,
+               (SELECT count(*)::int FROM app.enrollments) AS enrollments`
+          )
+        )
+      ).rows[0];
+
+    const before = await counts();
+    const response = await request.get("/api/v1/jobs/retention", {
+      headers: { Authorization: `Bearer ${CRON_SECRET}` },
+    });
+    expect(response.status()).toBe(200);
+
+    const body = await response.json();
+    // The contract's JobResult, and nothing else: no table names, no ids of
+    // anything deleted, nothing that identifies a person.
+    expect(Object.keys(body.data).sort()).toEqual([
+      "accepted",
+      "claimed",
+      "failed",
+      "run_id",
+      "suppressed",
+    ]);
+    expect(await response.text()).not.toContain("@example.invalid");
+
+    // What a learner would miss is exactly what retention may not touch.
+    expect(await counts()).toEqual(before);
+
+    const recorded = await db(async (client) =>
+      client.query("SELECT kind, status FROM app.job_runs WHERE id=$1", [body.data.run_id])
+    );
+    expect(recorded.rows[0]).toEqual({ kind: "retention", status: "completed" });
+  });
+});

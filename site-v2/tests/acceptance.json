@@ -214,7 +214,8 @@
       "requirements": [
         "FR-07"
       ],
-      "status": "not_run"
+      "status": "blocked",
+      "evidence": "tests/unit/captions.test.ts and tests/integration/assets.test.ts: every conversion rule in the scenario passes — timestamps and text preserved, overlapping cues allowed, an end<=start cue rejected, and raw HTML in a cue carried through as text rather than markup. The remaining clause, 'play generated VTT', needs a real video with a real caption track; tests/fixtures.json says the client's nine videos cannot be substituted. Recorded blocked on that media rather than passed on the half that could be checked."
     },
     {
       "id": "AC-018",
@@ -675,7 +676,8 @@
         "FR-07",
         "FR-08"
       ],
-      "status": "not_run"
+      "status": "blocked",
+      "evidence": "tests/evaluation/demo-gate.md records what published media exists today: synthetic files uploaded through the real upload path (AC-015, AC-016, AC-062 pass on them). The scenario asks for a check against the CLIENT's published media, which does not exist in the system yet — the nine videos with their transcripts and captions. Blocked on that delivery."
     },
     {
       "id": "AC-053",
@@ -720,7 +722,8 @@
       "requirements": [
         "FR-03"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/unit/roster.test.ts (17 cases) and tests/integration/bulk-import.test.ts — the preview reads a real CSV (quoted commas, doubled quotes, CRLF, a BOM, no header), names every problem on every row with the line number a person sees, and reconciles: valid + invalid = rows. A differently cased duplicate is recognised as the same person and the first occurrence is the one imported. Applying is idempotent both by request id and by the membership key itself, so the same file applied twice adds nobody twice. A manager is refused a cohort in another organization, an invitation into another organization, and any attempt to import somebody as a manager; a roster containing an outsider is refused all-or-nothing, and the refusal names nothing about them."
     },
     {
       "id": "AC-056",
@@ -732,7 +735,8 @@
       "requirements": [
         "FR-06"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/integration/version-cloning.test.ts (13 cases). Cloning a published version copies every module, class, exercise, content chunk and asset at a NEW id, and no id, storage key or file is shared with the source — asked the other way round by a query for rows the two versions have in common, which returns none. Titles, order, format, requirement and body survive unchanged, so the author starts from the course rather than from nothing. Copied assets are created pending at their own keys and settled through the clone.finish job once the bytes are copied; a copy that fails leaves the asset failed and publication blocked. Editing the draft does not reach the published version, and a second Open draft returns the existing draft rather than cloning twice. On the seeded programme, cloning leaves every existing enrollment on its original version at its original place in the course — no silent migration. The clone publishes with no issues and a new cohort offering selects the new version. clone.finish refuses a non-administrator (42501) and an asset of a published version (23514). e2e (tests/e2e/admin.spec.ts): the administrator opens a draft of the published programme and finds its classes already there."
     },
     {
       "id": "AC-057",
@@ -744,7 +748,8 @@
       "requirements": [
         "FR-14"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/integration/retention.test.ts (10 cases) and the scheduler e2e. A chat older than thirty days is removed — requests before sessions — while a recent one, and an old session holding a recent question, are kept. Raw learning events and idempotency records go at thirty days, rate windows at thirty-five, and the tutor ledger only at a hundred and eighty. An Auth action link is stripped from a delivered outbox message without losing the delivery record. Across a run that deleted chats and events, class_progress, exercise_completions, certificates and enrollments are unchanged, and the month's spend still sums to the same total after the chats it accounted for are gone — the ledger survives chat deletion because tutor_usage carries no foreign key to tutor_requests. The run is recorded in job_runs with its per-rule counts. The endpoint refuses no secret, a wrong secret and a signed-in platform administrator."
     },
     {
       "id": "AC-058",
@@ -756,7 +761,8 @@
       "requirements": [
         "FR-14"
       ],
-      "status": "not_run"
+      "status": "blocked",
+      "evidence": "tests/evaluation/restore-runbook.md is the procedure: what to back up and why the database and the storage bucket are two separate things, RPO <= 24h and restore within one business day, the rehearsal in a disposable project, and a verification that ends with a class actually playing — the step that fails when only the database was restored. It cannot be performed yet: the development project's plan has no daily backups, creating and deleting a second project needs authorisation, and the only media in the system is synthetic (AC-017, AC-052). A rehearsal that was not measured would not be evidence, so this is recorded blocked rather than assumed."
     },
     {
       "id": "AC-059",
@@ -794,7 +800,8 @@
       "requirements": [
         "FR-13"
       ],
-      "status": "not_run"
+      "status": "blocked",
+      "evidence": "tests/evaluation/tutor-synthetic-course.md establishes what can be established without a provider key: retrieval is confined to the enrolled version, citations resolve to real classes, and an unsupported question is refused rather than answered. Evaluating a transcript's actual content needs both the client's material and OPENAI_API_KEY. Blocked on both."
     },
     {
       "id": "AC-062",

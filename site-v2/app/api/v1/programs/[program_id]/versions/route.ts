@@ -17,7 +17,16 @@ export async function POST(
   { params }: { params: Promise<{ program_id: string }> }
 ) {
   const { program_id } = await params;
-  return mutateRoute(request, z.object({}).strict().optional(), ({ requestId }) =>
-    draftVersion(program_id, requestId)
-  );
+  /*
+   * The contract's 201 carries a Version and nothing else
+   * (additionalProperties: false), so the clone's own summary is not returned
+   * here. It does not need to be: every copied file is an asset row, and
+   * get_version already reports each one's state — a file that did not copy is
+   * `failed` on the screen the author lands on, next to the class it belongs
+   * to, which is where they would have to go to replace it anyway.
+   */
+  return mutateRoute(request, z.object({}).strict().optional(), async ({ requestId }) => {
+    const result = await draftVersion(program_id, requestId);
+    return result.version;
+  });
 }

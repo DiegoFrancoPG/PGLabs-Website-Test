@@ -12,6 +12,11 @@ import { Button } from "@ds/components/ui/button";
  * it does either way: the endpoint returns an existing draft rather than
  * making a second one, so an author who navigated away comes back to their own
  * work rather than to an empty one.
+ *
+ * T27: when the program HAS a published version, the new draft is a copy of it
+ * — modules, classes, exercises and media, each at a new identity. The copying
+ * of the files happens while this request is in flight, so the button can stay
+ * "Opening…" a little longer for a program with a lot of video.
  */
 export function OpenDraft({ programId }: { programId: string }) {
   const router = useRouter();
@@ -29,7 +34,7 @@ export function OpenDraft({ programId }: { programId: string }) {
       });
       const json = await response.json();
       if (!response.ok) throw new Error(json?.error?.message ?? "The draft could not be opened.");
-      router.push(`/admin/programs/${programId}/versions/${json.data.version.id}`);
+      router.push(`/admin/programs/${programId}/versions/${json.data.id}`);
     } catch (err) {
       setError((err as Error).message);
       setPending(false);
