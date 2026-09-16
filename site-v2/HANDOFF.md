@@ -551,6 +551,25 @@ The certificate stores the learner's name and the program title **as they were**
 - The integration tests run inside a rolled-back transaction, where `now()` never moves. Every heartbeat therefore looked simultaneous and the plausibility bound allowed only the 2 s of clock slack. The helper backdates `last_received_at` to let time pass. It also revealed that ten minutes of media at fifteen seconds a beat is forty round trips to a hosted database — the long tests now play at rate 2 in sixty-second beats, the most a single heartbeat may ever claim, and the suite went from 198 s to 66 s.
 - A Playwright `test.skip(condition)` stops the **tests** but not `beforeAll`/`afterAll`. The mobile project, every test of which was skipped, was still running this spec's cleanup and deleting the playback session out from under the desktop run. The hooks now carry the same guard. The spec also moved off Amber onto the `personal` learner, because `learning-navigation.spec.ts` asserts Amber has no progress and the two files run in parallel against one database.
 
+## T14 — Short-response exercise completion
+
+- **Status:** done. AC-031, AC-032 and AC-033 pass.
+- **Checks:** 143 unit, 231 integration, 79 e2e; lint, typecheck, build, `verify_spec.py`, `db:reset:test`.
+
+### Two languages that count differently
+
+`"🙂".length` is 2 in JavaScript and 1 to `char_length` in PostgreSQL. A 2,000-emoji response is therefore exactly at the limit for the database and 4,000 "characters" to a form validating on `.length` — the browser would refuse what the database would have stored, and the counter under the box would be wrong by a factor of two for anybody writing with emoji or with any astral character.
+
+`lib/exercise.ts` counts with `[...text].length`, which iterates by code point, and normalises to NFC first so that `e` + combining acute counts as the one character it renders as. `app.normalize_response` does the same in SQL with `normalize(…, NFC)` and a `btrim` whose character set is built from `chr()` codes rather than escapes. The unit tests and the integration tests assert the same four boundary submissions on both sides, because AC-031's word is "consistently".
+
+### A resend is not a second answer
+
+"First successful response is final/read-only in v1" could be read as refusing every repeat. It does not: a repeat of the **same** text — a double click, a retried request, a reload — returns what was saved. Only a **different** response after completion is `PGL40` / 409 `EXERCISE_ALREADY_COMPLETED`. The generic idempotency mechanism covers the same-request-id case; the text comparison covers the rest.
+
+### Completion has one implementation
+
+`app.settle_completion` is called by both the heartbeat and the exercise. Whichever half of a class arrives second completes it, and neither path holds an opinion about the other. AC-033 is tested in both orders for that reason.
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -568,6 +587,7 @@ The certificate stores the learner's name and the program title **as they were**
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
+- T14: short-response exercises, Unicode-correct counting and read-only saved responses; AC-031, AC-032, AC-033 passed. PGL40 added for EXERCISE_ALREADY_COMPLETED.
 - T13: playback sessions, heartbeats, coverage, text completion and the completion/certificate chain; AC-023 to AC-030 passed. Three custom SQLSTATEs added; T09 and T12 corrected to return ACCESS_UNAVAILABLE rather than VALIDATION_ERROR. Real-media playback still blocked.
 - T12: learner dashboard, outline and class shell; AC-066 passed. Un-onboarded sign-in gap found and fixed.
 - T11: offerings, enrollment, date boundaries and bulk date updates; AC-020, AC-021, AC-022, AC-063, AC-065 passed and AC-012 closed.

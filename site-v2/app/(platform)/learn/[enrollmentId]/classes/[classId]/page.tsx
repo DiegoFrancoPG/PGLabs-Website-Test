@@ -7,6 +7,8 @@ import { RpcError } from "@/lib/rpc";
 import { ClassPlayer } from "@/components/learning/ClassPlayer";
 import { MarkTextComplete } from "@/components/learning/MarkTextComplete";
 import { HandoutLink } from "@/components/learning/HandoutLink";
+import { ExerciseForm } from "@/components/learning/ExerciseForm";
+import { getExerciseCompletion, type ExerciseSaved } from "@/features/learning/exercises";
 import { Alert } from "@ds/components/ui/alert";
 import { Badge } from "@ds/components/ui/badge";
 import { Button } from "@ds/components/ui/button";
@@ -56,6 +58,20 @@ export default async function ClassPage({
 
   const handouts = detail.assets.filter((a) => a.role === "handout");
   const captionAsset = detail.assets.find((a) => a.role === "caption" && a.state === "ready");
+
+  /*
+   * The saved response, if there is one. A 404 here means "not answered yet",
+   * which is the ordinary case rather than an error — the contract has no
+   * other way to say it.
+   */
+  let savedResponse: ExerciseSaved | null = null;
+  if (detail.exercise) {
+    try {
+      savedResponse = await getExerciseCompletion(enrollmentId, detail.exercise.id);
+    } catch (err) {
+      if (!(err instanceof RpcError && err.code === "NOT_FOUND")) throw err;
+    }
+  }
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
@@ -123,16 +139,12 @@ export default async function ClassPage({
       )}
 
       {detail.exercise && (
-        <section className="mt-10 border-t border-steel-200 pt-8">
-          <h2 className="font-display text-h4 text-ink-800">Practical exercise</h2>
-          <p className="mt-3 whitespace-pre-wrap text-body-sm">
-            {detail.exercise.instructions_md}
-          </p>
-          {/* The response form is T14. */}
-          <Alert variant="info" className="mt-4">
-            The response form arrives with exercise completion.
-          </Alert>
-        </section>
+        <ExerciseForm
+          enrollmentId={enrollmentId}
+          exerciseId={detail.exercise.id}
+          instructions={detail.exercise.instructions_md}
+          saved={savedResponse}
+        />
       )}
 
       <nav className="mt-12 flex justify-between gap-4 border-t border-steel-200 pt-6">

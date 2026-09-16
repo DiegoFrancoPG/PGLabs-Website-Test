@@ -390,7 +390,8 @@
       "requirements": [
         "FR-09"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/unit/exercise.test.ts (13 cases) and tests/integration/exercise.test.ts — whitespace-only and unconfirmed are refused, 2000 code points accepted, 2001 refused, asserted identically in the application and against the database. 2000 emoji (4000 UTF-16 units) are accepted by both, which a JavaScript length check would have refused."
     },
     {
       "id": "AC-032",
@@ -403,7 +404,8 @@
         "FR-02",
         "FR-09"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/integration/exercise.test.ts — a failure injected after the insert leaves no response and no completion, and the retry afterwards succeeds exactly once; a retry with the same request id and body returns the first answer; another learner's enrollment and an exercise outside the pinned version are both 404; a different response after completion is PGL40/EXERCISE_ALREADY_COMPLETED and the saved text is untouched."
     },
     {
       "id": "AC-033",
@@ -416,7 +418,8 @@
         "FR-09",
         "FR-10"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/integration/exercise.test.ts — the response saves and reads back read-only while the class stays incomplete; finishing the audio then completes it, and completed_at does not move on a later heartbeat. The reverse order (media first, exercise last) completes the class on the spot."
     },
     {
       "id": "AC-034",

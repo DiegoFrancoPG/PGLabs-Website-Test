@@ -31,6 +31,7 @@ export class RpcError extends Error {
  *   PGL22  owned but blocked learning   -> ACCESS_UNAVAILABLE (custom class)
  *   PGL28  playback session superseded  -> SESSION_SUPERSEDED (custom class)
  *   PGL29  implausible progress claim   -> INVALID_PROGRESS   (custom class)
+ *   PGL40  a second, different response  -> EXERCISE_ALREADY_COMPLETED
  *
  * The PGL classes are ours: SQLSTATE lets an implementation define its own
  * five-character codes, and these three are conditions spec/05 names that no
@@ -54,6 +55,7 @@ const SQLSTATE_TO_CODE: Record<string, ErrorCode> = {
   PGL22: "ACCESS_UNAVAILABLE",
   PGL28: "SESSION_SUPERSEDED",
   PGL29: "INVALID_PROGRESS",
+  PGL40: "EXERCISE_ALREADY_COMPLETED",
 };
 
 export async function callRpc<T>(action: string, payload: Record<string, unknown> = {}): Promise<T> {
@@ -92,6 +94,8 @@ function messageFor(code: ErrorCode): string {
       return "This is not available yet.";
     case "ACCESS_UNAVAILABLE":
       return "This program is not available to you right now.";
+    case "EXERCISE_ALREADY_COMPLETED":
+      return "This exercise has already been completed.";
     case "SESSION_SUPERSEDED":
       return "This program is playing in another tab.";
     case "INVALID_PROGRESS":

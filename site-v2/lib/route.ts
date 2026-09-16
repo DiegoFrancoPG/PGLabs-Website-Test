@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { verifiedUser } from "@/lib/auth";
 import { RpcError } from "@/lib/rpc";
+import { ExerciseError } from "@/lib/exercise";
 import { jsonError, jsonOk, resolveRequestId, isUuid } from "@/lib/http";
 
 /*
@@ -73,6 +74,17 @@ export async function mutateRoute<S extends z.ZodTypeAny>(
 
 function toResponse(err: unknown, requestId: string) {
   if (err instanceof RpcError) return jsonError(err.code, err.message, requestId, err.fields);
+  /*
+   * Rules the application checks before the database does — currently the
+   * exercise text rules, which have to count code points rather than UTF-16
+   * units. The field path is carried through so a form can show the message
+   * beside the control it belongs to.
+   */
+  if (err instanceof ExerciseError) {
+    return jsonError(err.code, err.message, requestId, [
+      { path: err.path, message: err.message },
+    ]);
+  }
   // Never surfaced: an unexpected failure must not leak a stack or a provider
   // message into the response (spec/05).
   console.error("[api] unexpected", err);

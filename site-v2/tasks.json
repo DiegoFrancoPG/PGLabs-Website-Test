@@ -694,7 +694,7 @@
     {
       "id": "T14",
       "title": "Implement short-response exercise completion",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T13"
@@ -724,8 +724,16 @@
         "npm run test:unit -- exercise",
         "npm run test:integration -- exercise"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "Counting is the whole of this task. PostgreSQL's char_length counts code points and JavaScript's string.length counts UTF-16 units, so a 2,000-emoji response is 2,000 characters to the database and 4,000 to a naive form — the browser would refuse what the database would have accepted. lib/exercise.ts counts by code point and normalises to NFC before counting, and app.normalize_response does the same in SQL. Completion goes through app.settle_completion, the same helper T13's heartbeat calls, so whichever half of a class arrives second completes it and the two paths cannot disagree. PGL40 carries EXERCISE_ALREADY_COMPLETED; an identical resubmission is treated as the retry it is rather than refused.",
+      "evidence": [
+        "143 unit + 231 integration + 79 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-031 the four boundary submissions behave identically in the application and in the database",
+        "AC-031 2000 emoji and 2000 decomposed characters both accepted, counted as PostgreSQL counts them",
+        "AC-032 injected failure leaves neither response nor completion; retry succeeds exactly once",
+        "AC-032 a different response after completion is 409 EXERCISE_ALREADY_COMPLETED, saved text untouched",
+        "AC-032 a manager and another learner both get 404 for a learner's response",
+        "AC-033 exercise saved before the media keeps the class incomplete until coverage passes, then completes once"
+      ]
     },
     {
       "id": "T15",
