@@ -457,7 +457,8 @@
       "requirements": [
         "FR-12"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/integration/reports.test.ts and tests/e2e/reports.spec.ts — the offering A report matches fixtures.json's expected_report field for field (assigned 4, not_started 2, in_progress 1, completed 1, overdue 3, completion_rate 25, average_progress 41.7) and each learner's row_progress_percent; the manager's screen shows the same numbers and rows."
     },
     {
       "id": "AC-037",
@@ -469,7 +470,8 @@
       "requirements": [
         "FR-12"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/integration/reports.test.ts — an empty match returns null for completion_rate and average_progress rather than zero; completion-time filters exclude every incomplete row, with completed_from inclusive and completed_to exclusive; a one-row page still carries the summary of all four matching rows, and paging returns each row exactly once before stopping; cancelled rows leave the active denominator but are returned when asked for by state."
     },
     {
       "id": "AC-038",
@@ -482,7 +484,8 @@
         "FR-02",
         "FR-12"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/unit/csv.test.ts, tests/integration/reports.test.ts and tests/e2e/reports.spec.ts — a display name of '   =HYPERLINK(...)' is prefixed with an apostrophe and RFC4180-quoted, the check looking past leading whitespace; a manager asking for another organization is refused 403 on both report and export, and is bound to their own organization with no filter at all; the header is ReportRow's field order and carries no response, chat or time-spent column; personal enrollments are invisible to every manager."
     },
     {
       "id": "AC-039",

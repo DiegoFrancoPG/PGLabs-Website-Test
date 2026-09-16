@@ -597,6 +597,33 @@ Revoked metadata stays readable — that is the point of recording a revocation 
 
 Reading is deliberately **not** gated on enrollment availability. spec/03 says "including after course access expiry", and a certificate that stops being readable when the course window closes would be worth nothing.
 
+## T16 — Scoped manager and admin reporting
+
+- **Status:** done. AC-036, AC-037 and AC-038 pass.
+- **Checks:** 167 unit, 263 integration, 91 e2e; lint, typecheck, build, `verify_spec.py`, `db:reset:test`.
+
+### Scope is computed, not trusted
+
+`app.report_scope` turns the caller into a set of organization ids — or `NULL` for a platform admin, who is not organization-bound. Every row is intersected with that set, so a manager's `organization_id` filter can only narrow what they may already see, never widen it. A personal enrollment has no `organization_id` at all, so no manager's scope can reach one; that is structural rather than a filter somebody remembered to write.
+
+### The summary is not the page
+
+AC-037's last clause: "summary uses all matching records not just one page". The handler therefore runs the row query twice — once unpaged for the summary, once paged for the items. A summary computed from the rows in hand would describe the page and look entirely reasonable while being wrong.
+
+### The first real pagination
+
+Every earlier list handler returns `next_cursor: NULL`. This one pages properly, and the cursor is the **sort key of the last row** rather than an offset, so rows do not shift under a manager who is paging while somebody finishes a class. The key is the uuid followed by the name: the uuid has a fixed width and goes first, because Postgres text cannot contain a NUL and there is no separator a display name could not also contain.
+
+### `   =HYPERLINK(...)` is the whole point
+
+A spreadsheet treats a cell beginning `=`, `+`, `-`, `@` or a tab as a formula. A learner who puts one in their display name would have it run in their manager's spreadsheet — reading the row beside it and sending it somewhere. The defence prefixes an apostrophe, and it looks **past leading whitespace**, because a check on the raw first character sees a space, passes it through, and the spreadsheet (which ignores the space) runs the formula anyway. That is AC-038's exact case.
+
+Only user-entered columns are defended. A timestamp or a uuid cannot begin with `=`, and prefixing one would corrupt the value it carries.
+
+### `enroll_multi_a` is resolved
+
+Recorded at T11 as ambiguous. `expected_report` is authoritative, and the report now reproduces it exactly with `multi` enrolled in organization B only — `assigned` is 4, as the fixture says. The unused `enroll_multi_a` id stays in `fixtures.json` because `verify_spec.py` checks the id table against the document, and removing it is a specification change rather than an implementation one.
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -614,6 +641,7 @@ Reading is deliberately **not** gated on enrollment availability. spec/03 says "
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
+- T16: scoped reporting, real cursor pagination and the CSV export; AC-036, AC-037, AC-038 passed. PGL42 added for EXPORT_LIMIT; the enroll_multi_a fixture ambiguity resolved in favour of expected_report.
 - T15: certificate reading, PDF rendering with bundled OFL fonts, and revocation; AC-034 and AC-035 passed. PGL41 added for CERTIFICATE_REVOKED.
 - T14: short-response exercises, Unicode-correct counting and read-only saved responses; AC-031, AC-032, AC-033 passed. PGL40 added for EXERCISE_ALREADY_COMPLETED.
 - T13: playback sessions, heartbeats, coverage, text completion and the completion/certificate chain; AC-023 to AC-030 passed. Three custom SQLSTATEs added; T09 and T12 corrected to return ACCESS_UNAVAILABLE rather than VALIDATION_ERROR. Real-media playback still blocked.

@@ -54,8 +54,31 @@ export const enrollmentPatchSchema = z
   .object({ status: z.enum(["active", "cancelled"]) })
   .strict();
 
-export const listOfferings = (organizationId?: string) =>
-  callRpc("list_offerings", organizationId ? { organization_id: organizationId } : {});
+/* contracts/api.json's Offering. It carries ids and dates, and no titles. */
+export const offeringSchema = z.object({
+  id: z.string().uuid(),
+  organization_id: z.string().uuid(),
+  program_id: z.string().uuid(),
+  cohort_id: z.string().uuid(),
+  version_id: z.string().uuid(),
+  grant_id: z.string().uuid(),
+  starts_at: z.string(),
+  due_at: z.string(),
+  access_ends_at: z.string().nullable(),
+  status: z.enum(["active", "cancelled"]),
+});
+
+export type Offering = z.infer<typeof offeringSchema>;
+
+export const offeringListSchema = z.object({
+  items: z.array(offeringSchema),
+  next_cursor: z.string().nullable(),
+});
+
+export const listOfferings = async (organizationId?: string) =>
+  offeringListSchema.parse(
+    await callRpc("list_offerings", organizationId ? { organization_id: organizationId } : {})
+  );
 
 export const createOffering = (input: z.infer<typeof offeringCreateSchema>, requestId: string) =>
   callRpc("create_offering", { request_id: requestId, ...input });

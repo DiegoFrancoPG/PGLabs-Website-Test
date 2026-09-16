@@ -782,7 +782,7 @@
     {
       "id": "T16",
       "title": "Implement scoped manager/admin reporting",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T15"
@@ -812,8 +812,17 @@
       "checks": [
         "npm run test:integration -- reports"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "Scope is computed, never trusted: app.report_scope turns the caller into a set of organization ids that every row is intersected with, so a manager's filter cannot widen it and a personal enrollment (which has no organization_id) is unreachable by construction. The summary is computed over all matching rows rather than the page returned, which AC-037 requires and which a page-local summary would silently get wrong. This is the first real cursor pagination in the codebase: the cursor is the sort key of the last row, so rows do not shift under a manager paging while somebody finishes a class. The CSV's formula-injection defence looks past leading whitespace, which is exactly AC-038's case. PGL42 carries EXPORT_LIMIT. The enroll_multi_a fixture ambiguity recorded at T11 is now resolved: expected_report is authoritative and the report reproduces it exactly with multi in organization B only.",
+      "evidence": [
+        "167 unit + 263 integration + 91 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-036 expected_report reproduced field for field, including each learner's progress percentage",
+        "AC-037 null denominators, inclusive/exclusive completion window, and a summary over every matching row",
+        "AC-037 paging returns each row exactly once and then stops; cancelled rows never enter the active denominator",
+        "AC-038 a name beginning whitespace then = is prefixed and quoted; the check looks past the whitespace",
+        "AC-038 a foreign organization filter is 403 on both the report and the export",
+        "AC-038 the CSV header is ReportRow's order and carries no exercise, chat or time-spent column",
+        "a personal enrollment is invisible to every manager, and somebody who manages nothing is refused"
+      ]
     },
     {
       "id": "T17",
