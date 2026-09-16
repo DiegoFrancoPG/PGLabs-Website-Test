@@ -3,10 +3,11 @@
 ## Current state
 
 - Specification version: 1.0, 15 September 2026.
-- Application implementation: T00–T07 done (including T03B). T08–T30 todo.
-- Active task: none. Start T08.
-- Last completed application task: T07.
-- Acceptance scenarios passing: 13 of 67 — AC-001 to AC-011, AC-013 and AC-064. **AC-012 is partial and blocked on T11.**
+- Application implementation: T00–T08 done (including T03B). T09–T30 todo.
+- Active task: none. Start T09.
+- Last completed application task: T08.
+- Acceptance scenarios passing: 14 of 67 — AC-001 to AC-011, AC-013, AC-014 and AC-064. **AC-012 is partial and blocked on T11.**
+- **T09 is the first task that needs real media from the client.**
 - Specification validation: `python3 verify_spec.py` PASS — 66 operations, 70 schemas, 31 acyclic tasks. This validates the package, not the application.
 - Inputs outstanding: actual media/source content, final course details, Resend and OpenAI credentials with sender setup, and the certificate issuer string (see below). A development database is configured.
 
@@ -360,6 +361,34 @@ That correction also gives reactivation exactly the shape spec/03 asks for: sett
 
 Revoking a grant flips `enrollment_availability` to `revoked`, and shortening its window flips it to `expired`, both while the enrollment row itself is untouched. spec/03: "Backend checks actual current grant each request, so revoking/shortening it takes effect without rewriting enrollment history."
 
+## T08 — Draft content authoring and ordering
+
+- **Status:** done. AC-014 passes.
+- **Checks:** 44 unit, 137 integration, 65 e2e; lint, typecheck, build, `verify_spec.py`, `db:reset:test`.
+- All 13 operations ship with `/api/v1` routes and services. The authoring UI is T23.
+
+### The reorder needs the deferral, and the test proves it
+
+spec/03: "The transaction defers position uniqueness checks, rewrites positions and restores constraints."
+
+The handler does exactly that, and the test that matters reverses a three-class module completely. Moving the first item to the end collides with an existing position part-way through the rewrite, even though the final arrangement is valid — so the test fails against an implementation that skips the deferral. `SET CONSTRAINTS ALL IMMEDIATE` afterwards is what makes a violation surface on this operation rather than at COMMIT.
+
+Rejection is checked by comparing the **entire row set** before and after, not just a count, so a partial rewrite would fail the test.
+
+### One comparison covers three kinds of invalid list
+
+The handler requires `ordered_ids` to be exactly the current sibling set. That single check rejects a foreign child, a missing sibling and a partial list alike — a set that does not match cannot be a reordering of it. Duplicates are caught separately, because a list containing the same child twice does not describe an order at all.
+
+### A literal allowlist invites one specific mistake
+
+ADR-03 forbids building the dispatch from a table, so every migration that adds actions recreates the whole `CASE`. The failure mode is writing a handler and never registering it, which leaves an operation silently unreachable and indistinguishable from one that does not exist.
+
+`tests/integration/dispatcher.test.ts` now reads the **live database** and asserts that every `app.handle_*` function is reachable, that every dispatched action has a handler, and that every action corresponds to an `operationId` the contract declares.
+
+### Deliberately not dispatched
+
+`clone_version` appears on `/programs/{id}/versions` but belongs to **T27**, which is pilot scope. It has no handler, so it is refused exactly like any unknown action.
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -377,6 +406,7 @@ Revoking a grant flips `enrollment_availability` to `revoked`, and shortening it
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
+- T08: content authoring, ordering and the reorder deferral; AC-014 passed. Dispatcher completeness now tested against the live database.
 - T07: cohorts, cohort membership and catalog grants; AC-013 passed, AC-012 partial pending T11. Enrollment guard corrected so cancellation survives a lapsed membership.
 - T06: organizations, memberships and invitation creation; AC-010 and AC-011 passed. Idempotency mechanism added; last-manager trigger corrected to fire immediately.
 - T05: invitation acceptance and password recovery; AC-008 and AC-009 passed against real Auth. Fixture accounts created through the Auth admin API; db:reset:test became three-phase.

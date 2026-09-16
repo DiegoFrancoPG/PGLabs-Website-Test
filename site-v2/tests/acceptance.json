@@ -174,7 +174,7 @@
       "requirements": [
         "FR-06"
       ],
-      "status": "not_run"
+      "status": "passed"
     },
     {
       "id": "AC-015",

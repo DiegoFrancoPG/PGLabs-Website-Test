@@ -399,7 +399,7 @@
     {
       "id": "T08",
       "title": "Implement draft content CRUD and ordering",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T03"
@@ -437,8 +437,18 @@
       "checks": [
         "npm run test:integration -- content"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "All 13 operations implemented in M08 with /api/v1 routes and services. The editor UI is not built; spec/04's authoring screens are T23. clone_version is listed on /programs/{id}/versions but belongs to T27 (pilot), so it is deliberately not dispatched yet. Added tests/integration/dispatcher.test.ts, which asserts every app.handle_* function is reachable from the allowlist — the failure mode a literal allowlist invites is writing a handler and forgetting to register it.",
+      "evidence": [
+        "44 unit + 137 integration + 65 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-014: a valid reorder persists as a contiguous run from zero, including a full reversal, which a non-deferred unique constraint would reject part-way through",
+        "AC-014: duplicates, a child of another parent, and a partial list that omits a sibling are each rejected 22023, and a rejected reorder leaves every position byte-identical to before — verified by comparing the full row set",
+        "modules and classes are created at contiguous positions without the caller counting; reordering works for modules within a version and classes within a module",
+        "ADR-08 enforced: adding an exercise makes its class required, and a second put_exercise replaces rather than adds",
+        "delete_class removes the exercise, assets and chunks with it, after clearing the primary-asset reference that would otherwise block it",
+        "every authoring action is refused to a manager 42501; list_programs shows a manager only their entitled catalogue and a learner nothing",
+        "the M02 freeze holds through the handlers: update, create and delete against a published version all return 23514",
+        "dispatcher tests: every handler is reachable, every dispatched action has a handler, and every action corresponds to an operationId the contract declares"
+      ]
     },
     {
       "id": "T09",
