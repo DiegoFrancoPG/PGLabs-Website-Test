@@ -257,21 +257,36 @@ BEGIN
       RAISE EXCEPTION 'enrollment grant belongs to a different organization'
         USING ERRCODE = '23514';
     END IF;
-    -- spec/02: organization enrollment must reference an existing active
-    -- cohort_members row and an invited or active membership of the same org.
-    IF NOT EXISTS (
-      SELECT 1 FROM app.cohort_offerings o
-      JOIN app.cohort_members cm ON cm.cohort_id = o.cohort_id AND cm.user_id = NEW.user_id
-      WHERE o.id = NEW.offering_id AND cm.status = 'active'
-    ) THEN
-      RAISE EXCEPTION 'learner is not an active member of the offering cohort'
-        USING ERRCODE = '23514';
-    END IF;
-    SELECT * INTO m FROM app.memberships
-      WHERE organization_id = NEW.organization_id AND user_id = NEW.user_id;
-    IF m.status NOT IN ('invited', 'active') THEN
-      RAISE EXCEPTION 'learner has no invited or active membership of this organization'
-        USING ERRCODE = '23514';
+
+    /*
+     * spec/02: organization enrollment must reference an existing active
+     * cohort_members row and an invited or active membership of the same org.
+     *
+     * Checked only while the enrollment IS active. Cancelling has to stay
+     * possible after a membership lapses, because spec/03 requires removing a
+     * cohort member to cancel their active enrollments — this rule would
+     * otherwise make the spec's own behaviour impossible.
+     *
+     * It also gives reactivation the right shape: setting a cancelled
+     * enrollment back to active re-runs these checks, which is exactly
+     * spec/03's "admin can explicitly reactivate cancelled enrollment if all
+     * predicates pass".
+     */
+    IF NEW.status = 'active' THEN
+      IF NOT EXISTS (
+        SELECT 1 FROM app.cohort_offerings o
+        JOIN app.cohort_members cm ON cm.cohort_id = o.cohort_id AND cm.user_id = NEW.user_id
+        WHERE o.id = NEW.offering_id AND cm.status = 'active'
+      ) THEN
+        RAISE EXCEPTION 'learner is not an active member of the offering cohort'
+          USING ERRCODE = '23514';
+      END IF;
+      SELECT * INTO m FROM app.memberships
+        WHERE organization_id = NEW.organization_id AND user_id = NEW.user_id;
+      IF m.status NOT IN ('invited', 'active') THEN
+        RAISE EXCEPTION 'learner has no invited or active membership of this organization'
+          USING ERRCODE = '23514';
+      END IF;
     END IF;
   END IF;
 

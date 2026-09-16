@@ -162,7 +162,7 @@
       "requirements": [
         "FR-04"
       ],
-      "status": "not_run"
+      "status": "passed"
     },
     {
       "id": "AC-014",

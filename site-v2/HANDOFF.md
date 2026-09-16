@@ -3,10 +3,10 @@
 ## Current state
 
 - Specification version: 1.0, 15 September 2026.
-- Application implementation: T00–T06 done (including T03B). T07–T30 todo.
-- Active task: none. Start T07.
-- Last completed application task: T06.
-- Acceptance scenarios passing: 12 of 67 — AC-001 to AC-011 and AC-064.
+- Application implementation: T00–T07 done (including T03B). T08–T30 todo.
+- Active task: none. Start T08.
+- Last completed application task: T07.
+- Acceptance scenarios passing: 13 of 67 — AC-001 to AC-011, AC-013 and AC-064. **AC-012 is partial and blocked on T11.**
 - Specification validation: `python3 verify_spec.py` PASS — 66 operations, 70 schemas, 31 acyclic tasks. This validates the package, not the application.
 - Inputs outstanding: actual media/source content, final course details, Resend and OpenAI credentials with sender setup, and the certificate issuer string (see below). A development database is configured.
 
@@ -332,6 +332,34 @@ Those tests now send `Origin` explicitly. Any future e2e test that posts through
 
 The action link is never returned from the service. Tests assert the real HTTP response body contains no `action_link`, `hashed_token`, `email_otp` or verify URL.
 
+## T07 — Cohorts and catalog grants
+
+- **Status:** done. AC-013 passes in full; **AC-012 is partial**, see below.
+- **Checks:** 44 unit, 120 integration, 65 e2e; lint, typecheck, build, `verify_spec.py`, `db:reset:test`.
+- All nine operations ship with `/api/v1` routes and services. Manager screens are T23.
+
+### AC-012 is cross-task, and stays `not_run`
+
+Three of its four clauses pass here: removal cancels the enrollment and keeps progress, re-adding does not restore it, and a cancelled learner has no access. The fourth — "explicit valid reactivation restores access" — needs `update_enrollment`, which `contracts/api.json` and the ledger both assign to **T11**.
+
+`tasks.json` records the partial evidence and the dependency; the scenario is not marked passed. That is what the ledger's completion rule requires: "For explicitly cross-task checks, record partial evidence and dependency; never mark the full scenario passed early."
+
+### A guard that made the specification's own behaviour impossible
+
+M02's `enrollment_relationships` required an active `cohort_members` row on **every** update of an organization enrollment. But spec/03 requires removing a cohort member to *cancel* their active enrollments — and by then the member is no longer active, so the cancellation was rejected by the very rule meant to protect it.
+
+The membership checks now run **only while the enrollment is active**. Cancelling is always allowed; creating or reactivating is not.
+
+That correction also gives reactivation exactly the shape spec/03 asks for: setting a cancelled enrollment back to active re-runs the checks, which is "admin can explicitly reactivate cancelled enrollment **if all predicates pass**". T11 gets that behaviour for free rather than having to add it.
+
+### A personal grant cannot leak into an organization's catalog
+
+`list_grants` matches a manager only through `g.organization_id IS NOT NULL AND app.org_manager(...)`. A personal grant's subject is a user and its `organization_id` is null, so it can never satisfy that predicate — the exclusion is structural rather than a filter someone could forget. Asking for another organization's grants explicitly is refused `42501` rather than returning an empty list, so the response never implies "that organization has no catalog".
+
+### Revocation and expiry need no migration of enrollment rows
+
+Revoking a grant flips `enrollment_availability` to `revoked`, and shortening its window flips it to `expired`, both while the enrollment row itself is untouched. spec/03: "Backend checks actual current grant each request, so revoking/shortening it takes effect without rewriting enrollment history."
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -349,6 +377,7 @@ The action link is never returned from the service. Tests assert the real HTTP r
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
+- T07: cohorts, cohort membership and catalog grants; AC-013 passed, AC-012 partial pending T11. Enrollment guard corrected so cancellation survives a lapsed membership.
 - T06: organizations, memberships and invitation creation; AC-010 and AC-011 passed. Idempotency mechanism added; last-manager trigger corrected to fire immediately.
 - T05: invitation acceptance and password recovery; AC-008 and AC-009 passed against real Auth. Fixture accounts created through the Auth admin API; db:reset:test became three-phase.
 - T04: session verification, profile services, Origin rule and admin bootstrap; AC-006, AC-007, AC-064 passed. Mobile navigation gap recorded.

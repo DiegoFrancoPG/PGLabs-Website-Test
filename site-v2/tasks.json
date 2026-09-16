@@ -349,7 +349,7 @@
     {
       "id": "T07",
       "title": "Implement cohorts and catalog grants",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T06"
@@ -385,8 +385,16 @@
       "checks": [
         "npm run test:integration -- cohorts-grants"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "All nine operations implemented in M07 with /api/v1 routes and services. AC-013 passes in full. AC-012 is a CROSS-TASK scenario: its first three clauses pass here, but 'explicit valid reactivation restores access' needs update_enrollment, which contracts/api.json and the ledger assign to T11 — so AC-012 stays not_run per the completion rule. Manager screens are not built; UI integration is T23.",
+      "evidence": [
+        "44 unit + 120 integration + 65 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-012 PARTIAL: removal sets the member to removed and cancels exactly the enrollments reached through that cohort, leaving progress rows untouched and the personal enrollment active; re-adding restores membership but NOT the cancelled enrollment; a cancelled learner reads availability 'cancelled'",
+        "AC-012 PARTIAL: adding members never auto-enrols; an all-or-nothing add writes nothing when any one person is not a member of that organization; an archived cohort refuses new members and makes existing learners membership_inactive without deleting progress",
+        "AC-012 BLOCKED on T11: explicit reactivation via update_enrollment",
+        "AC-013: manager A sees only grant_a, never a personal grant (its subject is a user, so it cannot match an organization), never organization B's catalog; asking for B explicitly is refused 42501 rather than returning empty",
+        "AC-013: a manager cannot create or update a grant; a grant naming both subjects or neither is refused 22023; the subject stays immutable under direct SQL while dates and status remain editable",
+        "AC-013: revoking a grant flips availability to 'revoked' and shortening its window to 'expired', both without altering the enrollment row — spec/03's 'takes effect without rewriting enrollment history'"
+      ]
     },
     {
       "id": "T08",
