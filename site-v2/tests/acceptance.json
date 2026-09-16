@@ -74,7 +74,7 @@
         "FR-01",
         "FR-02"
       ],
-      "status": "not_run"
+      "status": "passed"
     },
     {
       "id": "AC-007",
@@ -86,7 +86,7 @@
       "requirements": [
         "FR-01"
       ],
-      "status": "not_run"
+      "status": "passed"
     },
     {
       "id": "AC-008",
@@ -795,7 +795,7 @@
       "requirements": [
         "FR-02"
       ],
-      "status": "not_run"
+      "status": "passed"
     },
     {
       "id": "AC-065",

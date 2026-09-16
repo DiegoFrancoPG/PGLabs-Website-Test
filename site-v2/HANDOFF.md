@@ -3,10 +3,10 @@
 ## Current state
 
 - Specification version: 1.0, 15 September 2026.
-- Application implementation: T00–T03 and T03B done. T04–T30 todo.
-- Active task: none. Start T04.
-- Last completed application task: T03B.
-- Acceptance scenarios passing: AC-001, AC-002, AC-003, AC-004, AC-005.
+- Application implementation: T00–T04 done (including T03B). T05–T30 todo.
+- Active task: none. Start T05.
+- Last completed application task: T04.
+- Acceptance scenarios passing: AC-001 to AC-007 and AC-064.
 - Specification validation: `python3 verify_spec.py` PASS — 66 operations, 70 schemas, 31 acyclic tasks. This validates the package, not the application.
 - Inputs outstanding: actual media/source content, final course details, Resend and OpenAI credentials with sender setup, and the certificate issuer string (see below). A development database is configured.
 
@@ -227,6 +227,37 @@ Introducing committed fixture data broke 30 integration tests that had quietly a
 - **`enroll_multi_a` is seeded nowhere.** `fixtures.json` says the `multi` learner has enrollments in "A and B offerings", but the only organization A offering is `offering_a`, and adding `multi` there would make `assigned` 5 and break `expected_report`. The fixture is ambiguous; `expected_report` is authoritative, so `multi` is seeded into organization B only. Worth resolving before T16.
 - `tests/acceptance.json` now records `passed` for the five scenarios that have evidence. Specification v1.0 shipped every scenario as `not_run` and used no other value; this is the field's intended use, recorded here as a deliberate change.
 
+## T04 — Verified session and profile services
+
+- **Status:** done. AC-006, AC-007 and AC-064 all pass.
+- **Checks:** 44 unit, 74 integration, 42 e2e; lint, typecheck, build, `verify_spec.py`.
+
+### What it establishes
+
+- `lib/auth.ts` verifies sessions with `getUser()`, never `getSession()`. ADR-05 requires server-side verification; `getSession()` only decodes a cookie the client can edit, so nothing may use it to decide authority.
+- `lib/supabase/server.ts` exposes two clients with deliberately different authority: the user-scoped one, whose queries run as the signed-in user so `auth.uid()` is correct inside the RPC, and the service one, which takes no cookies at all because nothing it does may be driven by a browser-supplied identity.
+- `proxy.ts` refreshes the session and enforces the Origin rule, matched only on platform paths so the marketing site stays statically served.
+- `scripts/bootstrap-admin.mjs`, per spec/05: a script, not a route, so there is no HTTP path to becoming an admin. It creates no account and sets no password, refuses an account that has not completed password setup, and prints only the user id.
+
+### Three findings worth keeping
+
+1. **`get_me` did not match the contract.** M03 returned a convenience shape; `contracts/api.json` defines `Me` as `{profile, platform_admin, contexts}`. Corrected, and M03 was amended in place rather than superseded — spec/02 permits that until real records exist, and none do.
+2. **AC-064's evidence is the difference between two status codes.** A foreign-Origin PATCH returns 403 while the identical same-origin request returns 401. That ordering is the actual security property: a valid session cookie replayed from another site is refused before the handler runs, so there is no state change to undo.
+3. **A learner cannot promote themselves by lying in their own JWT.** A session whose claims assert `is_admin` and `user_role=platform_admin` still reads `platform_admin: false`, because the flag is read from `app.platform_admins`, never from a claim.
+
+### Pre-existing gap: site-v2 has no mobile navigation
+
+The masthead nav is `hidden md:flex` and there is **no mobile menu anywhere in the site**. At 390px, Services, AI Readiness, Work, About and Learning are unreachable from the masthead; only the logo and the contact button remain. They are still reachable from the footer, which is why `/learning` is not orphaned.
+
+This predates PGLearn and was not introduced here, but it matters: spec/04 requires the interface verified at 390px, and this is the marketing half of that. The e2e suite asserts current behaviour at both widths and pins the masthead as desktop-only, so adding a mobile menu later will fail that test and force the expectation to be updated deliberately.
+
+**Decision needed:** whether adding a mobile menu is in scope. It is marketing-site work, not a PGLearn task, so it was not done unasked.
+
+### Notes for T05
+
+- `/forgot-password`, `/set-password` and `/invitations/[id]` are referenced by `/login` and by `proxy.ts`'s matcher but do not exist yet — the forgot-password link currently 404s.
+- Fixture accounts still have no passwords, so no e2e test signs in yet. T05's Auth admin work completes the other half of M05.
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -244,6 +275,7 @@ Introducing committed fixture data broke 30 integration tests that had quietly a
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
+- T04: session verification, profile services, Origin rule and admin bootstrap; AC-006, AC-007, AC-064 passed. Mobile navigation gap recorded.
 - T03B: M05 fixtures seeded and verified against expected_report; AC-001 closed.
 - T03: M02–M04 applied; AC-004 and AC-005 passed as real browser roles. Published-version INSERT blocked beyond spec's letter; schema-smoke.sql retired to M01-only.
 - T02: M01 applied to a hosted development project; AC-002 and AC-003 passed against a real database. Remote-reset deviation from spec/02 recorded. M05 found unowned.

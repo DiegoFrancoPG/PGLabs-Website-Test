@@ -40,11 +40,33 @@ test.describe("marketing shell", () => {
  * T05 and the Sign in link joins the masthead.
  */
 test.describe("PGLearn entry point", () => {
-  test("is reachable from the masthead", async ({ page }) => {
+  test("is reachable from the site chrome at both widths", async ({ page }, testInfo) => {
     await page.goto("/");
-    await page.getByRole("link", { name: "Learning", exact: true }).first().click();
-    await expect(page).toHaveURL(/\/learning$/);
+
+    /*
+     * The masthead nav is `hidden md:flex`, and site-v2 ships no mobile menu at
+     * all — so at 390px the only route to any section is the footer. That is a
+     * pre-existing gap in the marketing site, recorded in HANDOFF; this test
+     * asserts what is actually reachable rather than pretending otherwise.
+     */
+    const isNarrow = (testInfo.project.use.viewport?.width ?? 1440) < 768;
+    const link = isNarrow
+      ? page.getByRole("contentinfo").getByRole("link", { name: "Learning", exact: true })
+      : page.getByRole("navigation").getByRole("link", { name: "Learning", exact: true });
+
+    await expect(link).toBeVisible();
+    await link.click();
+    await page.waitForURL("**/learning");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Structured learning");
+  });
+
+  test("the masthead navigation is desktop-only, which is a known gap", async ({ page }, testInfo) => {
+    await page.goto("/");
+    const navLinks = page.getByRole("navigation").getByRole("link", { name: "Learning", exact: true });
+    const isNarrow = (testInfo.project.use.viewport?.width ?? 1440) < 768;
+    // Pins the current behaviour so that adding a mobile menu later fails here
+    // and forces this expectation to be updated deliberately.
+    await expect(navLinks).toBeVisible({ visible: !isNarrow });
   });
 
   test("offers no public sign-up, because ADR-05 disables it", async ({ page }) => {

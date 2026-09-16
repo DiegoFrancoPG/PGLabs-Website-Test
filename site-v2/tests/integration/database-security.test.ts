@@ -40,9 +40,10 @@ describe.skipIf(!hasDatabase)("AC-004 function privilege boundary", () => {
     await inRollback(async (client) => {
       await client.query(SEED_LEARNER);
       await asUser(client, LEARNER);
+      // get_me returns contracts/api.json's Me: {profile, platform_admin, contexts}.
       const r = await client.query("SELECT public.pglearn_rpc('get_me') AS out");
-      expect(r.rows[0].out.id).toBe(LEARNER);
-      expect(r.rows[0].out.is_platform_admin).toBe(false);
+      expect(r.rows[0].out.profile.id).toBe(LEARNER);
+      expect(r.rows[0].out.platform_admin).toBe(false);
     });
   });
 
@@ -67,8 +68,8 @@ describe.skipIf(!hasDatabase)("AC-004 function privilege boundary", () => {
         const r = await client.query("SELECT public.pglearn_rpc('get_me', $1::jsonb) AS out", [
           JSON.stringify(payload),
         ]);
-        expect(r.rows[0].out.id).toBe(LEARNER);
-        expect(r.rows[0].out.is_platform_admin).toBe(false);
+        expect(r.rows[0].out.profile.id).toBe(LEARNER);
+        expect(r.rows[0].out.platform_admin).toBe(false);
       }
     });
   });

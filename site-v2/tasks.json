@@ -209,7 +209,7 @@
     {
       "id": "T04",
       "title": "Implement verified session and profile services",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T03"
@@ -224,9 +224,10 @@
         "spec/04-ui.md"
       ],
       "implementation_targets": [
-        "src/lib/auth SSR clients",
-        "src/features/identity profile services",
-        "login/logout/profile page"
+        "lib/supabase SSR clients and lib/auth verified session",
+        "features/identity profile services",
+        "login/logout/settings pages and the /learn placeholder",
+        "scripts/bootstrap-admin.mjs operator command (spec/05)"
       ],
       "acceptance_ids": [
         "AC-006",
@@ -242,8 +243,17 @@
         "npm run test:unit -- <changed feature>",
         "npm run test:e2e -- auth"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "get_me was corrected to return contracts/api.json's Me shape; M03 was amended rather than superseded because no real records exist yet, which spec/02 explicitly permits. Supabase variables promoted into lib/env's core schema. middleware.ts migrated to Next 16's proxy.ts convention. /learn is a placeholder for T12; it exists because spec/04 sends a successful sign-in there and AC-007 needs a protected page.",
+      "evidence": [
+        "44 unit + 74 integration + 42 e2e tests passing; lint, typecheck, build and verify_spec pass",
+        "AC-006: update_me rejects platform_admin, email, role, status, onboarded_at and id with 22023, at the schema layer AND again in the RPC; database authority verified unchanged afterwards",
+        "AC-006: a learner whose own JWT claims assert is_admin and user_role=platform_admin still reads platform_admin false, because the flag comes from the database",
+        "AC-007: /learn and /settings redirect an anonymous visitor to /login; GET /api/v1/me returns 401 UNAUTHENTICATED; every protected response carries private, no-store and X-Robots-Tag noindex",
+        "AC-064: a PATCH with an attacker Origin returns 403 while the same request same-origin returns 401 — different statuses prove the Origin check runs before authentication, so a replayed cookie never reaches the handler",
+        "AC-064: an absent Origin is rejected too; a same-origin GET is unaffected; /api/v1/webhooks and /api/v1/jobs are exempt because they authenticate by signature and bearer token, not by cookie",
+        "service role key verified absent from .next/static",
+        "bootstrap-admin refuses a nonexistent account and an account that has not completed password setup; it creates no account and prints only the user id"
+      ]
     },
     {
       "id": "T05",

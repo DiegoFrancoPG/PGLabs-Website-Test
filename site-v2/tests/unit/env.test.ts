@@ -12,8 +12,19 @@ async function loadEnv() {
   return mod;
 }
 
+/*
+ * Supabase joined the core schema at T04, so a valid baseline now includes it.
+ * Individual cases still remove one variable at a time to prove it is required.
+ */
+const VALID_CORE = {
+  NEXT_PUBLIC_APP_URL: "http://localhost:3001",
+  NEXT_PUBLIC_SUPABASE_URL: "https://example-ref.supabase.co",
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_test",
+  SUPABASE_SERVICE_ROLE_KEY: "sb_secret_test",
+};
+
 beforeEach(() => {
-  process.env = { ...ORIGINAL, NEXT_PUBLIC_APP_URL: "http://localhost:3001" };
+  process.env = { ...ORIGINAL, ...VALID_CORE };
 });
 afterEach(() => {
   process.env = { ...ORIGINAL };
@@ -43,6 +54,16 @@ describe("core configuration", () => {
       expect(String(err)).not.toContain("not-a-url");
       expect(String(err)).not.toContain("super-secret-sender");
     }
+  });
+
+  it.each([
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY",
+  ])("rejects a missing %s, rather than starting without a database", async (key) => {
+    delete process.env[key];
+    const { serverEnv } = await loadEnv();
+    expect(() => serverEnv()).toThrow(new RegExp(key));
   });
 
   it("applies the documented defaults from .env.example", async () => {

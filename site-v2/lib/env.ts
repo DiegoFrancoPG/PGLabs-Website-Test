@@ -25,9 +25,9 @@ export type AppEnv = (typeof APP_ENVS)[number];
 /*
  * Core: the application cannot serve a correct request without these.
  *
- * The Supabase and CRON entries join this schema as the features that use them
- * land — Auth at T04, jobs at T21 — rather than being demanded by a build that
- * has nothing to point them at. They are already listed in .env.example.
+ * Supabase joined this set at T04, when Auth started being used. CRON_SECRET
+ * joins at T21 with the scheduler. Nothing is required before something
+ * actually needs it, so a missing variable always means a real problem.
  */
 /*
  * spec/05 checks a mutation's Origin header against the configured app origin,
@@ -49,6 +49,14 @@ const httpUrl = z.string().refine(
 const coreSchema = z.object({
   APP_ENV: z.enum(APP_ENVS).default("development"),
   NEXT_PUBLIC_APP_URL: httpUrl,
+  NEXT_PUBLIC_SUPABASE_URL: httpUrl,
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
+  /*
+   * Bypasses RLS entirely. spec/02 confines it to "server-only modules for Auth
+   * admin, signed storage URLs, jobs and provider-result persistence", which is
+   * why it carries no NEXT_PUBLIC_ prefix and is read only from this module.
+   */
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
 });
 
 /*
