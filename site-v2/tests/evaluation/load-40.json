@@ -1,0 +1,110 @@
+{
+  "measuredAt": "2026-09-16T19:11:13.342Z",
+  "transport": "http",
+  "baseline": [
+    {
+      "operation": "get_enrollment",
+      "calls": 10,
+      "p50": 155,
+      "p95": 194,
+      "max": 194
+    },
+    {
+      "operation": "get_me",
+      "calls": 10,
+      "p50": 157,
+      "p95": 1350,
+      "max": 1350
+    },
+    {
+      "operation": "list_my_enrollments",
+      "calls": 10,
+      "p50": 160,
+      "p95": 202,
+      "max": 202
+    },
+    {
+      "operation": "report_enrollments",
+      "calls": 10,
+      "p50": 187,
+      "p95": 254,
+      "max": 254
+    }
+  ],
+  "learners": 40,
+  "rounds": 12,
+  "calls": 984,
+  "wallSeconds": 60.9,
+  "operations": [
+    {
+      "operation": "get_enrollment",
+      "calls": 128,
+      "p50": 163,
+      "p95": 359,
+      "max": 651
+    },
+    {
+      "operation": "get_learning_class",
+      "calls": 112,
+      "p50": 164,
+      "p95": 378,
+      "max": 494
+    },
+    {
+      "operation": "get_me",
+      "calls": 116,
+      "p50": 176,
+      "p95": 410,
+      "max": 549
+    },
+    {
+      "operation": "list_cohort_members",
+      "calls": 12,
+      "p50": 170,
+      "p95": 245,
+      "max": 245
+    },
+    {
+      "operation": "list_my_enrollments",
+      "calls": 124,
+      "p50": 200,
+      "p95": 465,
+      "max": 661
+    },
+    {
+      "operation": "record_progress",
+      "calls": 440,
+      "p50": 156,
+      "p95": 221,
+      "max": 456
+    },
+    {
+      "operation": "report_enrollments",
+      "calls": 12,
+      "p50": 186,
+      "p95": 302,
+      "max": 302
+    },
+    {
+      "operation": "start_playback",
+      "calls": 40,
+      "p50": 192,
+      "p95": 382,
+      "max": 470
+    }
+  ],
+  "dashboard": {
+    "measured": true,
+    "p95": 1208,
+    "samples": [
+      1208,
+      827,
+      800,
+      789,
+      810
+    ]
+  },
+  "failures": [],
+  "lostUpdates": [],
+  "problems": []
+}

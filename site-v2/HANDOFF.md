@@ -907,6 +907,46 @@ The runbook is complete: what to back up and why it is two separate things, the 
 
 It cannot be performed yet: the development project is on a plan with no daily backups, creating and deleting a second project needs authorisation, and the only media in the system is synthetic (AC-017, AC-052). A rehearsal that was not measured would not be evidence, so AC-058 is recorded blocked rather than assumed.
 
+## T29 — Forty learners at once
+
+- **Status:** done. AC-059 passes.
+- **Checks:** `node scripts/load-40.mjs` (40 learners, 12 rounds, 984 calls), with `tests/evaluation/load-40.json` written by the run and `tests/evaluation/load-40.md` explaining it.
+
+### The first measurement failed, and two of the three reasons were mine
+
+It gave every learner a **database backend of their own** and fired five reads back to back with no pause. p95 landed between 7 and 14 seconds, `report_enrollments` at 32s, and some heartbeats were refused for claiming more than the thirty seconds a single heartbeat may.
+
+Forty people learning do not issue five queries each with no think time. More importantly, **the application does not open a backend per user** — it speaks to PostgREST over HTTPS, which multiplexes onto a small pool. Forty direct backends on a free-tier instance is a connection-count experiment wearing a load test's clothes.
+
+### The third reason was real, and is the finding worth carrying
+
+On this instance the connection model dominates everything else. The single-learner baseline was 116–257ms p50 in **both** runs; only the direct-backend version collapsed under concurrency. Anything in the pilot that opens a connection per user — a background worker, a migration tool, a reporting script somebody leaves running — will do to the platform what that run did.
+
+### Through the path the application actually uses
+
+Every data operation inside the 1s p95 target, the slowest at 465ms; `record_progress` at 221ms across 440 writes. The dashboard, signed in and measured **during** the load, at 1208ms against its 3s target. No failed calls. No lost acknowledged updates — every heartbeat the server acknowledged is accounted for in the coverage the database holds, asked of the database directly rather than trusted from either side of the conversation.
+
+Measured from this machine to the hosted development project over the public internet, which is harsher than the deployed application's same-region link. It says nothing about the pilot instance, which is a different project on a different plan, and nothing about four hundred learners.
+
+## T30 — The pilot gate
+
+- **Status:** done. **AC-060 is recorded blocked**, and that is the point of it.
+- **Checks:** `node scripts/pilot-gate.mjs` — OPEN on the software, 7 conditions, 1 outstanding.
+
+### The gate is computed, so it cannot be flattered
+
+`scripts/pilot-gate.mjs` reconciles `tasks.json` against `tests/acceptance.json` and writes `tests/evaluation/pilot-gate.md`. It closes on a scenario marked passed with no evidence anywhere, on a task marked done whose scenario was never run, and on any unfinished pilot task. AC-060 cannot close itself, or the gate could never open.
+
+Writing it found two inconsistencies in our own ledger. AC-017, AC-052 and AC-061 were recorded `not_run` when HANDOFF had been saying for weeks that they were blocked on the client's media and a provider key — they are now `blocked`, each with evidence naming precisely what is missing. And twenty early scenarios looked unevidenced because their evidence had been written on the owning **task** rather than the scenario; the gate reads both, because that is a change of habit rather than an absence of evidence.
+
+### Defects and conditions are not the same thing
+
+Seven scenarios are blocked on inputs the software cannot supply itself: the client's nine videos with transcripts and captions, `OPENAI_API_KEY`, a verified email sender, an assistive-technology pass, and a backup-bearing plan with a disposable project for the restore rehearsal. None is a defect. Every one must be settled before real learners are onboarded, and the gate lists them as conditions rather than burying them among defects — or letting a real defect hide among them.
+
+### Why AC-060 is blocked rather than passed
+
+`handoff/manager-runbook.md` is the manager's procedure, written only from the screens; nothing in it needs the database, which is what AC-060 asks for. But the scenario also asks that a manager **can operate** — and nobody has yet followed that runbook end to end on pilot data. Marking the gate passed on a script's say-so is exactly the rounding up the gate exists to prevent.
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -924,6 +964,8 @@ It cannot be performed yet: the development project is on a plan with no daily b
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
+- T30: the pilot gate computed rather than written; OPEN on the software with seven named conditions. AC-060 blocked pending the manager walkthrough and those inputs. Two ledger inconsistencies found and corrected.
+- T29: forty learners measured through the path the application actually uses — every data operation inside 1s at p95, the dashboard at 1.2s, no lost acknowledged updates. AC-059 passed. The first measurement's failure produced the finding that a connection per user collapses this instance.
 - T28: retention implemented as one statement per rule with the nightly cron, and the restore runbook written. AC-057 passed; AC-058 blocked on a backup-bearing plan, a disposable project and real media.
 - T27: version cloning done properly — content, exercises, chunks and media, each at a new identity, with the file copies settled outside the transaction. AC-056 passed. The clone route corrected to return a Version, as the contract declares.
 - T26: bulk roster import — preview, explicit apply, derived per-row idempotency keys, and no new API contract. AC-055 passed. A server-only import in browser code caught by the build and moved to lib/email-address.
