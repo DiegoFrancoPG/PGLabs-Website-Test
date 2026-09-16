@@ -545,7 +545,7 @@
     {
       "id": "T11",
       "title": "Implement dated offerings and enrollment",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T07",
@@ -582,8 +582,17 @@
       "checks": [
         "npm run test:integration -- enrollment"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "Six operations plus lib/schedule.ts, the pure date logic AC-022 asks for at unit level. CLOSES AC-012, whose reactivation clause was blocked here since T07: update_enrollment does not re-implement the predicates, it sets status back to active and lets the M02 trigger re-run them, which is exactly spec/03's 'if all predicates pass'. Assignment forms are not built; UI integration is T23.",
+      "evidence": [
+        "103 unit + 203 integration + 65 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-022: 23 unit tests pinning every boundary at the exact millisecond — start inclusive, due inclusive for on-time completion, hard end EXCLUSIVE; completion at D is on time, at D+1ms is late but still permitted while access lasts, and at E no write is accepted",
+        "AC-020: a second assignment of the same people creates nothing and returns identical enrollment ids; one ineligible person makes the whole call write nothing; offering dates are copied onto each enrollment",
+        "AC-012 CLOSED: reactivation is refused while the learner is still out of the cohort, and succeeds once re-added — with progress rows and availability both verified intact afterwards",
+        "AC-063: one completed enrollment in the selection makes the whole date change write nothing, verified by comparing every row before and after; only named enrollments move; a start cannot pass a learner's started_at; the current grant's hard gate still overrides the new dates",
+        "AC-021: a personal enrollment has no organization and can_report cannot match it structurally; manager A sees their own records and not organization B's; every change manager A makes in A leaves the multi-organisation learner's row in B byte-identical",
+        "AC-065: removal from organisation A yields membership_inactive there while owns_enrollment still returns true for the learner's own history, organisation B and personal entitlement stay available, and the manager keeps reporting on historical rows",
+        "personal retakes use the next attempt number (1, 2, 3 verified); a manager cannot create a personal enrollment"
+      ]
     },
     {
       "id": "T12",

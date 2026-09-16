@@ -150,7 +150,7 @@
         "FR-03",
         "FR-15"
       ],
-      "status": "not_run"
+      "status": "passed"
     },
     {
       "id": "AC-013",
@@ -248,7 +248,7 @@
       "requirements": [
         "FR-05"
       ],
-      "status": "not_run"
+      "status": "passed"
     },
     {
       "id": "AC-021",
@@ -261,7 +261,7 @@
         "FR-02",
         "FR-05"
       ],
-      "status": "not_run"
+      "status": "passed"
     },
     {
       "id": "AC-022",
@@ -274,7 +274,7 @@
         "FR-05",
         "FR-15"
       ],
-      "status": "not_run"
+      "status": "passed"
     },
     {
       "id": "AC-023",
@@ -783,7 +783,7 @@
       "requirements": [
         "FR-05"
       ],
-      "status": "not_run"
+      "status": "passed"
     },
     {
       "id": "AC-064",
@@ -807,7 +807,7 @@
       "requirements": [
         "FR-15"
       ],
-      "status": "not_run"
+      "status": "passed"
     },
     {
       "id": "AC-066",

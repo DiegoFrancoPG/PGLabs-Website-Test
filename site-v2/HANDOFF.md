@@ -3,11 +3,11 @@
 ## Current state
 
 - Specification version: 1.0, 15 September 2026.
-- Application implementation: T00–T10 done (including T03B). T11–T30 todo.
-- Active task: none. Start T11.
-- Last completed application task: T10.
-- Acceptance scenarios passing: 19 of 67 — AC-001 to AC-011, AC-013 to AC-016, AC-018, AC-019, AC-062 and AC-064.
-- **AC-012 is partial, blocked on T11. AC-017 is partial, blocked on real media.**
+- Application implementation: T00–T11 done (including T03B). T12–T30 todo.
+- Active task: none. Start T12.
+- Last completed application task: T11.
+- Acceptance scenarios passing: 25 of 67. **AC-012 is now closed.**
+- **AC-017 remains partial, blocked on real media.**
 - Specification validation: `python3 verify_spec.py` PASS — 66 operations, 70 schemas, 31 acyclic tasks. This validates the package, not the application.
 - Inputs outstanding: actual media/source content, final course details, Resend and OpenAI credentials with sender setup, and the certificate issuer string (see below). A development database is configured.
 
@@ -452,6 +452,33 @@ The test that says the most: adding a class to a published version is refused, a
 
 `publication_issues` validates class and module titles, but the schema's `CHECK` already makes an empty title impossible to store. The validation stays as a second line; a test that tried to exercise it was rewritten to use failures that can actually occur.
 
+## T11 — Dated offerings and enrollment
+
+- **Status:** done. AC-020, AC-021, AC-022, AC-063 and AC-065 pass, and **AC-012 is closed**.
+- **Checks:** 103 unit, 203 integration, 65 e2e; lint, typecheck, build, `verify_spec.py`, `db:reset:test`.
+
+### AC-012 closed without writing the rule twice
+
+`update_enrollment` does not re-implement the reactivation predicates. It sets `status` back to `active` and lets the M02 trigger re-run, which is literally spec/03's "admin can explicitly reactivate cancelled enrollment **if all predicates pass**". A learner still out of the cohort is refused; one who has been re-added succeeds, with progress intact.
+
+That fell out of the correction made at T07 — scoping the membership checks to active enrollments — rather than needing new logic here.
+
+### The three date boundaries do not behave the same way
+
+ADR-10 makes **start inclusive, due inclusive for on-time completion, and the hard access end EXCLUSIVE**. `lib/schedule.ts` holds that as pure logic and the unit suite pins every case at the exact millisecond: at `E` no write is accepted, at `E-1ms` one is; at `D` a completion is on time, at `D+1ms` it is late but still permitted while access lasts.
+
+Getting one of these backwards is the kind of mistake that only surfaces on the day a cohort's deadline lands, which is why they are tested at the boundary rather than around it.
+
+### AC-063 is all-or-nothing twice over
+
+Every selected enrollment is validated before any is written, and an enrollment that was **not** named keeps the dates it was created with. A completed learner's schedule can never be edited (spec/02), so one completed row in the selection makes the whole call write nothing — asserted by comparing every row before and after, not a count.
+
+A date change also cannot outrun the grant: after moving the due date, revoking the grant still flips availability to `revoked`. spec/03's "backend checks actual current grant each request" means the new dates are not a way around it.
+
+### Privacy is structural, not filtered
+
+`can_report` matches a manager only through a non-null `organization_id`. A personal enrollment has none, so it cannot appear in an organisation's reporting by construction — not because a filter remembered to exclude it. And every change manager A makes in their own organisation leaves the multi-organisation learner's row in B byte-identical.
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -469,6 +496,7 @@ The test that says the most: adding a class to a published version is refused, a
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
+- T11: offerings, enrollment, date boundaries and bulk date updates; AC-020, AC-021, AC-022, AC-063, AC-065 passed and AC-012 closed.
 - T10: publication validation, in-transaction chunk indexing and the published freeze; AC-018 and AC-019 passed.
 - T09: uploads, caption conversion and download authorization; AC-015, AC-016, AC-062 passed with synthetic files. AC-017 partial and real-media checks blocked pending client assets.
 - T08: content authoring, ordering and the reorder deferral; AC-014 passed. Dispatcher completeness now tested against the live database.
