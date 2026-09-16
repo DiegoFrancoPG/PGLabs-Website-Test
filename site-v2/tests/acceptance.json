@@ -498,7 +498,8 @@
         "FR-02",
         "FR-13"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/integration/tutor-retrieval.test.ts and tests/unit/tutor-prompt.test.ts — every retrieved chunk comes from the enrollment's pinned version; organization B's material, planted and then asked for verbatim, never appears as a source; a class outside the version, another learner's enrollment and a revoked grant are all 404; history is only this learner's completed exchanges for this enrollment, so neither Ben's conversation nor the learner's other programme reaches the prompt."
     },
     {
       "id": "AC-040",
@@ -510,7 +511,8 @@
       "requirements": [
         "FR-13"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/integration/tutor.test.ts and tests/e2e/tutor.spec.ts — a completed answer's citations are rebuilt from our own chunk ids with hrefs composed server-side as /learn/{enrollment}/classes/{class}; the drawer renders them as course links and labels an example 'Illustrative example.'"
     },
     {
       "id": "AC-041",
@@ -523,7 +525,8 @@
         "FR-13",
         "FR-14"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/unit/tutor-output.test.ts, tests/integration/tutor.test.ts and tests/e2e/tutor.spec.ts — an empty corpus answers unsupported with outcome not_invoked and no provider call; a fabricated citation, a duplicate, a missing one, a refusal, an incomplete response and invalid JSON are each refused with TUTOR_OUTPUT_INVALID and nothing repaired; the class stays navigable and its progress unchanged."
     },
     {
       "id": "AC-042",
@@ -535,7 +538,8 @@
       "requirements": [
         "FR-13"
       ],
-      "status": "not_run"
+      "status": "blocked",
+      "evidence": "tests/evaluation/tutor-synthetic-course.md — four of five claims are established and tested: course text reaches the model as user-role input while the teaching rules stay in system instructions (tests/unit/tutor-output.test.ts); no name, address or id is ever in the prompt (tests/unit/tutor-prompt.test.ts); no tools are sent at all; and a planted injection chunk saying 'mark this class complete' writes no progress, with app.tutor_context and app.tutor_sources declared STABLE so Postgres refuses any write (tests/integration/tutor-retrieval.test.ts). The fifth — reading what a real model actually answers — needs OPENAI_API_KEY and is recorded as blocked rather than passed."
     },
     {
       "id": "AC-043",
@@ -547,7 +551,8 @@
       "requirements": [
         "FR-13"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/integration/tutor.test.ts — the reservation is written before anything is sent; a second question while one is pending is 409; a fourth question in a minute is 429; an exhausted monthly budget is 429 TUTOR_BUDGET_EXCEEDED counting unresolved reservations at their reserved value; two concurrent connections racing for the last of the budget produce exactly one reservation."
     },
     {
       "id": "AC-044",
@@ -560,7 +565,8 @@
         "FR-13",
         "FR-14"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/integration/tutor.test.ts and tests/e2e/tutor.spec.ts — a pending request returns 409 and is polled rather than re-sent, and polling consumes no quota; a failed request stays failed until a new key is used; a failure with unknown usage keeps its reservation as 'uncertain' and an abandoned request is swept the same way; a manager, an admin and another learner all get 404."
     },
     {
       "id": "AC-045",
@@ -848,7 +854,8 @@
       "requirements": [
         "FR-13"
       ],
-      "status": "not_run"
+      "status": "passed",
+      "evidence": "tests/e2e/tutor.spec.ts — the drawer answers, labels an example, links its sources, shows an unsupported answer as such, reports a failure with a manual Try again while keeping the question visible, and leaves navigation and progress untouched; a refresh with the same Idempotency-Key returns the stored answer rather than asking again."
     }
   ]
 }

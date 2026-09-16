@@ -624,6 +624,56 @@ Only user-entered columns are defended. A timestamp or a uuid cannot begin with 
 
 Recorded at T11 as ambiguous. `expected_report` is authoritative, and the report now reproduces it exactly with `multi` enrolled in organization B only — `assigned` is 4, as the fixture says. The unused `enroll_multi_a` id stays in `fixtures.json` because `verify_spec.py` checks the id table against the document, and removing it is a specification change rather than an implementation one.
 
+## T17, T18, T19 — The course tutor
+
+- **Status:** done. AC-039, AC-040, AC-041, AC-043, AC-044 and AC-067 pass. **AC-042 is blocked** on `OPENAI_API_KEY`.
+- **Checks:** 486 unit and integration, 98 e2e; lint, typecheck, build, `verify_spec.py`, `db:reset:test`.
+
+### Three steps, and why they are separate
+
+1. **`ask_tutor` reserves.** One transaction under the caller's own identity: the per-user lock, the in-flight check, the rate windows, the monthly budget lock, the pending request and the usage reservation.
+2. **The provider is called** — outside any transaction. A database transaction must never wait on a network round trip, and the point of reserving first is that the spend is recorded *before* the call rather than after it.
+3. **`pglearn_job('tutor.finish')` settles**, through the service-role dispatcher M04 reserved for exactly this, acting only on a request id step 1 already authorized.
+
+A crash between 2 and 3 leaves the reservation held and the request pending; `tutor.reap` sweeps it to failed after sixty seconds and marks the usage `uncertain`. spec/05: "Never release unknown usage simply because frontend disconnected." The money is only given back when we know the provider was never called.
+
+### The corpus is bounded once
+
+`app.tutor_sources` opens with a CTE over the enrollment's **pinned** version, and the current-class selection, the ranked selection and every tie-break draw from that CTE. No ordering mistake downstream can reach another programme, because nothing downstream can see one. AC-039's test plants organization B's material and then asks for it verbatim; it never arrives as a source.
+
+The question goes through `websearch_to_tsquery`, not `to_tsquery`: it is typed by a person, and a question consisting of `&&` or `'; DROP TABLE` must be a question rather than an error.
+
+### Bytes, not characters
+
+The 24,000 limit is UTF-8 bytes. A question in Japanese is three bytes a character, so a character-counted budget would send three times what it meant to — a cost and a context-window problem, not a cosmetic one. What gets dropped when the budget binds: oldest history first, then the lowest-ranked non-current sources. The system instructions are never truncated, and the current class's sources are kept even against an absurd budget, because a tutor answering about a class it cannot see is worse than one with less context.
+
+### No invented repair
+
+The tempting recoveries all produce something that looks like a good answer and is not the one the model gave: dropping a citation that does not exist, keeping an explanation with no citation at all, treating a refusal as an unsupported answer. `validateTutorOutput` refuses each of them and the request is recorded failed with `TUTOR_OUTPUT_INVALID`. A failure the learner can retry is honest.
+
+The answer's Markdown is reduced to text rather than parsed for safe constructs: links become their words, images become their alt text, bare URLs are removed. Source links are built by us, from our own chunk ids, and rendered beside the answer.
+
+### The stub, and why it uses an existing flag
+
+AC-067 needs injected success, unsupported and failure responses, and there is no `OPENAI_API_KEY` configured. `lib/tutor/stub.ts` answers from the question text, and is reachable only behind `PGLEARN_USE_FIXTURES` — the flag `assertCoreConfigured()` **already** refuses to boot with in pilot or production, because spec/05 forbids mock providers there. One switch with one guard, rather than a second mechanism nothing checks.
+
+### Four shadowing bugs in one task
+
+PL/pgSQL resolves identifiers case-insensitively and prefers the variable, which produced four distinct failures here and is worth remembering:
+
+- a variable named `found` silently became what `IF FOUND` tests;
+- a parameter named `scope` made every reference to `rate_windows.scope` ambiguous;
+- variables named `input_tokens`/`output_tokens` turned `SET input_tokens = input_tokens` into a self-assignment;
+- (earlier, in T14) a record named `ex` collided with the alias `ex`.
+
+The rule adopted: **never name a variable or parameter after a column it will be used beside.** Parameters take a `p_` prefix and records take a short unrelated name.
+
+### AC-042 is blocked, not passed
+
+Four of its five claims are established and tested: course text arrives as user-role input while the rules stay in system instructions; no name, address or id is ever in the prompt; no tools are sent at all; and a planted injection chunk saying "mark this class complete" writes nothing — `app.tutor_context` and `app.tutor_sources` are `STABLE`, so Postgres refuses the write rather than the code declining to make it.
+
+The fifth claim — that a reviewed answer stays within learning scope — needs a real model and a person reading what it says. `tests/evaluation/tutor-synthetic-course.md` records the four questions to ask and what to look for. AGENTS.md: "Record unavailable-provider checks as blocked, not passed."
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -641,6 +691,7 @@ Recorded at T11 as ambiguous. `expected_report` is authoritative, and the report
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
+- T17-T19: tutor retrieval and privacy, the model adapter with budget reservation and settlement, and the drawer; AC-039, AC-040, AC-041, AC-043, AC-044, AC-067 passed and AC-042 recorded blocked pending OPENAI_API_KEY. PGL43/44/45 added.
 - T16: scoped reporting, real cursor pagination and the CSV export; AC-036, AC-037, AC-038 passed. PGL42 added for EXPORT_LIMIT; the enroll_multi_a fixture ambiguity resolved in favour of expected_report.
 - T15: certificate reading, PDF rendering with bundled OFL fonts, and revocation; AC-034 and AC-035 passed. PGL41 added for CERTIFICATE_REVOKED.
 - T14: short-response exercises, Unicode-correct counting and read-only saved responses; AC-031, AC-032, AC-033 passed. PGL40 added for EXERCISE_ALREADY_COMPLETED.

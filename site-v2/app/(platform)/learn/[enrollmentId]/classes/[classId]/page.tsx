@@ -8,6 +8,7 @@ import { ClassPlayer } from "@/components/learning/ClassPlayer";
 import { MarkTextComplete } from "@/components/learning/MarkTextComplete";
 import { HandoutLink } from "@/components/learning/HandoutLink";
 import { ExerciseForm } from "@/components/learning/ExerciseForm";
+import { TutorDrawer } from "@/components/learning/TutorDrawer";
 import { getExerciseCompletion, type ExerciseSaved } from "@/features/learning/exercises";
 import { Alert } from "@ds/components/ui/alert";
 import { Badge } from "@ds/components/ui/badge";
@@ -146,6 +147,17 @@ export default async function ClassPage({
           saved={savedResponse}
         />
       )}
+
+      {/*
+        * The tutor, below the exercise and above the navigation. It never
+        * blocks either: spec/04 requires that a pending question not hold up
+        * class navigation or completion.
+        */}
+      <TutorDrawer
+        enrollmentId={enrollmentId}
+        classId={classId}
+        className={detail.class.title}
+      />
 
       <nav className="mt-12 flex justify-between gap-4 border-t border-steel-200 pt-6">
         {previous ? (

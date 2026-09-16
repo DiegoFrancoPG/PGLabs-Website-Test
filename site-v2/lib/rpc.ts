@@ -34,6 +34,9 @@ export class RpcError extends Error {
  *   PGL40  a second, different response  -> EXERCISE_ALREADY_COMPLETED
  *   PGL41  the certificate was withdrawn -> CERTIFICATE_REVOKED
  *   PGL42  an export too large to serve   -> EXPORT_LIMIT
+ *   PGL43  a question already in flight    -> REQUEST_IN_PROGRESS
+ *   PGL44  too many questions              -> RATE_LIMITED
+ *   PGL45  the month's tutor budget is out -> TUTOR_BUDGET_EXCEEDED
  *
  * The PGL classes are ours: SQLSTATE lets an implementation define its own
  * five-character codes, and these three are conditions spec/05 names that no
@@ -60,6 +63,9 @@ const SQLSTATE_TO_CODE: Record<string, ErrorCode> = {
   PGL40: "EXERCISE_ALREADY_COMPLETED",
   PGL41: "CERTIFICATE_REVOKED",
   PGL42: "EXPORT_LIMIT",
+  PGL43: "REQUEST_IN_PROGRESS",
+  PGL44: "RATE_LIMITED",
+  PGL45: "TUTOR_BUDGET_EXCEEDED",
 };
 
 export async function callRpc<T>(action: string, payload: Record<string, unknown> = {}): Promise<T> {
@@ -104,6 +110,12 @@ function messageFor(code: ErrorCode): string {
       return "This certificate has been revoked.";
     case "EXPORT_LIMIT":
       return "This export is too large. Narrow the filters and try again.";
+    case "REQUEST_IN_PROGRESS":
+      return "A question is already being answered. Wait for it to finish.";
+    case "RATE_LIMITED":
+      return "Too many questions just now. Try again shortly.";
+    case "TUTOR_BUDGET_EXCEEDED":
+      return "The tutor is unavailable for the rest of this month.";
     case "SESSION_SUPERSEDED":
       return "This program is playing in another tab.";
     case "INVALID_PROGRESS":

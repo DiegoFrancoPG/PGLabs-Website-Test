@@ -35,6 +35,13 @@ export default defineConfig({
     env: {
       APP_ENV: "test",
       NEXT_PUBLIC_APP_URL: baseURL,
+      /*
+       * The tutor answers from a stub rather than a model, so AC-067 can drive
+       * a completed, an unsupported and a failed answer without an account or a
+       * bill. assertCoreConfigured() refuses to boot with this set in pilot or
+       * production, per spec/05's ban on mock providers there.
+       */
+      PGLEARN_USE_FIXTURES: "tutor",
     },
   },
 });

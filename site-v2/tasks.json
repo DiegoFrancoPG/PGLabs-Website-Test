@@ -827,7 +827,7 @@
     {
       "id": "T17",
       "title": "Implement tutor context retrieval and privacy",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T10",
@@ -852,13 +852,18 @@
       "checks": [
         "npm run test:integration -- tutor-context"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "Nothing here is dispatched — T17 declares no operation_ids — so the retrieval is reachable only from inside T18's authorized reservation transaction. The corpus is bounded once, in a CTE over the enrollment's PINNED version, and every ranking and fallback draws from that: no ordering mistake can reach another programme. websearch_to_tsquery is used rather than to_tsquery because the question is typed by a person and must not be able to break the query. The prompt's 24,000-byte budget is measured in UTF-8 bytes, not characters, so a question in a non-Latin script is not silently sent at three times its intended size.",
+      "evidence": [
+        "486 unit+integration and 98 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-039 every source comes from the pinned version; planted organization B material is never retrieved",
+        "AC-039 history is this learner's completed exchanges for this enrollment and nothing else",
+        "a question of pure punctuation or SQL cannot break the query, and the tables are still there"
+      ]
     },
     {
       "id": "T18",
       "title": "Implement tutor model adapter and budget accounting",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T17"
@@ -890,13 +895,20 @@
       "checks": [
         "npm run test:integration -- tutor"
       ],
-      "notes": "",
-      "evidence": []
+      "notes": "Three steps, deliberately separate: ask_tutor reserves under the caller's identity in one transaction that takes the locks and records what the call may cost; the provider is called outside any transaction, because a database transaction must never wait on a network round trip; pglearn_job('tutor.finish') settles through the service-role dispatcher M04 already reserved for it. A crash between two and three leaves the reservation held and the request swept to failed by tutor.reap — spec/05's 'never release unknown usage simply because frontend disconnected'. The reservation counts unresolved reservations at their reserved value and settled ones at what they really cost. PGL43/44/45 carry REQUEST_IN_PROGRESS, RATE_LIMITED and TUTOR_BUDGET_EXCEEDED.",
+      "evidence": [
+        "AC-043 reservation before any call, one in-flight question, 3/minute, 30/day, monthly budget",
+        "AC-043 two concurrent connections racing for the last of the budget yield exactly one reservation",
+        "AC-044 pending returns 409 and is polled; polling consumes no quota; failed stays failed until a new key",
+        "AC-044 unknown usage keeps its reservation as uncertain; an abandoned request is swept the same way",
+        "AC-040 citations are rebuilt from our own ids with server-composed hrefs",
+        "a manager, an admin and another learner all get 404 for a learner's question"
+      ]
     },
     {
       "id": "T19",
       "title": "Build tutor UI and evaluate adapter behavior",
-      "status": "todo",
+      "status": "done",
       "release": "demo",
       "depends_on": [
         "T18",
@@ -925,8 +937,13 @@
         "npm run test:e2e -- tutor",
         "Run synthetic-course evaluation through injected provider; label test evidence as such"
       ],
-      "notes": "Live course/model evaluation remains AC-061 at T25; this implementation task can finish from explicit adapter/UI tests without claiming live readiness.",
-      "evidence": []
+      "notes": "The drawer polls a pending request and never re-sends it: asking again after a timeout would spend a second question and may pay twice for one answer. It is hidden rather than unmounted when closed, so a pending question keeps polling while the learner carries on with the class. AC-067's injected responses come from lib/tutor/stub.ts behind PGLEARN_USE_FIXTURES — the flag assertCoreConfigured() already refuses to boot with in pilot or production, rather than a second switch nothing checks. AC-042 is recorded as blocked: four of its five claims are tested, and the fifth needs a real model and a person to read what it says.",
+      "evidence": [
+        "AC-067 pending indicator, completed answer with source links, illustrative label, failure with manual retry",
+        "AC-067 navigation and progress are untouched by anything the tutor does",
+        "AC-041 a fabricated citation is recorded as a failure and never shown",
+        "AC-042 blocked: recorded in tests/evaluation/tutor-synthetic-course.md pending OPENAI_API_KEY"
+      ]
     },
     {
       "id": "T20",
