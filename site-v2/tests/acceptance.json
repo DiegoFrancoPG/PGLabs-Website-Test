@@ -11,7 +11,7 @@
       "requirements": [
         "FR-14"
       ],
-      "status": "not_run"
+      "status": "passed"
     },
     {
       "id": "AC-002",
@@ -24,7 +24,7 @@
         "FR-02",
         "FR-05"
       ],
-      "status": "not_run"
+      "status": "passed"
     },
     {
       "id": "AC-003",
@@ -36,7 +36,7 @@
       "requirements": [
         "FR-02"
       ],
-      "status": "not_run"
+      "status": "passed"
     },
     {
       "id": "AC-004",
@@ -48,7 +48,7 @@
       "requirements": [
         "FR-02"
       ],
-      "status": "not_run"
+      "status": "passed"
     },
     {
       "id": "AC-005",
@@ -61,7 +61,7 @@
         "FR-02",
         "FR-04"
       ],
-      "status": "not_run"
+      "status": "passed"
     },
     {
       "id": "AC-006",
@@ -563,7 +563,7 @@
       "title": "Reminder date/time rules",
       "given": "Local date at due-3, due day, overdue and 08:59/09:00",
       "when": "Evaluate rules with fixed clock including DST timezone",
-      "then": "Only correct local date/rule eligible in 09:00\u201317:59; no duplicate local-day send after DST offset change.",
+      "then": "Only correct local date/rule eligible in 09:00–17:59; no duplicate local-day send after DST offset change.",
       "layer": "unit",
       "requirements": [
         "FR-11"
@@ -662,7 +662,7 @@
       "title": "End-to-end demo",
       "given": "Controlled manager/admin/learner and real provider credentials/assets",
       "when": "Follow demo script",
-      "then": "Publish\u2192grant\u2192invite\u2192enroll\u2192learn\u2192response\u2192certificate\u2192report works; real controlled reminder/tutor verified; mocked-only features disclosed incomplete.",
+      "then": "Publish→grant→invite→enroll→learn→response→certificate→report works; real controlled reminder/tutor verified; mocked-only features disclosed incomplete.",
       "layer": "e2e",
       "requirements": [
         "FR-01",

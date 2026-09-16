@@ -12,6 +12,7 @@
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
     "db:reset:test": "node scripts/db-reset-test.mjs",
+    "db:seed:generate": "node scripts/generate-seed.mjs",
     "verify:spec": "python3 verify_spec.py"
   },
   "dependencies": {

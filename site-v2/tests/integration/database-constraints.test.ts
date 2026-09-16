@@ -10,33 +10,38 @@ import { hasDatabase, inRollback, sqlStateOf, withClient } from "./db";
  * SQLSTATEs: 23514 CHECK, 23505 UNIQUE, 23503 FOREIGN KEY.
  */
 
+/*
+ * Test-only identifiers. Deliberately NOT the ids in tests/fixtures.json: the
+ * seed commits those rows, so reusing them would collide on insert even inside
+ * a rolled-back transaction. The f0000000- prefix makes a stray row obvious.
+ */
 const U = {
-  amber: "6dbad48c-f06b-5321-84d6-0b42d923296d",
-  personal: "d132f5f4-a23c-51c2-81e3-3d81ea102b2b",
-  orgA: "e803e98e-7e2b-5663-be8d-b90a533b408a",
-  orgB: "16f88a87-6764-53cf-abde-3778f2ea1355",
-  cohort: "8d660e2e-a9fb-5b6a-9ec3-d5d6b06f64a3",
-  shared: "6f0169d8-f0c3-5c98-a1d1-2567de5cc1df",
-  bOnly: "ca077cbc-8c50-51ed-ba8b-f26d4f2f7528",
-  vShared: "fabecfce-b09c-541e-acf3-575147e78603",
-  vB: "1e4985f2-8eec-5418-998a-484f5561c049",
-  module: "1690cd9c-eca0-5455-944c-94bf4537dd5d",
-  videoClass: "d95caac8-b580-5147-bc93-bd483f308611",
-  exercise: "083cddbe-279d-5ea2-8289-7fb9ece21de6",
-  grantOrg: "0459023a-6a55-56cf-b516-1476b9054b8b",
-  offering: "65999d80-6d61-5239-8300-529875cbc1e6",
-  enrollment: "f1961d6a-d742-5300-bd9a-a9fa80d6ae07",
+  amber: "f0000007-0000-4000-8000-000000000000",
+  personal: "f0000013-0000-4000-8000-000000000000",
+  orgA: "f0000015-0000-4000-8000-000000000000",
+  orgB: "f0000004-0000-4000-8000-000000000000",
+  cohort: "f0000009-0000-4000-8000-000000000000",
+  shared: "f0000008-0000-4000-8000-000000000000",
+  bOnly: "f0000012-0000-4000-8000-000000000000",
+  vShared: "f0000017-0000-4000-8000-000000000000",
+  vB: "f0000005-0000-4000-8000-000000000000",
+  module: "f0000003-0000-4000-8000-000000000000",
+  videoClass: "f0000014-0000-4000-8000-000000000000",
+  exercise: "f0000002-0000-4000-8000-000000000000",
+  grantOrg: "f0000001-0000-4000-8000-000000000000",
+  offering: "f0000006-0000-4000-8000-000000000000",
+  enrollment: "f0000016-0000-4000-8000-000000000000",
   // A second, still-draft version of the same program. Content constraints are
   // exercised here because M02 freezes everything under a published version.
-  vDraft: "aa11bb22-cc33-4d44-8e55-ff6677889900",
-  moduleDraft: "bb22cc33-dd44-4e55-8f66-001122334455",
+  vDraft: "f0000010-0000-4000-8000-000000000000",
+  moduleDraft: "f0000011-0000-4000-8000-000000000000",
 };
 
 /** The fixture graph from tests/schema-smoke.sql, which never leaves the transaction. */
 const SEED = `
 INSERT INTO auth.users(id) VALUES('${U.amber}'),('${U.personal}');
 INSERT INTO app.profiles(id,email,display_name) VALUES
-  ('${U.amber}','amber@example.invalid','Amber'),('${U.personal}','personal@example.invalid','Personal');
+  ('${U.amber}','probe-amber@example.invalid','Amber'),('${U.personal}','probe-personal@example.invalid','Personal');
 INSERT INTO app.organizations(id,name) VALUES('${U.orgA}','A'),('${U.orgB}','B');
 INSERT INTO app.memberships(organization_id,user_id,role,status) VALUES('${U.orgA}','${U.amber}','learner','active');
 INSERT INTO app.cohorts(id,organization_id,name) VALUES('${U.cohort}','${U.orgA}','Alpha');
@@ -152,10 +157,19 @@ describe.skipIf(!hasDatabase)("AC-002 schema constraints", () => {
       await client.query(
         `INSERT INTO app.exercise_completions(enrollment_id,exercise_id,response) VALUES('${U.enrollment}','${U.exercise}',repeat(chr(128512),2000))`
       );
-      const r = await client.query("SELECT char_length(response)::int AS n, octet_length(response)::int AS b FROM app.exercise_completions");
+      // Scoped to this test's enrollment: the seeded fixture has its own
+      // exercise response, and an unscoped query would read that instead.
+      const r = await client.query(
+        `SELECT char_length(response)::int AS n, octet_length(response)::int AS b FROM app.exercise_completions WHERE enrollment_id='${U.enrollment}'`
+      );
       expect(r.rows[0].n).toBe(2000);
       expect(r.rows[0].b).toBe(8000);
-      expect(await sqlStateOf(client, `UPDATE app.exercise_completions SET response=repeat(chr(128512),2001)`)).toBe("23514");
+      expect(
+        await sqlStateOf(
+          client,
+          `UPDATE app.exercise_completions SET response=repeat(chr(128512),2001) WHERE enrollment_id='${U.enrollment}'`
+        )
+      ).toBe("23514");
     });
   });
 

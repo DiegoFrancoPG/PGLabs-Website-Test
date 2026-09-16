@@ -14,8 +14,8 @@ import { hasDatabase, inRollback, sqlStateOf, withClient } from "./db";
  * not be able to get past these.
  */
 
-const LEARNER = "6dbad48c-f06b-5321-84d6-0b42d923296d";
-const OUTSIDER = "d132f5f4-a23c-51c2-81e3-3d81ea102b2b";
+const LEARNER = "f0000006-0000-4000-8000-000000000000";
+const OUTSIDER = "f0000009-0000-4000-8000-000000000000";
 
 /** Presents the connection as a signed-in user, the way Supabase does. */
 async function asUser(client: import("pg").Client, userId: string) {
@@ -30,9 +30,9 @@ async function asAnon(client: import("pg").Client) {
 }
 
 const SEED_LEARNER = `
-INSERT INTO auth.users(id,email) VALUES('${LEARNER}','amber@example.invalid') ON CONFLICT DO NOTHING;
+INSERT INTO auth.users(id,email) VALUES('${LEARNER}','probe-amber@example.invalid') ON CONFLICT DO NOTHING;
 INSERT INTO app.profiles(id,email,display_name,onboarded_at)
-  VALUES('${LEARNER}','amber@example.invalid','Amber',now()) ON CONFLICT DO NOTHING;
+  VALUES('${LEARNER}','probe-amber@example.invalid','Amber',now()) ON CONFLICT DO NOTHING;
 `;
 
 describe.skipIf(!hasDatabase)("AC-004 function privilege boundary", () => {
@@ -50,10 +50,10 @@ describe.skipIf(!hasDatabase)("AC-004 function privilege boundary", () => {
     await inRollback(async (client) => {
       await client.query(SEED_LEARNER);
       await client.query(
-        `INSERT INTO auth.users(id,email) VALUES('${OUTSIDER}','other@example.invalid') ON CONFLICT DO NOTHING`
+        `INSERT INTO auth.users(id,email) VALUES('${OUTSIDER}','probe-other@example.invalid') ON CONFLICT DO NOTHING`
       );
       await client.query(
-        `INSERT INTO app.profiles(id,email,display_name,onboarded_at) VALUES('${OUTSIDER}','other@example.invalid','Other',now()) ON CONFLICT DO NOTHING`
+        `INSERT INTO app.profiles(id,email,display_name,onboarded_at) VALUES('${OUTSIDER}','probe-other@example.invalid','Other',now()) ON CONFLICT DO NOTHING`
       );
       await asUser(client, LEARNER);
       // Every shape a caller might use to claim to be somebody else.
@@ -169,17 +169,17 @@ describe.skipIf(!hasDatabase)("AC-004 function privilege boundary", () => {
 });
 
 describe.skipIf(!hasDatabase)("AC-005 cross-context relationship", () => {
-  const A = "e803e98e-7e2b-5663-be8d-b90a533b408a";
-  const B = "16f88a87-6764-53cf-abde-3778f2ea1355";
-  const PROGRAM = "6f0169d8-f0c3-5c98-a1d1-2567de5cc1df";
-  const VERSION = "fabecfce-b09c-541e-acf3-575147e78603";
-  const COHORT_B = "8d660e2e-a9fb-5b6a-9ec3-d5d6b06f64a3";
-  const GRANT_A = "0459023a-6a55-56cf-b516-1476b9054b8b";
+  const A = "f0000010-0000-4000-8000-000000000000";
+  const B = "f0000003-0000-4000-8000-000000000000";
+  const PROGRAM = "f0000007-0000-4000-8000-000000000000";
+  const VERSION = "f0000011-0000-4000-8000-000000000000";
+  const COHORT_B = "f0000008-0000-4000-8000-000000000000";
+  const GRANT_A = "f0000001-0000-4000-8000-000000000000";
 
   /* Org A holds the grant; org B holds the cohort. */
   const SEED = `
-    INSERT INTO auth.users(id,email) VALUES('${LEARNER}','amber@example.invalid');
-    INSERT INTO app.profiles(id,email,display_name,onboarded_at) VALUES('${LEARNER}','amber@example.invalid','Amber',now());
+    INSERT INTO auth.users(id,email) VALUES('${LEARNER}','probe-amber@example.invalid');
+    INSERT INTO app.profiles(id,email,display_name,onboarded_at) VALUES('${LEARNER}','probe-amber@example.invalid','Amber',now());
     INSERT INTO app.organizations(id,name) VALUES('${A}','Org A'),('${B}','Org B');
     INSERT INTO app.memberships(organization_id,user_id,role,status) VALUES('${B}','${LEARNER}','learner','active');
     INSERT INTO app.cohorts(id,organization_id,name) VALUES('${COHORT_B}','${B}','B cohort');
@@ -201,7 +201,10 @@ describe.skipIf(!hasDatabase)("AC-005 cross-context relationship", () => {
          VALUES('${COHORT_B}','${B}','${PROGRAM}','${VERSION}','${GRANT_A}','2026-09-05Z','2026-09-20Z')`
       );
       expect(state).toBe("23514");
-      const r = await client.query("SELECT count(*)::int AS n FROM app.cohort_offerings");
+      // Scoped to this test's cohort: the seed commits its own offerings.
+      const r = await client.query(
+        `SELECT count(*)::int AS n FROM app.cohort_offerings WHERE cohort_id='${COHORT_B}'`
+      );
       expect(r.rows[0].n).toBe(0);
     });
   });
@@ -214,9 +217,9 @@ describe.skipIf(!hasDatabase)("AC-005 cross-context relationship", () => {
         `INSERT INTO app.cohort_offerings(cohort_id,organization_id,program_id,version_id,grant_id,starts_at,due_at)
          VALUES('${COHORT_B}','${B}','${PROGRAM}','${VERSION}','${GRANT_A}','2026-09-05Z','2026-09-20Z')`
       );
-      const r = await client.query(
-        "SELECT (SELECT count(*) FROM app.cohort_offerings)::int AS o, (SELECT count(*) FROM app.enrollments)::int AS e"
-      );
+      const r = await client.query(`
+        SELECT (SELECT count(*) FROM app.cohort_offerings WHERE cohort_id='${COHORT_B}')::int AS o,
+               (SELECT count(*) FROM app.enrollments WHERE user_id='${LEARNER}')::int AS e`);
       expect(r.rows[0]).toEqual({ o: 0, e: 0 });
     });
   });
@@ -225,15 +228,15 @@ describe.skipIf(!hasDatabase)("AC-005 cross-context relationship", () => {
     await inRollback(async (client) => {
       await client.query(SEED);
       await client.query(
-        `INSERT INTO app.program_versions(id,program_id,version_number,title) VALUES('11111111-2222-4333-8444-555555555555','${PROGRAM}',2,'draft v2')`
+        `INSERT INTO app.program_versions(id,program_id,version_number,title) VALUES('f0000002-0000-4000-8000-000000000000','${PROGRAM}',2,'draft v2')`
       );
       await client.query(
-        `INSERT INTO app.program_grants(id,program_id,organization_id,starts_at) VALUES('22222222-3333-4444-8555-666666666666','${PROGRAM}','${B}','2026-09-01Z')`
+        `INSERT INTO app.program_grants(id,program_id,organization_id,starts_at) VALUES('f0000004-0000-4000-8000-000000000000','${PROGRAM}','${B}','2026-09-01Z')`
       );
       const state = await sqlStateOf(
         client,
         `INSERT INTO app.cohort_offerings(cohort_id,organization_id,program_id,version_id,grant_id,starts_at,due_at)
-         VALUES('${COHORT_B}','${B}','${PROGRAM}','11111111-2222-4333-8444-555555555555','22222222-3333-4444-8555-666666666666','2026-09-05Z','2026-09-20Z')`
+         VALUES('${COHORT_B}','${B}','${PROGRAM}','f0000002-0000-4000-8000-000000000000','f0000004-0000-4000-8000-000000000000','2026-09-05Z','2026-09-20Z')`
       );
       expect(state).toBe("23514");
     });
@@ -243,12 +246,12 @@ describe.skipIf(!hasDatabase)("AC-005 cross-context relationship", () => {
     await inRollback(async (client) => {
       await client.query(SEED);
       await client.query(
-        `INSERT INTO app.program_grants(id,program_id,organization_id,starts_at,ends_at) VALUES('33333333-4444-4555-8666-777777777777','${PROGRAM}','${B}','2026-09-01Z','2026-10-01Z')`
+        `INSERT INTO app.program_grants(id,program_id,organization_id,starts_at,ends_at) VALUES('f0000005-0000-4000-8000-000000000000','${PROGRAM}','${B}','2026-09-01Z','2026-10-01Z')`
       );
       const state = await sqlStateOf(
         client,
         `INSERT INTO app.cohort_offerings(cohort_id,organization_id,program_id,version_id,grant_id,starts_at,due_at,access_ends_at)
-         VALUES('${COHORT_B}','${B}','${PROGRAM}','${VERSION}','33333333-4444-4555-8666-777777777777','2026-09-05Z','2026-09-20Z','2026-11-01Z')`
+         VALUES('${COHORT_B}','${B}','${PROGRAM}','${VERSION}','f0000005-0000-4000-8000-000000000000','2026-09-05Z','2026-09-20Z','2026-11-01Z')`
       );
       expect(state).toBe("23514");
     });

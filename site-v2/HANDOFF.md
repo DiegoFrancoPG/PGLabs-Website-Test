@@ -3,9 +3,10 @@
 ## Current state
 
 - Specification version: 1.0, 15 September 2026.
-- Application implementation: T00–T03 done. T04–T30 todo.
+- Application implementation: T00–T03 and T03B done. T04–T30 todo.
 - Active task: none. Start T04.
-- Last completed application task: T03.
+- Last completed application task: T03B.
+- Acceptance scenarios passing: AC-001, AC-002, AC-003, AC-004, AC-005.
 - Specification validation: `python3 verify_spec.py` PASS — 66 operations, 70 schemas, 31 acyclic tasks. This validates the package, not the application.
 - Inputs outstanding: actual media/source content, final course details, Resend and OpenAI credentials with sender setup, and the certificate issuer string (see below). A development database is configured.
 
@@ -159,11 +160,11 @@ Costs that have already materialised: the integration suite takes ~56s against a
 
 The `class_progress` completion case initially passed while proving nothing: its `UPDATE` matched no row, because the fixture graph had no progress row yet. The suite now carries a guard that asserts every `UPDATE` case actually matches a row, so a vacuous pass fails.
 
-### Ledger gap: migration M05 is unowned
+### Ledger gap: migration M05 is unowned — CLOSED by T03B
 
 spec/02's migration sequence lists **M05 — test/demo fixtures via explicit seed command**, with "deterministic totals and repeatable fixture seed" as its evidence. No task in `tasks.json` lists it as an implementation target. `tests/fixtures.json` exists with the expected report totals, and `supabase/seed.sql` does not.
 
-Consequence: **AC-001 remains `not_run`.** Its first two clauses hold — the app shell builds, and reset creates the schema — but "deterministic fixtures" has nothing to create them. This needs either an explicit decision to fold M05 into T03, or a new task. It should not be left to be discovered at T24.
+Consequence at the time: AC-001 could not pass. Resolved by adding **T03B** to the ledger — see below. AC-001 now passes.
 
 ## T03 — Relationship guards and permission boundary
 
@@ -198,6 +199,34 @@ It passed 32/32 against M01 at T02 and that evidence stands. The living replacem
 
 `pglearn_rpc` dispatches `get_me` and nothing else. The allowlist is deny-by-default, so each later task adds only the actions it implements. That is why an unimplemented operation and a nonexistent one are indistinguishable from outside, which is the desired property.
 
+## T03B — Deterministic test fixtures (migration M05)
+
+Added to the ledger because spec/02's migration sequence lists M05 but no task in specification v1.0 owned it, which left AC-001 unsatisfiable. Scope split at the user's direction: the data half now, Auth passwords at T05.
+
+- **Acceptance IDs exercised:** AC-001, now fully.
+- **Files:** `scripts/generate-seed.mjs`, generated `supabase/seed.sql`, `tests/unit/seed-fidelity.test.ts`, `tests/integration/fixture-report.test.ts`.
+
+**The seed is generated from `tests/fixtures.json`**, not hand-written, so it cannot drift from the fixture contract — the same guard M01 has against `contracts/schema.sql`. `seed-fidelity.test.ts` fails if the checked-in file is stale.
+
+**It reproduces `expected_report` exactly**: assigned 4, not_started 2, in_progress 1, completed 1, overdue 3, completion_rate 25.0, average_progress 41.7, and all four per-learner percentages. Those numbers are the oracle T16 will be measured against, and they are not incidental — `overdue 3` proves that finishing before the due date is not late, and `average_progress 41.7` proves the mean is taken over everyone assigned rather than only those who started.
+
+**Repeatable**, as spec/02 M05 requires: two consecutive resets both yield 6 enrollments, 5 progress rows, 1 certificate, 9 profiles.
+
+**No passwords and no routable recipients.** Every address is `@example.invalid`, a reserved TLD that cannot receive mail, asserted by test rather than by convention.
+
+### Two things the seed changed about existing tests
+
+Introducing committed fixture data broke 30 integration tests that had quietly assumed an empty database. Both causes were real test defects, not seed problems:
+
+1. They reused the fixture's own UUIDs and email addresses, so their inserts collided with committed rows. They now use a `f0000000-` namespace and `probe-` addresses that cannot collide.
+2. Some assertions counted rows **globally** (`SELECT count(*) FROM app.cohort_offerings`). They now scope to their own data. An unscoped count would have silently started passing or failing for the wrong reason as the seed grew.
+
+### Known limitations, deliberately not hidden
+
+- **The seeded version is published by direct write**, so it does not exercise T10's publication validation, and its classes carry no media assets. `fixtures.json` says so itself: "real media checks require actual assets." T10 must build its own publication test rather than relying on this fixture.
+- **`enroll_multi_a` is seeded nowhere.** `fixtures.json` says the `multi` learner has enrollments in "A and B offerings", but the only organization A offering is `offering_a`, and adding `multi` there would make `assigned` 5 and break `expected_report`. The fixture is ambiguous; `expected_report` is authoritative, so `multi` is seeded into organization B only. Worth resolving before T16.
+- `tests/acceptance.json` now records `passed` for the five scenarios that have evidence. Specification v1.0 shipped every scenario as `not_run` and used no other value; this is the field's intended use, recorded here as a deliberate change.
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -215,5 +244,6 @@ It passed 32/32 against M01 at T02 and that evidence stands. The living replacem
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
+- T03B: M05 fixtures seeded and verified against expected_report; AC-001 closed.
 - T03: M02–M04 applied; AC-004 and AC-005 passed as real browser roles. Published-version INSERT blocked beyond spec's letter; schema-smoke.sql retired to M01-only.
 - T02: M01 applied to a hosted development project; AC-002 and AC-003 passed against a real database. Remote-reset deviation from spec/02 recorded. M05 found unowned.
