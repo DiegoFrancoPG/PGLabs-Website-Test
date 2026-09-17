@@ -994,6 +994,43 @@ So the paid plan is not only about AC-058's backups, as previously recorded. It 
 the product's own upload limits can be configured at all. The script reports this specifically
 rather than surfacing the provider's message, which reads like a rejected file.
 
+## Production database migrated — ojekiwjlgyxwcqmgtltv
+
+16 September 2026. `supabase db push --db-url` against the empty production project. Not a
+specification task; the first half of the cutover.
+
+- **Applied:** all 23 migrations, M01 through M28.
+- **Verified against the database directly:** 32 tables and 69 indexes in schema `app` — the same
+  numbers T02 recorded in development — 23 rows in `supabase_migrations.schema_migrations`, and the
+  three `pglearn_*` entrypoints present.
+- **AC-003 re-verified on the new project:** `app.profiles` over the Data API returns 406 with the
+  publishable key **and** with the service key, because schema `app` is not exposed there.
+- **Not done:** storage. `provision-storage.mjs` cannot succeed while the project is on the free
+  plan, which caps uploads at 50 MiB and will not accept the 1 GiB bucket limit.
+- **Free-plan caveat:** the project pauses after a week of inactivity and is restorable from the
+  dashboard. A migrated but untouched project will be asleep when someone next looks at it.
+
+### A newer Supabase project ships a function the spec's "only one" test does not expect
+
+`public.rls_auto_enable` exists in production and **not** in the older development project. It is
+Supabase's own: `SECURITY DEFINER`, owned by `postgres`, invoked by the event trigger `ensure_rls`
+on `ddl_command_end` to enable RLS on any table created in `public`. It belongs to no extension,
+which is why it does not look like a platform object at a glance.
+
+It is **not exploitable**. Calling it as `authenticated` is refused by Postgres itself — `0A000`,
+an event trigger function cannot be invoked directly — and it takes no arguments, so there is
+nothing an attacker could steer.
+
+But it does falsify, on any newly created project, the literal claim T03 verified: that
+`pglearn_rpc` is the only function in `public` a browser role may execute. `has_function_privilege`
+across the schema now returns two names, not one.
+
+**Consequence to settle before the suite is run against a fresh project:** AC-004's check needs to
+distinguish functions this application created from platform functions it did not, rather than
+asserting a bare count of one. Revoking EXECUTE from the platform function instead was not done,
+because whether the event trigger still fires afterwards is not something to discover on the
+project holding real data.
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -1008,6 +1045,10 @@ rather than surfacing the provider's message, which reads like a rejected file.
 
 ## Change log
 
+- Production database migrated: M01-M28 applied to ojekiwjlgyxwcqmgtltv, 32 tables and 69 indexes
+  verified, AC-003 re-confirmed against the Data API with both keys. Storage still blocked on the
+  free plan. Found that newer Supabase projects ship `public.rls_auto_enable`, which breaks T03's
+  "only one executable function" assertion without being exploitable.
 - **TEMPORARY (16 September 2026): the reminder cron is daily, not hourly.** `vercel.json` says
   `0 18 * * *` so the demo can deploy on a Vercel Hobby team, where hourly expressions fail
   deployment. Reminders only send 09:00–17:59 local, so one daily run reaches only the timezones
