@@ -1008,6 +1008,10 @@ rather than surfacing the provider's message, which reads like a rejected file.
 
 ## Change log
 
+- **TEMPORARY (16 September 2026): the reminder cron is daily, not hourly.** `vercel.json` says
+  `0 18 * * *` so the demo can deploy on a Vercel Hobby team, where hourly expressions fail
+  deployment. Reminders only send 09:00–17:59 local, so one daily run reaches only the timezones
+  near 11:00 Pacific. Revert to `0 * * * *` on Pro. See handoff/production-cutover.md.
 - Production cutover: cutover runbook written; CRON_SECRET made a boot requirement on deployed
   environments; storage provisioning given an operator command. The free Supabase plan found to cap
   uploads at 50 MiB, which the product's own 1 GiB limit cannot fit under.

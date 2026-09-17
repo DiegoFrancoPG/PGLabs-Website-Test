@@ -4,11 +4,26 @@ The procedure for putting PGLearn on the internet for the first time. It assumes
 except the code in this repository and the development Supabase project, which is **not** what
 production will run against.
 
+> ## ⚠ TEMPORARY — revert before the pilot
+>
+> `vercel.json` currently schedules the reminder job **daily at `0 18 * * *`**, not hourly. This was
+> done on 16 September 2026 so the demo could deploy on a Vercel **Hobby** team, where an hourly
+> expression fails deployment outright.
+>
+> **The cost, which is not cosmetic.** `m20_reminders.sql` only sends between 09:00 and 17:59 *local*
+> time (`local_hour BETWEEN 9 AND 17`). An hourly job sweeps every timezone as it crosses that
+> window; one daily run only reaches learners whose local hour is 9–17 at that instant. 18:00 UTC is
+> 11:00 Pacific, chosen for Vancouver-based demo learners. **Anyone outside roughly UTC-9 to UTC+0
+> gets no reminders at all**, and on Hobby the run can land anywhere inside the named hour.
+>
+> **Revert to `0 * * * *` when the team moves to Pro.** Until then the reminder coverage in this
+> deployment does not match what the specification describes.
+
 Four decisions were taken on 16 September 2026 and everything below follows from them:
 
 | Decision | Choice |
 | --- | --- |
-| Database | A **new** Supabase project on a plan with daily backups. `kviqthksrpyyrduoiupg` stays the disposable development project. |
+| Database | A **new** Supabase project on a plan with daily backups: **`ojekiwjlgyxwcqmgtltv`**, created empty on 16 September 2026. `kviqthksrpyyrduoiupg` stays the disposable development project. |
 | Hosting | **Vercel** — `vercel.json` declares the two cron jobs and they need a platform scheduler. |
 | Stage | **`APP_ENV=pilot`** for the first deployment. |
 | Scope | site-v2 serves **both** the PG Labs marketing site and PGLearn, from one deployment. |
@@ -30,8 +45,12 @@ Six of these are outside this repository and nobody can proceed without them.
      assumed: `npm run provision:storage` against the development project fails with
      `The object exceeded the maximum allowed size`, which is the plan refusing the bucket write.
      A nine-video series will not fit under 50 MiB per file.
-2. **A Vercel account or team** with the repository connected, on a plan whose cron scheduling is
-   available. The two jobs are hourly and daily.
+2. **A Vercel account on a paid team plan** with the repository connected. This is not a
+   preference. Vercel's Hobby plan restricts cron jobs to *once per day* and *"expressions that run
+   more frequently will fail deployment"* — and `vercel.json` declares the reminder job at
+   `0 * * * *`. On Hobby the deployment does not merely lose its reminders, it does not deploy.
+   Hobby also fires a daily cron anywhere inside the named hour, so reminder send-time would be
+   non-deterministic even if the schedule were reduced.
 3. **The domain**, and the decision of which host serves the apex. Deploying site-v2 replaces
    whatever serves the marketing site today; that is Part 6.
 4. **`RESEND_API_KEY`, `EMAIL_FROM` and a verified sender domain.** Without these no invitation and
@@ -54,18 +73,35 @@ stop being sent and retention stops deleting, while every screen keeps working n
 
 ## Part 1 — Create and migrate the production database
 
+### Production credentials never go in .env.local
+
+`.env.local` is the **development** file, and `scripts/db-reset-test.mjs` reads its
+`PGLEARN_DEV_PROJECT_REF` to decide which database it is allowed to destroy. Pointing it at
+production would put the production URL in the one file a destructive command consults. Keep them
+apart: put them in `.env.production.local` (already covered by `.gitignore`'s `.env.*.local`) and
+run operator commands with Node's env-file flag, which takes precedence over `.env.local`:
+
 ```bash
-# 1. Create the project in the Supabase dashboard, on a plan with daily backups.
-#    Record its ref (the subdomain of the project URL) and database password.
+node --env-file=.env.production.local scripts/provision-storage.mjs
+node --env-file=.env.production.local scripts/bootstrap-admin.mjs <email>
+```
+
+That file needs `APP_ENV=pilot`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_SUPABASE_URL`,
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_DB_PASSWORD`.
+It must never contain `PGLEARN_DEV_PROJECT_REF`.
+
+```bash
+# 1. The project is ojekiwjlgyxwcqmgtltv, created empty. Confirm its plan
+#    allows daily backups and a 1 GiB global upload limit before going further.
 
 # 2. Raise the global upload limit:
 #    Dashboard -> Settings -> Storage -> Upload file size limit -> 1 GiB.
-#    Do this BEFORE step 4 or the bucket write is refused.
+#    Do this BEFORE Part 2 or the bucket write is refused.
 
 # 3. Apply every migration. This is `db push`, NOT `db:reset:test` — the reset
 #    script refuses a pilot or production target by design, and must keep doing so.
 cd site-v2
-supabase link --project-ref <production-ref>
+supabase link --project-ref ojekiwjlgyxwcqmgtltv
 supabase db push
 ```
 
@@ -79,10 +115,8 @@ scripts refuse anything but `development`/`test`, and that refusal is the guard,
 
 ## Part 2 — Provision storage
 
-With `.env.local` pointed at the production project, or the variables exported in the shell:
-
 ```bash
-npm run provision:storage
+node --env-file=.env.production.local scripts/provision-storage.mjs
 ```
 
 It creates `pglearn-private` as a **private** bucket with a 1 GiB limit, and is idempotent — run it
@@ -137,8 +171,17 @@ fails the deployment rather than a learner's first request.
   and set it as `RESEND_WEBHOOK_SECRET`, then redeploy. Delivery events are Svix-signed and an
   unverified payload is rejected.
 - **Crons** are declared in `vercel.json` and register themselves on deploy:
-  `/api/v1/jobs/reminders` hourly, `/api/v1/jobs/retention` at 03:15 daily. Set `CRON_SECRET` in
-  the Vercel cron configuration so the scheduler presents it as `Authorization: Bearer`.
+  `/api/v1/jobs/reminders` hourly, `/api/v1/jobs/retention` at 03:15 daily.
+
+  There is no separate place to configure the scheduler's secret. Vercel recognises an environment
+  variable named exactly `CRON_SECRET` and *"the value of the variable will be automatically sent as
+  an `Authorization` header when Vercel invokes your cron job"*. Setting it in Part 4 is the whole
+  of it.
+
+  Vercel's own guidance is that cron delivery is best-effort — an invocation can be missed, and the
+  same scheduled run can fire twice. Both jobs are already built for that: reminders claim their
+  rows and hold a daily cap, and retention deletes on each row's own timestamp under one clock, so a
+  second run finds nothing left to do rather than doing it twice.
 
 ## Part 6 — DNS and the marketing site
 

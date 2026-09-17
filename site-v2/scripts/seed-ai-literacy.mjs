@@ -44,6 +44,31 @@ function env() {
 }
 const config = { ...env(), ...process.env };
 const value = (key) => config[key] ?? "";
+
+/*
+ * This script is for a development or test database and nothing else.
+ *
+ * It signs in as fixture accounts with a shared password, reads organization
+ * and learner ids out of tests/fixtures.json, and uploads test-video.mp4 nine
+ * times. None of that exists or belongs on a deployed environment.
+ *
+ * The sharp edge is --clean: it deletes enrollments, class progress, playback
+ * sessions, exercise completions and CERTIFICATES for any programme matching
+ * PROGRAM_TITLE. Once the real series has been authored into production under
+ * that same title, a --clean run there would destroy real learners' records of
+ * having completed it. Every other operator script in this directory refuses a
+ * deployed target; this one did not.
+ */
+const appEnv = value("APP_ENV") || "development";
+if (appEnv !== "development" && appEnv !== "test") {
+  console.error(
+    `seed-ai-literacy: APP_ENV is "${appEnv}". This seeds fixture content and deletes learner ` +
+      "records, and only runs against development or test.\n" +
+      "  To author this series on a deployed environment, use the admin UI with the real videos.\n" +
+      "  The curriculum text is in PARTS below and in ai-literacy-program-structure.md."
+  );
+  process.exit(1);
+}
 /*
  * The app's own origin, not an equivalent one. proxy.ts refuses a mutation
  * whose Origin does not match NEXT_PUBLIC_APP_URL — that is ADR-06 working, and
