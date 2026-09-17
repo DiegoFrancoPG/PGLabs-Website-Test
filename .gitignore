@@ -2,15 +2,24 @@
 .claude/worktrees/
 
 # Storybook/Vite cache
-design-system/.vite-storybook-cache/
+.vite-storybook-cache/
 
-# Dependencies
-node_modules/
+# Dependencies (no trailing slash: site-v2/node_modules is a symlink)
+node_modules
 
 # Build outputs
+.next/
+test-results/
+playwright-report/
 dist/
 build/
 storybook-static/
+*.tsbuildinfo
+
+# Local secrets
+.env
+.env.local
+.env.*.local
 
 # OS
 .DS_Store

@@ -1,0 +1,22 @@
+{
+  "name": "pglabs-website",
+  "private": true,
+  "description": "The PG Labs site and the PGLearn platform, with the design system they are built from.",
+  "workspaces": [
+    "site-v2",
+    "design-system-v2"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace site-v2",
+    "build": "npm run build --workspace site-v2",
+    "start": "npm run start --workspace site-v2",
+    "lint": "npm run lint --workspace site-v2",
+    "typecheck": "npm run typecheck --workspace site-v2",
+    "test:unit": "npm run test:unit --workspace site-v2",
+    "test:integration": "npm run test:integration --workspace site-v2",
+    "test:e2e": "npm run test:e2e --workspace site-v2"
+  }
+}

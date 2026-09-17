@@ -1,0 +1,1428 @@
+{
+  "version": "1.0",
+  "status_values": [
+    "todo",
+    "in_progress",
+    "blocked",
+    "done"
+  ],
+  "completion_rule": "All task acceptance IDs exercised with evidence. For explicitly cross-task checks, record partial evidence and dependency; never mark the full scenario passed early. Release gate requires full real checks.",
+  "tasks": [
+    {
+      "id": "T00",
+      "title": "Prepare site-v2 as the PGLearn application shell",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [],
+      "requirements": [],
+      "read": [
+        "spec/04-ui.md",
+        "spec/05-integrations-operations.md"
+      ],
+      "implementation_targets": [
+        "app/(marketing) and app/(platform) route groups; root layout reduced to document shell",
+        "real node_modules and committed package-lock.json for site-v2 and design-system-v2",
+        "design-system-v2 components required by spec/04 (Alert, Checkbox, Dialog, Progress, Select, Skeleton, Table, Tabs)"
+      ],
+      "acceptance_ids": [],
+      "operation_ids": [],
+      "checks": [
+        "npm run build",
+        "npx tsc --noEmit (design-system-v2)",
+        "rendered-HTML parity diff against baseline 76d4cca"
+      ],
+      "notes": "Added by the site-v2 integration plan (site-v2/plans/pglearn-integration-plan.md, outside this package until it is relocated to the application root); not part of specification v1.0. Records deviations D-01 (repository layout) and D-02 (design system) from ADR-01 and ADR-16.",
+      "evidence": [
+        "branch pglearn-integration; baseline commit 76d4cca",
+        "npm run build: 7 marketing routes prerendered static, no errors",
+        "DOM parity vs baseline: 6 marketing pages identical except JSON-LD moved head->body (payload byte-identical, 501 bytes)",
+        "generated CSS delta vs baseline: one added rule (.min-h-screen) from the platform shell",
+        "all 8 new design-system components compiled and rendered via a temporary /ds-smoke route, since removed"
+      ]
+    },
+    {
+      "id": "T01",
+      "title": "Bootstrap repository and shared contracts",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [],
+      "requirements": [
+        "FR-14"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "README.md",
+        "contracts/api.json"
+      ],
+      "implementation_targets": [
+        "package.json scripts and exact package-lock.json",
+        "app/ shell (root app/, per D-01) and lib/clock",
+        "tests harness and safe environment validation"
+      ],
+      "acceptance_ids": [
+        "AC-001"
+      ],
+      "operation_ids": [
+        "health"
+      ],
+      "checks": [
+        "npm run lint",
+        "npm run typecheck",
+        "npm run test:unit",
+        "npm run test:integration",
+        "npm run test:e2e",
+        "npm run build",
+        "npm run db:reset:test",
+        "python3 verify_spec.py"
+      ],
+      "notes": "Next.js resolved 14.2.35 -> 16.3.5 and React 18 -> 19 per ADR-01 ('resolve currently supported patched versions'); the entire Next 14 line was unpatched, including a critical RCE in the Image Optimization API. npm audit now reports 0 vulnerabilities. AC-001's shell clause is satisfied here; its fixture clause is completed by T03B. The db:reset:test script and its non-production guards are in place and tested.",
+      "evidence": [
+        "commit on branch pglearn-integration; spec package relocated to the application root",
+        "all seven required scripts pass: lint, typecheck, test:unit, test:integration, test:e2e, build, verify_spec",
+        "27 vitest tests (unit + integration); 12 Playwright tests across 390px and 1440px projects",
+        "GET /api/v1/health returns {data:{status:'ok',version:'2.0.0'},request_id:<uuid>} and is validated against contracts/api.json by tests/integration/health-contract.test.ts",
+        "startup guard verified: with NEXT_PUBLIC_APP_URL unset the server fails its instrumentation hook and serves 500 for every request; it never falls back to a default or a mock",
+        "db:reset:test refuses APP_ENV=production and APP_ENV=pilot (exit 1), and refuses a remote Supabase host even when APP_ENV=test (exit 1)",
+        "marketing routes still prerender static; /api/v1 responses carry private,no-store and X-Robots-Tag noindex while / does not",
+        "AC-001 PARTIAL: app shell builds (verified); database reset blocked on T02 M01 migration and M05 fixtures"
+      ]
+    },
+    {
+      "id": "T02",
+      "title": "Create schema migration and constraint tests",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T01"
+      ],
+      "requirements": [
+        "FR-02",
+        "FR-05"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "contracts/schema.sql",
+        "spec/02-data-and-security.md",
+        "tests/fixtures.json"
+      ],
+      "implementation_targets": [
+        "supabase/migrations/M01_schema.sql",
+        "tests/integration/database-constraints"
+      ],
+      "acceptance_ids": [
+        "AC-002",
+        "AC-003"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "npm run db:reset:test",
+        "npm run test:integration -- database-constraints"
+      ],
+      "notes": "M01 applied to the designated development project. AC-002 and AC-003 fully exercised against a real PostgreSQL 17.6 instance. Note: no task in this ledger owns migration M05 (fixtures) from spec/02's migration sequence, so AC-001's 'deterministic fixtures' clause is still unmet and AC-001 stays not_run.",
+      "evidence": [
+        "supabase db push applied 20260915000001_m01_schema.sql; 32 tables in schema app, 69 indexes, 183 constraints",
+        "tests/schema-smoke.sql: 32/32 checks passed under ON_ERROR_STOP=1, then ROLLBACK",
+        "tests/integration/database-constraints.test.ts: 30 tests passing (AC-002 16 rejection cases + AC-003 role and policy checks)",
+        "AC-003 additionally verified against the live Data API: app.enrollments and app.profiles are unreachable over REST with the publishable key AND with the service role key, because schema app is not exposed",
+        "npm run db:reset:test verified end to end against the remote project: dropped, reapplied M01, smoke suite passes again afterwards",
+        "guard verified: refuses APP_ENV=production, APP_ENV=pilot, and any project ref other than the designated one"
+      ]
+    },
+    {
+      "id": "T03",
+      "title": "Implement relationship guards and permission boundary",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T02"
+      ],
+      "requirements": [
+        "FR-02"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/02-data-and-security.md"
+      ],
+      "implementation_targets": [
+        "M02 guard triggers/private predicates",
+        "M03 RPC allowlist and grant/revoke privileges",
+        "M04 service entrypoint boundaries"
+      ],
+      "acceptance_ids": [
+        "AC-004",
+        "AC-005"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "npm run test:integration -- database-security",
+        "npm run db:reset:test"
+      ],
+      "notes": "M02 predicates and triggers, M03 user dispatcher, M04 service entrypoints and private bucket. Deliberate strengthening beyond spec/02's wording: INSERT is blocked on modules/classes/exercises/assets of a published version, not only UPDATE/DELETE, since ADR-07 makes published versions immutable. content_chunks keeps INSERT allowed because spec/05 creates chunks during the publication transaction. Handler allowlist currently holds get_me only; each later task adds its own actions.",
+      "evidence": [
+        "tests/integration/database-security.test.ts: 20 tests passing (AC-004 12, AC-005 8)",
+        "AC-004: actor derived from auth.uid() only — payloads carrying user_id, actor_id, sub, role or is_admin are ignored, verified for all five shapes",
+        "AC-004: unknown action, SQL-injection-shaped action and wrong-case action all return the same 42501 as an unauthorized one, so the dispatcher cannot enumerate operations; row counts unchanged after rejection",
+        "AC-004: anon and authenticated denied EXECUTE on pglearn_job and pglearn_provision; learner denied EXECUTE on app.handle_get_me, app.actor_active and app.can_learn",
+        "AC-004: pglearn_rpc is the ONLY function in public executable by a browser role; all three entrypoints are SECURITY DEFINER with search_path=\"\"",
+        "AC-005: offering with org A grant and org B cohort rejected 23514, leaving zero offerings and zero enrollments; draft version and grant-outliving access also rejected",
+        "AC-005: grant subject immutable while dates/status stay editable; published version content frozen against UPDATE, DELETE and INSERT; unknown timezone rejected 22023",
+        "Full suite: 27 unit + 55 integration passing; db:reset:test applies M01-M04 cleanly"
+      ]
+    },
+    {
+      "id": "T03B",
+      "title": "Seed deterministic test fixtures (migration M05)",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T03"
+      ],
+      "requirements": [
+        "FR-14"
+      ],
+      "read": [
+        "spec/02-data-and-security.md",
+        "tests/fixtures.json"
+      ],
+      "implementation_targets": [
+        "scripts/generate-seed.mjs and generated supabase/seed.sql",
+        "tests/integration/fixture-report expected_report oracle"
+      ],
+      "acceptance_ids": [
+        "AC-001"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "npm run db:reset:test",
+        "npm run test:integration",
+        "npm run test:unit"
+      ],
+      "notes": "Added because spec/02's migration sequence lists M05 but no task in specification v1.0 owned it, leaving AC-001 unsatisfiable. Covers the data half only: Auth passwords for real login arrive at T05 with the Auth admin API, as fixtures.json requires ('Do not commit passwords').",
+      "evidence": [
+        "supabase/seed.sql generated from tests/fixtures.json; tests/unit/seed-fidelity.test.ts fails if it is stale",
+        "seeded database reproduces expected_report EXACTLY: assigned 4, not_started 2, in_progress 1, completed 1, overdue 3, completion_rate 25.0, average_progress 41.7, and all four row percentages",
+        "repeatable: two consecutive db:reset:test runs both yield 6 enrollments / 5 class_progress rows / 1 certificate / 9 profiles",
+        "no passwords and no routable recipients committed: every address is @example.invalid, asserted by test",
+        "AC-001 now fully exercised: shell builds, reset creates schema and deterministic fixtures, no external provider involved"
+      ]
+    },
+    {
+      "id": "T04",
+      "title": "Implement verified session and profile services",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T03"
+      ],
+      "requirements": [
+        "FR-01",
+        "FR-02"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/05-integrations-operations.md",
+        "spec/04-ui.md"
+      ],
+      "implementation_targets": [
+        "lib/supabase SSR clients and lib/auth verified session",
+        "features/identity profile services",
+        "login/logout/settings pages and the /learn placeholder",
+        "scripts/bootstrap-admin.mjs operator command (spec/05)"
+      ],
+      "acceptance_ids": [
+        "AC-006",
+        "AC-007",
+        "AC-064"
+      ],
+      "operation_ids": [
+        "get_me",
+        "update_me"
+      ],
+      "checks": [
+        "npm run typecheck",
+        "npm run test:unit -- <changed feature>",
+        "npm run test:e2e -- auth"
+      ],
+      "notes": "get_me was corrected to return contracts/api.json's Me shape; M03 was amended rather than superseded because no real records exist yet, which spec/02 explicitly permits. Supabase variables promoted into lib/env's core schema. middleware.ts migrated to Next 16's proxy.ts convention. /learn is a placeholder for T12; it exists because spec/04 sends a successful sign-in there and AC-007 needs a protected page.",
+      "evidence": [
+        "44 unit + 74 integration + 42 e2e tests passing; lint, typecheck, build and verify_spec pass",
+        "AC-006: update_me rejects platform_admin, email, role, status, onboarded_at and id with 22023, at the schema layer AND again in the RPC; database authority verified unchanged afterwards",
+        "AC-006: a learner whose own JWT claims assert is_admin and user_role=platform_admin still reads platform_admin false, because the flag comes from the database",
+        "AC-007: /learn and /settings redirect an anonymous visitor to /login; GET /api/v1/me returns 401 UNAUTHENTICATED; every protected response carries private, no-store and X-Robots-Tag noindex",
+        "AC-064: a PATCH with an attacker Origin returns 403 while the same request same-origin returns 401 — different statuses prove the Origin check runs before authentication, so a replayed cookie never reaches the handler",
+        "AC-064: an absent Origin is rejected too; a same-origin GET is unaffected; /api/v1/webhooks and /api/v1/jobs are exempt because they authenticate by signature and bearer token, not by cookie",
+        "service role key verified absent from .next/static",
+        "bootstrap-admin refuses a nonexistent account and an account that has not completed password setup; it creates no account and prints only the user id"
+      ]
+    },
+    {
+      "id": "T05",
+      "title": "Implement invitation onboarding and password recovery",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T04"
+      ],
+      "requirements": [
+        "FR-01"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/03-behavior.md",
+        "spec/05-integrations-operations.md"
+      ],
+      "implementation_targets": [
+        "Auth callback/password setup/reset",
+        "provision and accept invitation handlers",
+        "identity reconciliation and test adapters"
+      ],
+      "acceptance_ids": [
+        "AC-008",
+        "AC-009"
+      ],
+      "operation_ids": [
+        "get_invitation",
+        "accept_invitation"
+      ],
+      "checks": [
+        "npm run test:integration -- onboarding",
+        "npm run test:e2e -- invitations"
+      ],
+      "notes": "Completes the second half of M05: fixture accounts now have passwords, created through the Auth admin API rather than by hand-written auth.users rows. db:reset:test became a three-phase command (migrations, Auth accounts, application fixtures) because app.profiles references auth.users and Auth owns those rows. Real email delivery is still T21; the invite link is redeemed here with its one-time token, which is what following the emailed link does.",
+      "evidence": [
+        "44 unit + 85 integration + 56 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-008: 9 integration tests — the invited person is onboarded and their membership activated exactly once; a retry returns identical state and does not move onboarded_at; another signed-in user gets P0002/404 for both read and accept and nothing changes; an expired invitation reads as expired and is refused; a personal invitation creates no membership; a manager invitation cannot promote an active learner",
+        "AC-009 new account, against REAL Supabase Auth with no mocks: invite creates an identity with no password; sign-in impossible before it; the one-time token establishes a session; a normal RPC is refused while un-onboarded while get_invitation still works; password set BEFORE onboarding; acceptance is what grants access; the chosen password then works from a clean client",
+        "AC-009 existing account, through the real UI: signs in with the password it already has, never visits set-password, sees organization and role, accepts, and the same password still works afterwards",
+        "password recovery returns byte-identical wording for a known and an unknown address, verified by comparing the two rendered responses",
+        "set-password refuses a visitor with no recovery session"
+      ]
+    },
+    {
+      "id": "T06",
+      "title": "Implement organization and invitation administration",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T05"
+      ],
+      "requirements": [
+        "FR-02",
+        "FR-03"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/02-data-and-security.md",
+        "spec/03-behavior.md"
+      ],
+      "implementation_targets": [
+        "organization/membership command handlers",
+        "invitation intent/outbox/retry logic",
+        "admin organization forms"
+      ],
+      "acceptance_ids": [
+        "AC-010",
+        "AC-011"
+      ],
+      "operation_ids": [
+        "list_organizations",
+        "create_organization",
+        "update_organization",
+        "update_membership",
+        "create_invitation",
+        "resend_invitation"
+      ],
+      "checks": [
+        "npm run test:integration -- organizations"
+      ],
+      "notes": "All six operations implemented in M06 plus /api/v1 routes and feature services. Idempotency added as a shared mechanism over app.idempotency_records, with authorization deliberately running BEFORE any replay is returned. The M02 last-manager trigger was changed from INITIALLY DEFERRED to INITIALLY IMMEDIATE so a refused change fails on its own statement rather than at COMMIT. Admin organization forms are not built; the API and services are, and UI integration is T23.",
+      "evidence": [
+        "44 unit + 101 integration + 65 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-010: a create retried three times with one key returns an identical response and leaves exactly 1 invitation and 1 membership; the same key with a different body is refused 23505; resend expires the old row and issues a fresh one under 24 hours; a retried resend leaves only one pending invitation",
+        "AC-010: the response contains only the seven Invitation fields and no token, action_link, OTP or URL — asserted both at the RPC and over HTTP against the real response body",
+        "AC-010: an already-active member returns existing state instead of a second invitation",
+        "AC-011: removing or demoting the only active manager fails 23514 and the row is unchanged; the swap succeeds once a second manager is active",
+        "AC-011: a manager cannot invite a manager, cannot issue a personal invitation, cannot change any membership including their own, cannot act on another organization, and cannot create or edit an organization",
+        "AC-011: list_organizations is scoped by the database — admin sees both, each manager sees only theirs, verified at the RPC and over HTTP"
+      ]
+    },
+    {
+      "id": "T07",
+      "title": "Implement cohorts and catalog grants",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T06"
+      ],
+      "requirements": [
+        "FR-03",
+        "FR-04",
+        "FR-15"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/02-data-and-security.md",
+        "spec/04-ui.md"
+      ],
+      "implementation_targets": [
+        "cohort/member/grant handlers and manager screens"
+      ],
+      "acceptance_ids": [
+        "AC-012",
+        "AC-013"
+      ],
+      "operation_ids": [
+        "list_cohorts",
+        "create_cohort",
+        "update_cohort",
+        "list_cohort_members",
+        "add_cohort_members",
+        "remove_cohort_member",
+        "list_grants",
+        "create_grant",
+        "update_grant"
+      ],
+      "checks": [
+        "npm run test:integration -- cohorts-grants"
+      ],
+      "notes": "All nine operations implemented in M07 with /api/v1 routes and services. AC-013 passes in full. AC-012 is a CROSS-TASK scenario: its first three clauses pass here, but 'explicit valid reactivation restores access' needs update_enrollment, which contracts/api.json and the ledger assign to T11 — so AC-012 stays not_run per the completion rule. Manager screens are not built; UI integration is T23.",
+      "evidence": [
+        "44 unit + 120 integration + 65 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-012 PARTIAL: removal sets the member to removed and cancels exactly the enrollments reached through that cohort, leaving progress rows untouched and the personal enrollment active; re-adding restores membership but NOT the cancelled enrollment; a cancelled learner reads availability 'cancelled'",
+        "AC-012 PARTIAL: adding members never auto-enrols; an all-or-nothing add writes nothing when any one person is not a member of that organization; an archived cohort refuses new members and makes existing learners membership_inactive without deleting progress",
+        "AC-012 BLOCKED on T11: explicit reactivation via update_enrollment",
+        "AC-013: manager A sees only grant_a, never a personal grant (its subject is a user, so it cannot match an organization), never organization B's catalog; asking for B explicitly is refused 42501 rather than returning empty",
+        "AC-013: a manager cannot create or update a grant; a grant naming both subjects or neither is refused 22023; the subject stays immutable under direct SQL while dates and status remain editable",
+        "AC-013: revoking a grant flips availability to 'revoked' and shortening its window to 'expired', both without altering the enrollment row — spec/03's 'takes effect without rewriting enrollment history'"
+      ]
+    },
+    {
+      "id": "T08",
+      "title": "Implement draft content CRUD and ordering",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T03"
+      ],
+      "requirements": [
+        "FR-06"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/03-behavior.md",
+        "spec/04-ui.md"
+      ],
+      "implementation_targets": [
+        "content DTOs/handlers",
+        "program/module/class/exercise editor"
+      ],
+      "acceptance_ids": [
+        "AC-014"
+      ],
+      "operation_ids": [
+        "list_programs",
+        "create_program",
+        "update_program",
+        "get_version",
+        "update_version",
+        "create_module",
+        "update_module",
+        "create_class",
+        "update_class",
+        "delete_class",
+        "put_exercise",
+        "delete_exercise",
+        "reorder_content"
+      ],
+      "checks": [
+        "npm run test:integration -- content"
+      ],
+      "notes": "All 13 operations implemented in M08 with /api/v1 routes and services. The editor UI is not built; spec/04's authoring screens are T23. clone_version is listed on /programs/{id}/versions but belongs to T27 (pilot), so it is deliberately not dispatched yet. Added tests/integration/dispatcher.test.ts, which asserts every app.handle_* function is reachable from the allowlist — the failure mode a literal allowlist invites is writing a handler and forgetting to register it.",
+      "evidence": [
+        "44 unit + 137 integration + 65 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-014: a valid reorder persists as a contiguous run from zero, including a full reversal, which a non-deferred unique constraint would reject part-way through",
+        "AC-014: duplicates, a child of another parent, and a partial list that omits a sibling are each rejected 22023, and a rejected reorder leaves every position byte-identical to before — verified by comparing the full row set",
+        "modules and classes are created at contiguous positions without the caller counting; reordering works for modules within a version and classes within a module",
+        "ADR-08 enforced: adding an exercise makes its class required, and a second put_exercise replaces rather than adds",
+        "delete_class removes the exercise, assets and chunks with it, after clearing the primary-asset reference that would otherwise block it",
+        "every authoring action is refused to a manager 42501; list_programs shows a manager only their entitled catalogue and a learner nothing",
+        "the M02 freeze holds through the handlers: update, create and delete against a published version all return 23514",
+        "dispatcher tests: every handler is reachable, every dispatched action has a handler, and every action corresponds to an operationId the contract declares"
+      ]
+    },
+    {
+      "id": "T09",
+      "title": "Implement private uploads, captions and file access",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T08",
+        "T04"
+      ],
+      "requirements": [
+        "FR-06",
+        "FR-07",
+        "FR-15"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/03-behavior.md",
+        "spec/05-integrations-operations.md"
+      ],
+      "implementation_targets": [
+        "StorageProvider adapter",
+        "asset authorize/finalize/download routes",
+        "upload progress and VTT conversion"
+      ],
+      "acceptance_ids": [
+        "AC-015",
+        "AC-016",
+        "AC-017",
+        "AC-062"
+      ],
+      "operation_ids": [
+        "authorize_upload",
+        "finalize_upload",
+        "authorize_download"
+      ],
+      "checks": [
+        "npm run test:integration -- assets"
+      ],
+      "notes": "StorageProvider adapter, SRT-to-WebVTT conversion and the three asset operations, implemented and tested with SYNTHETIC files at the user's direction. AC-015, AC-016 and AC-062 pass. AC-017's conversion rules pass in full; its 'play generated VTT' clause and every real-media check remain BLOCKED on the nine client videos with their transcripts and captions, which fixtures.json itself says cannot be substituted. The finalize route makes two calls to the same allowlisted action — inspect, then record — because spec/02 requires the allowlist to correspond to operationId values and there is no operation for reading back a reservation.",
+      "evidence": [
+        "80 unit + 155 integration + 65 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-015: the storage key is composed in the DATABASE from version, class and asset ids, so a hostile filename cannot alter it; verified to be exactly six segments, correctly prefixed and free of '..'",
+        "AC-015: 22 unit tests on sanitization — traversal, percent-encoded separators, Windows paths, control characters, newlines, quotes and length padding all defused; learner and manager both refused 42501; upload into a published version refused 23514; retry returns one reservation",
+        "AC-016: a failed finalize records a stable error code and the asset never becomes the class's primary, which is what keeps publication blocked; a successful one promotes it and records duration; a primary whose MIME disagrees with the class kind is refused by the M02 trigger",
+        "AC-017 conversion: 14 unit tests — timestamps preserved exactly, overlapping cues kept in original order, end<=start rejected, negative and non-numeric timestamps rejected, cues beyond duration+2s rejected, CRLF and BOM handled, VTT positioning settings dropped",
+        "AC-017 safety: markup is never carried through rather than sanitized — no angle brackets or entities survive in cue text, and script contents are dropped instead of being left as subtitle text",
+        "AC-062: the IDENTICAL download request that succeeded while a grant was active is refused once it is revoked, and again once the window closes — authorization is evaluated on every call and no response is ever replayed from cache",
+        "AC-062: another learner's enrollment returns P0002 not 42501; a non-ready asset is refused; a learner asking for preview gets no route into draft content; a caption signs the normalized VTT, never the raw SRT",
+        "BLOCKED pending real media: playback of an actual MP4 with its caption track, and the T25 demo gate. No synthetic file can satisfy these."
+      ]
+    },
+    {
+      "id": "T10",
+      "title": "Implement publication and frozen content",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T09"
+      ],
+      "requirements": [
+        "FR-06"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/02-data-and-security.md",
+        "spec/03-behavior.md"
+      ],
+      "implementation_targets": [
+        "publish transaction and source chunk indexing",
+        "published preview/lock UI"
+      ],
+      "acceptance_ids": [
+        "AC-018",
+        "AC-019"
+      ],
+      "operation_ids": [
+        "publish_version"
+      ],
+      "checks": [
+        "npm run test:integration -- publication"
+      ],
+      "notes": "publish_version validates, indexes chunks and flips state in ONE transaction, per spec/03. Chunking is done in SQL rather than the application so it derives from the stored source text inside that transaction; sending chunks in the request would index whatever the caller chose to send. A failed validation returns its issues as data rather than raising, so the draft is untouched and the route turns them into 422 PUBLISH_INCOMPLETE with per-field entries. The published editor UI is T23.",
+      "evidence": [
+        "80 unit + 181 integration + 65 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-018: a complete draft publishes and its source text is indexed in the same transaction; every rule refuses with a field-specific path — all-optional version, missing source text, video without captions, module with no classes, non-contiguous positions, exercise on an optional class, handout still uploading",
+        "AC-018: all problems are reported at once rather than the first, and a refusal leaves state and chunk count byte-identical to before",
+        "AC-018: publication is admin-only, and republishing is idempotent — published_at does not move and nothing is reindexed",
+        "AC-019: 11 separate edits to a published version are each refused 23514 RUNNING AS THE TABLE OWNER, not through a handler — rename, revert to draft, delete, add/rename/delete a module, edit/delete a class, make a class optional, add an asset, edit an exercise",
+        "AC-019: the required-class denominator and a fingerprint of all source text are unchanged after attempting every destructive edit; adding a class to a published version is refused, which is what stops an enrolled learner's percentage silently dropping",
+        "chunking verified in the database: 1500-character maximum respected, identical chunks deduped within a class, and character-based substring keeps UTF-8 sequences intact"
+      ]
+    },
+    {
+      "id": "T11",
+      "title": "Implement dated offerings and enrollment",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T07",
+        "T10"
+      ],
+      "requirements": [
+        "FR-02",
+        "FR-05",
+        "FR-15"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/03-behavior.md"
+      ],
+      "implementation_targets": [
+        "offering/enrollment handlers and assignment forms",
+        "availability predicates and transactional date updates"
+      ],
+      "acceptance_ids": [
+        "AC-020",
+        "AC-021",
+        "AC-022",
+        "AC-063",
+        "AC-065"
+      ],
+      "operation_ids": [
+        "list_offerings",
+        "create_offering",
+        "update_offering",
+        "enroll_cohort",
+        "enroll_personal",
+        "update_enrollment"
+      ],
+      "checks": [
+        "npm run test:integration -- enrollment"
+      ],
+      "notes": "Six operations plus lib/schedule.ts, the pure date logic AC-022 asks for at unit level. CLOSES AC-012, whose reactivation clause was blocked here since T07: update_enrollment does not re-implement the predicates, it sets status back to active and lets the M02 trigger re-run them, which is exactly spec/03's 'if all predicates pass'. Assignment forms are not built; UI integration is T23.",
+      "evidence": [
+        "103 unit + 203 integration + 65 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-022: 23 unit tests pinning every boundary at the exact millisecond — start inclusive, due inclusive for on-time completion, hard end EXCLUSIVE; completion at D is on time, at D+1ms is late but still permitted while access lasts, and at E no write is accepted",
+        "AC-020: a second assignment of the same people creates nothing and returns identical enrollment ids; one ineligible person makes the whole call write nothing; offering dates are copied onto each enrollment",
+        "AC-012 CLOSED: reactivation is refused while the learner is still out of the cohort, and succeeds once re-added — with progress rows and availability both verified intact afterwards",
+        "AC-063: one completed enrollment in the selection makes the whole date change write nothing, verified by comparing every row before and after; only named enrollments move; a start cannot pass a learner's started_at; the current grant's hard gate still overrides the new dates",
+        "AC-021: a personal enrollment has no organization and can_report cannot match it structurally; manager A sees their own records and not organization B's; every change manager A makes in A leaves the multi-organisation learner's row in B byte-identical",
+        "AC-065: removal from organisation A yields membership_inactive there while owns_enrollment still returns true for the learner's own history, organisation B and personal entitlement stay available, and the manager keeps reporting on historical rows",
+        "personal retakes use the next attempt number (1, 2, 3 verified); a manager cannot create a personal enrollment"
+      ]
+    },
+    {
+      "id": "T12",
+      "title": "Build learner dashboard and class experience",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T11"
+      ],
+      "requirements": [
+        "FR-07",
+        "FR-08"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/04-ui.md"
+      ],
+      "implementation_targets": [
+        "learn routes/outline/player/text/download UI",
+        "availability and empty/loading states"
+      ],
+      "acceptance_ids": [
+        "AC-066"
+      ],
+      "operation_ids": [
+        "list_my_enrollments",
+        "get_enrollment",
+        "get_learning_class"
+      ],
+      "checks": [
+        "npm run test:e2e -- learning-navigation"
+      ],
+      "notes": "Dashboard, outline and class shell built on design-system-v2 per D-02. The three read handlers are declared STABLE, so Postgres will not let them write — which is how AC-066's 'no completion is caused by GET' is guaranteed rather than merely intended. The player is T13, the exercise form T14 and the tutor drawer T19; each has a marked placeholder rather than a control that does nothing.",
+      "evidence": [
+        "103 unit + 203 integration + 77 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-066: the dashboard renders counts, percentage and due date from the fixture learners — Ben at 2 of 3 and 66.7%, Cora completed at 100% with View completion and no Overdue badge, Amber overdue",
+        "AC-066: a learner with nothing assigned sees spec/04's exact wording; the outline groups by module with required and complete labels",
+        "AC-066: another learner's enrollment, a nonexistent id, and a class reached through someone else's enrollment all return 'not available' with no detail leaked — the body is asserted not to contain the other learner's name",
+        "AC-066: opening every class twice by GET leaves required_completed at 0 and progress at 0 percent; the class API returns class_complete false",
+        "a learner's dashboard never lists another learner's enrollment, checked against the API response"
+      ]
+    },
+    {
+      "id": "T13",
+      "title": "Implement durable playback, text progress and resume",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T12"
+      ],
+      "requirements": [
+        "FR-08",
+        "FR-15"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/03-behavior.md"
+      ],
+      "implementation_targets": [
+        "playback/session/event transaction",
+        "interval union and coverage",
+        "text completion/continue calculation",
+        "Atomic class/program completion helper including unique certificate identity and outbox insert; PDF/UI follows T15"
+      ],
+      "acceptance_ids": [
+        "AC-023",
+        "AC-024",
+        "AC-025",
+        "AC-026",
+        "AC-027",
+        "AC-028",
+        "AC-029",
+        "AC-030"
+      ],
+      "operation_ids": [
+        "start_playback",
+        "record_progress",
+        "complete_text"
+      ],
+      "checks": [
+        "npm run test:unit -- progress",
+        "npm run test:integration -- progress",
+        "npm run test:e2e -- resume"
+      ],
+      "notes": "Playback, progress and completion live in one database transaction per heartbeat (spec/03 §4 steps 1-7). The rules are also written as pure functions in lib/progress.ts so they can be tested exhaustively and so the player can pre-validate; the database remains the authority. Three SQLSTATEs were added for conditions spec/05 names but no standard class describes: PGL22 ACCESS_UNAVAILABLE (with the availability reason in DETAIL, now used by T09 and T12 too, which had been returning VALIDATION_ERROR), PGL28 SESSION_SUPERSEDED and PGL29 INVALID_PROGRESS. app.settle_completion is the atomic class/program completion helper the task asks for, and T14 will call the same function so the two paths cannot disagree. Real-media playback — an actual video element seeking and reporting intervals — is still blocked on the client's nine videos; everything here is exercised through the real API and the real player's own logic.",
+      "evidence": [
+        "130 unit + 218 integration + 79 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-023 grant revoked mid-session: next heartbeat refused, prior progress retained",
+        "AC-024 cross-session resume at 125000ms in a second browser context, completing nothing",
+        "AC-025 coverage threshold exact at 540000 of 600000, overlapping replay credits nothing",
+        "AC-026 a seek credits only what could have been played, not the span skipped",
+        "AC-027 replay, stale sequence and changed-body conflict all behave as specified",
+        "AC-028 two tabs: 409 SESSION_SUPERSEDED for the old one, over the database and over HTTP",
+        "AC-029 implausible intervals refused with no state change, server clock over client's",
+        "AC-030 text completes only on the explicit POST, never on a GET",
+        "certificate and its outbox record are inserted in the same transaction that completes the program"
+      ]
+    },
+    {
+      "id": "T14",
+      "title": "Implement short-response exercise completion",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T13"
+      ],
+      "requirements": [
+        "FR-09"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/03-behavior.md",
+        "spec/04-ui.md"
+      ],
+      "implementation_targets": [
+        "exercise completion transaction and read-only saved response UI",
+        "Unicode validation and retry conflict handling"
+      ],
+      "acceptance_ids": [
+        "AC-031",
+        "AC-032",
+        "AC-033"
+      ],
+      "operation_ids": [
+        "complete_exercise",
+        "get_exercise_completion"
+      ],
+      "checks": [
+        "npm run test:unit -- exercise",
+        "npm run test:integration -- exercise"
+      ],
+      "notes": "Counting is the whole of this task. PostgreSQL's char_length counts code points and JavaScript's string.length counts UTF-16 units, so a 2,000-emoji response is 2,000 characters to the database and 4,000 to a naive form — the browser would refuse what the database would have accepted. lib/exercise.ts counts by code point and normalises to NFC before counting, and app.normalize_response does the same in SQL. Completion goes through app.settle_completion, the same helper T13's heartbeat calls, so whichever half of a class arrives second completes it and the two paths cannot disagree. PGL40 carries EXERCISE_ALREADY_COMPLETED; an identical resubmission is treated as the retry it is rather than refused.",
+      "evidence": [
+        "143 unit + 231 integration + 79 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-031 the four boundary submissions behave identically in the application and in the database",
+        "AC-031 2000 emoji and 2000 decomposed characters both accepted, counted as PostgreSQL counts them",
+        "AC-032 injected failure leaves neither response nor completion; retry succeeds exactly once",
+        "AC-032 a different response after completion is 409 EXERCISE_ALREADY_COMPLETED, saved text untouched",
+        "AC-032 a manager and another learner both get 404 for a learner's response",
+        "AC-033 exercise saved before the media keeps the class incomplete until coverage passes, then completes once"
+      ]
+    },
+    {
+      "id": "T15",
+      "title": "Implement certificates and completion transaction",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T14"
+      ],
+      "requirements": [
+        "FR-10"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/03-behavior.md"
+      ],
+      "implementation_targets": [
+        "Verify and finish atomic completion/certificate/outbox helper introduced in T13; add immutable certificate metadata and revocation",
+        "PDF renderer and metadata/download/revoke handlers"
+      ],
+      "acceptance_ids": [
+        "AC-034",
+        "AC-035"
+      ],
+      "operation_ids": [
+        "get_certificate",
+        "get_certificate_pdf",
+        "revoke_certificate"
+      ],
+      "checks": [
+        "npm run test:integration -- certificates",
+        "npm run test:e2e -- certificate"
+      ],
+      "notes": "The issuing transaction was already built in T13 (app.settle_completion) and the immutability trigger in T02; this task added reading, the PDF and revocation, and verified the atomicity claim with two genuinely concurrent connections rather than two sequential calls. Fonts are bundled under assets/fonts (Lora and Nunito Sans, SIL OFL 1.1, the faces the site already uses) rather than fetched, so a certificate renders identically in ten years. spec/03's 'do not silently replace unsupported characters' is enforced with fontkit's own character map: a name the font cannot draw raises CertificateFontError and no document is produced, because a certificate with somebody's name rendered as empty boxes looks official and is wrong. PGL41 carries CERTIFICATE_REVOKED. Reading is deliberately not gated on enrollment availability — spec/03 says 'including after course access expiry'.",
+      "evidence": [
+        "156 unit + 244 integration + 84 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-034 two concurrent final completions leave one completion, one certificate and one notification",
+        "AC-035 a rename of the profile and the program does not rewrite the snapshot",
+        "AC-035 the owner downloads the PDF after the grant has expired",
+        "AC-035 another learner and another organization's manager get 404 for metadata and PDF alike",
+        "AC-035 revoked metadata stays visible; the PDF is 409 CERTIFICATE_REVOKED and the button is disabled",
+        "revocation is admin-only, reason 1-500 characters, idempotent for the same reason and refused for a different one",
+        "the PDF renders accented names and refuses rather than printing empty boxes for characters the font lacks"
+      ]
+    },
+    {
+      "id": "T16",
+      "title": "Implement scoped manager/admin reporting",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T15"
+      ],
+      "requirements": [
+        "FR-02",
+        "FR-12"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/03-behavior.md",
+        "tests/fixtures.json"
+      ],
+      "implementation_targets": [
+        "reports SQL/DTOs",
+        "manager dashboard and CSV export"
+      ],
+      "acceptance_ids": [
+        "AC-036",
+        "AC-037",
+        "AC-038"
+      ],
+      "operation_ids": [
+        "report_enrollments",
+        "export_enrollments"
+      ],
+      "checks": [
+        "npm run test:integration -- reports"
+      ],
+      "notes": "Scope is computed, never trusted: app.report_scope turns the caller into a set of organization ids that every row is intersected with, so a manager's filter cannot widen it and a personal enrollment (which has no organization_id) is unreachable by construction. The summary is computed over all matching rows rather than the page returned, which AC-037 requires and which a page-local summary would silently get wrong. This is the first real cursor pagination in the codebase: the cursor is the sort key of the last row, so rows do not shift under a manager paging while somebody finishes a class. The CSV's formula-injection defence looks past leading whitespace, which is exactly AC-038's case. PGL42 carries EXPORT_LIMIT. The enroll_multi_a fixture ambiguity recorded at T11 is now resolved: expected_report is authoritative and the report reproduces it exactly with multi in organization B only.",
+      "evidence": [
+        "167 unit + 263 integration + 91 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-036 expected_report reproduced field for field, including each learner's progress percentage",
+        "AC-037 null denominators, inclusive/exclusive completion window, and a summary over every matching row",
+        "AC-037 paging returns each row exactly once and then stops; cancelled rows never enter the active denominator",
+        "AC-038 a name beginning whitespace then = is prefixed and quoted; the check looks past the whitespace",
+        "AC-038 a foreign organization filter is 403 on both the report and the export",
+        "AC-038 the CSV header is ReportRow's order and carries no exercise, chat or time-spent column",
+        "a personal enrollment is invisible to every manager, and somebody who manages nothing is refused"
+      ]
+    },
+    {
+      "id": "T17",
+      "title": "Implement tutor context retrieval and privacy",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T10",
+        "T11"
+      ],
+      "requirements": [
+        "FR-02",
+        "FR-13"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/05-integrations-operations.md"
+      ],
+      "implementation_targets": [
+        "authorized chunk retrieval and bounded prompt builder",
+        "tutor session access handlers"
+      ],
+      "acceptance_ids": [
+        "AC-039"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "npm run test:integration -- tutor-context"
+      ],
+      "notes": "Nothing here is dispatched — T17 declares no operation_ids — so the retrieval is reachable only from inside T18's authorized reservation transaction. The corpus is bounded once, in a CTE over the enrollment's PINNED version, and every ranking and fallback draws from that: no ordering mistake can reach another programme. websearch_to_tsquery is used rather than to_tsquery because the question is typed by a person and must not be able to break the query. The prompt's 24,000-byte budget is measured in UTF-8 bytes, not characters, so a question in a non-Latin script is not silently sent at three times its intended size.",
+      "evidence": [
+        "486 unit+integration and 98 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "AC-039 every source comes from the pinned version; planted organization B material is never retrieved",
+        "AC-039 history is this learner's completed exchanges for this enrollment and nothing else",
+        "a question of pure punctuation or SQL cannot break the query, and the tables are still there"
+      ]
+    },
+    {
+      "id": "T18",
+      "title": "Implement tutor model adapter and budget accounting",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T17"
+      ],
+      "requirements": [
+        "FR-13",
+        "FR-14"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/05-integrations-operations.md"
+      ],
+      "implementation_targets": [
+        "OpenAI structured answer adapter",
+        "request dedupe and durable usage reservation/settlement",
+        "request/history handlers"
+      ],
+      "acceptance_ids": [
+        "AC-040",
+        "AC-041",
+        "AC-043",
+        "AC-044"
+      ],
+      "operation_ids": [
+        "ask_tutor",
+        "get_tutor_request",
+        "list_tutor_history"
+      ],
+      "checks": [
+        "npm run test:integration -- tutor"
+      ],
+      "notes": "Three steps, deliberately separate: ask_tutor reserves under the caller's identity in one transaction that takes the locks and records what the call may cost; the provider is called outside any transaction, because a database transaction must never wait on a network round trip; pglearn_job('tutor.finish') settles through the service-role dispatcher M04 already reserved for it. A crash between two and three leaves the reservation held and the request swept to failed by tutor.reap — spec/05's 'never release unknown usage simply because frontend disconnected'. The reservation counts unresolved reservations at their reserved value and settled ones at what they really cost. PGL43/44/45 carry REQUEST_IN_PROGRESS, RATE_LIMITED and TUTOR_BUDGET_EXCEEDED.",
+      "evidence": [
+        "AC-043 reservation before any call, one in-flight question, 3/minute, 30/day, monthly budget",
+        "AC-043 two concurrent connections racing for the last of the budget yield exactly one reservation",
+        "AC-044 pending returns 409 and is polled; polling consumes no quota; failed stays failed until a new key",
+        "AC-044 unknown usage keeps its reservation as uncertain; an abandoned request is swept the same way",
+        "AC-040 citations are rebuilt from our own ids with server-composed hrefs",
+        "a manager, an admin and another learner all get 404 for a learner's question"
+      ]
+    },
+    {
+      "id": "T19",
+      "title": "Build tutor UI and evaluate adapter behavior",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T18",
+        "T12"
+      ],
+      "requirements": [
+        "FR-13"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/04-ui.md",
+        "spec/05-integrations-operations.md"
+      ],
+      "implementation_targets": [
+        "class tutor drawer/pending/failure/source links",
+        "Recorded synthetic-course evaluation; real-course evaluation belongs to T25"
+      ],
+      "acceptance_ids": [
+        "AC-040",
+        "AC-041",
+        "AC-042",
+        "AC-067"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "npm run test:e2e -- tutor",
+        "Run synthetic-course evaluation through injected provider; label test evidence as such"
+      ],
+      "notes": "The drawer polls a pending request and never re-sends it: asking again after a timeout would spend a second question and may pay twice for one answer. It is hidden rather than unmounted when closed, so a pending question keeps polling while the learner carries on with the class. AC-067's injected responses come from lib/tutor/stub.ts behind PGLEARN_USE_FIXTURES — the flag assertCoreConfigured() already refuses to boot with in pilot or production, rather than a second switch nothing checks. AC-042 is recorded as blocked: four of its five claims are tested, and the fifth needs a real model and a person to read what it says.",
+      "evidence": [
+        "AC-067 pending indicator, completed answer with source links, illustrative label, failure with manual retry",
+        "AC-067 navigation and progress are untouched by anything the tutor does",
+        "AC-041 a fabricated citation is recorded as a failure and never shown",
+        "AC-042 blocked: recorded in tests/evaluation/tutor-synthetic-course.md pending OPENAI_API_KEY"
+      ]
+    },
+    {
+      "id": "T20",
+      "title": "Implement reminder eligibility and outbox claims",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T15"
+      ],
+      "requirements": [
+        "FR-11",
+        "FR-14"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/03-behavior.md"
+      ],
+      "implementation_targets": [
+        "timezone-aware rule selectors",
+        "daily cap and transactional outbox claims",
+        "provider uncertainty state machine"
+      ],
+      "acceptance_ids": [
+        "AC-045",
+        "AC-046",
+        "AC-047",
+        "AC-048"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "npm run test:unit -- reminders",
+        "npm run test:integration -- outbox"
+      ],
+      "notes": "The rules are written twice on purpose: lib/reminders.ts so they can be evaluated against a fixed clock at 08:59 and 09:00 on the day an offset changes, and SQL because only the database can decide them inside the transaction that claims the day. Both use a real IANA timezone database rather than an offset, which is what makes the DST case work — on the morning Madrid's clocks go back, two different instants are the same wall-clock time on the same local date, and the daily claim catches the second. A suppressed message releases its day because nothing was sent; a message already claimed keeps it, because an email in flight cannot be recalled. Nothing with an unknown outcome is ever recorded as failed.",
+      "evidence": [
+        "AC-045 one message per learner per local day; a duplicate run plans nothing",
+        "AC-046 28 unit cases covering the window boundaries, each rule, and the DST-repeat day",
+        "AC-047 suppression before sending releases the day; a claimed message cannot be recalled",
+        "AC-048 1/5/15/60-minute backoff, uncertain at five attempts or 23 hours, slot retained",
+        "the scheduler is service-role only and refuses a browser role"
+      ]
+    },
+    {
+      "id": "T21",
+      "title": "Connect email, webhooks and cron",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T20",
+        "T06"
+      ],
+      "requirements": [
+        "FR-01",
+        "FR-11"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/05-integrations-operations.md"
+      ],
+      "implementation_targets": [
+        "Resend adapter/templates and custom SMTP setup",
+        "GET reminder job and webhook verification",
+        "vercel.json schedules"
+      ],
+      "acceptance_ids": [
+        "AC-009",
+        "AC-049",
+        "AC-050"
+      ],
+      "operation_ids": [
+        "run_reminders",
+        "email_webhook"
+      ],
+      "checks": [
+        "npm run test:integration -- email",
+        "Verify route/cron configuration and provider adapter with controlled test payloads; real mail gate is T25"
+      ],
+      "notes": "The adapter's whole job is to distinguish a definitive rejection from an uncertain one: a 4xx that is not 429 means the provider will never send it, and a timeout means nobody knows. The outbox treats those completely differently, so collapsing them into 'error' would silently send somebody two reminders or none. The outbox row's uuid is the provider's Idempotency-Key, which is why a retry must never mint a new one — Resend deduplicates for 24 hours and the behavioural cutoff is 23. The webhook is verified against the RAW body before anything is persisted, and the body is parsed only afterwards; this svix version's verify() returns undefined, so relying on its return value silently turned every valid callback into a 401 until the parse was separated from the verification.",
+      "evidence": [
+        "AC-049 dedupe by provider event id, no downgrade of delivered, terminal bounce, callback-before-save reconciliation",
+        "AC-049 forged, unsigned and tampered callbacks are 401 with nothing written",
+        "AC-050 only the correct Bearer secret runs the scheduler; a signed-in admin is refused",
+        "AC-050 ordinary GET routes write nothing; the cron response carries counts and no addresses",
+        "templates carry plain text and HTML, link only into the application, and contain no course content",
+        "real outbound email is BLOCKED pending RESEND_API_KEY, EMAIL_FROM and a verified sender",
+        "e2e suite reworked to one sign-in per learner after Auth throttling surfaced as unrelated timeouts",
+        "the scheduler runs in its own Playwright project, last and single-worker, because its effects are global"
+      ]
+    },
+    {
+      "id": "T22",
+      "title": "Implement redacted operations and configuration failures",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T21",
+        "T18"
+      ],
+      "requirements": [
+        "FR-14"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/05-integrations-operations.md"
+      ],
+      "implementation_targets": [
+        "admin notifications/jobs status and safe retry",
+        "provider config validation and redacted logs"
+      ],
+      "acceptance_ids": [
+        "AC-048",
+        "AC-051"
+      ],
+      "operation_ids": [
+        "list_notifications",
+        "retry_notification",
+        "list_jobs"
+      ],
+      "checks": [
+        "npm run test:integration -- operations"
+      ],
+      "notes": "AC-051 is a test about what is NOT there, so the test plants the secret first: a failed invitation whose payload really does carry an Auth action link, then asserts the token is absent from the API response, the rendered HTML and every script the browser downloads. The OperationStatus DTO has no payload field and the handlers select columns explicitly, so the link cannot arrive by being forgotten; the Zod schema is strict, so a handler that started returning more would fail rather than pass it to a screen. A failed message may be resent by somebody who has looked at it, and an uncertain one may not — that refusal is DELIVERY_UNCERTAIN and the button is not even rendered.",
+      "evidence": [
+        "AC-051 the planted action link is absent from the API, the HTML and every downloaded script",
+        "AC-051 the DTO is the contract's seven fields and the schema is strict",
+        "AC-048 a failed message may be resent once, audited; an uncertain one is refused DELIVERY_UNCERTAIN",
+        "configuration status shows configured/not_configured and never a key",
+        "the page and its API are refused to a manager and to a learner"
+      ]
+    },
+    {
+      "id": "T23",
+      "title": "Integrate responsive admin/manager/learner UI",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T16",
+        "T19",
+        "T22"
+      ],
+      "requirements": [
+        "FR-06",
+        "FR-07",
+        "FR-12"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/04-ui.md"
+      ],
+      "implementation_targets": [
+        "consistent role navigation and PGLearn branding",
+        "complete program upload/assignment/report flows"
+      ],
+      "acceptance_ids": [
+        "AC-053"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "npm run test:e2e -- primary-flows",
+        "Manual keyboard/layout check at 390px and desktop using labeled fixture media"
+      ],
+      "notes": "One shell, built from get_me: a learner sees their own navigation, a manager of one organization sees it named, a manager of several must choose, and an admin sees the admin items. It is a convenience and not a control — every screen re-establishes the caller's rights from the database.\n\nTwo things the work exposed. First, a contract gap: `Program` carries only latest_published_version_id and no operation lists a program's versions, so an author who navigates away from a draft cannot find it again. clone_version — declared in the contract, previously unimplemented — now answers 'give me this program's draft', returning an existing one rather than creating a second. It does NOT copy content: spec/04 defers version cloning, and an asset's storage_key is UNIQUE so a copied class could not carry its media.\n\nSecond, an authorization assumption that was wrong: list_programs deliberately answers a MANAGER too, because a manager needs to know what they may assign. The admin pages had inferred admin rights from a refusal, so a manager could open /admin/programs. They now establish platform_admin from get_me. The API refused every write regardless, but the screen should never have rendered.",
+      "evidence": [
+        "577 unit and integration, 128 e2e passing; lint, typecheck, build, verify_spec and db:reset:test all pass",
+        "the shell gives each role its own navigation, with aria-current on the page in view",
+        "a manager is refused /admin/programs, /admin/organizations and /admin/individuals",
+        "the catalog, a program, its draft and its published version are all reachable and correct",
+        "a published version renders read-only: no publish, no add-module, disabled fields",
+        "publishing an incomplete draft lists what is missing rather than refusing with one message",
+        "individuals are shown with no organization invented for them; personal report rows are labelled",
+        "the cohort roster states that adding somebody does not assign them anything",
+        "clone_version tested: one draft at a time, idempotent, audited, admin-only, content not copied",
+        "AC-053 partially automated — labels, keyboard traversal, live regions — and recorded blocked for the manual half"
+      ]
+    },
+    {
+      "id": "T24",
+      "title": "Run cross-context and end-to-end verification",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T23"
+      ],
+      "requirements": [
+        "FR-02",
+        "FR-14"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/02-data-and-security.md",
+        "tests/acceptance.json"
+      ],
+      "implementation_targets": [
+        "real test evidence and corrected defects",
+        "private-cache/origin/access/secret checks"
+      ],
+      "acceptance_ids": [
+        "AC-003",
+        "AC-004",
+        "AC-007",
+        "AC-021",
+        "AC-023",
+        "AC-032",
+        "AC-038",
+        "AC-039",
+        "AC-064",
+        "AC-065"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "npm run test:integration",
+        "npm run test:e2e",
+        "npm run lint",
+        "npm run typecheck",
+        "npm run build"
+      ],
+      "notes": "A verification pass is only worth running if it can fail, so the inventories are read from the contract, the filesystem and the dispatcher's own source rather than typed out — a route or an action added later appears in these tests without anybody remembering to add it. That caught two real defects.\n\nFirst: get_invitation and accept_invitation are declared in contracts/api.json and had NO API route. The invitation page calls the feature service directly server-side, so the flow worked and AC-009 passed — but the two declared endpoints did not exist. Both now do.\n\nSecond, in my own test rather than the code: I assumed update_me was onboarding-exempt. spec/02 names the exempt set exactly — get_me, get_invitation and accept_invitation — and the implementation was right. Worth recording because a test written from memory rather than from the specification is how a wrong assumption becomes a 'passing' check.\n\nrun_retention is declared and unbuilt (T28). It is listed by name in the sweep so the gap is stated rather than silently skipped, and so shipping it without removing the entry fails loudly.",
+      "evidence": [
+        "AC-007: every contract operation except health, the scheduler and the webhook answers an anonymous caller 401",
+        "AC-064: every mutating operation refuses a foreign Origin with 403, before authentication",
+        "every platform page found on disk sends an anonymous visitor to sign in and is no-store",
+        "AC-003/AC-004: one function reachable by the browser role; no table privileges; RLS on every table",
+        "AC-004: all 60+ dispatched actions refuse an unauthenticated and a suspended caller; only three are onboarding-exempt",
+        "AC-021: no personal enrollment reaches any manager through any action they may call",
+        "AC-023: revocation closes reading, playback, progress, completion, download and the tutor at once",
+        "AC-032/AC-039: one learner's id never substitutes for another's, and the actor comes only from auth.uid()",
+        "AC-065: removing a membership preserves the record and keeps it reportable",
+        "no configured secret appears in the browser bundle or in any rendered admin page",
+        "two defects found and fixed: get_invitation and accept_invitation had no API route"
+      ]
+    },
+    {
+      "id": "T25",
+      "title": "Rehearse and record demo gate",
+      "status": "done",
+      "release": "demo",
+      "depends_on": [
+        "T24"
+      ],
+      "requirements": [
+        "FR-01",
+        "FR-03",
+        "FR-06",
+        "FR-10",
+        "FR-11",
+        "FR-12",
+        "FR-13"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "README.md",
+        "tests/acceptance.json"
+      ],
+      "implementation_targets": [
+        "deployment/rehearsal evidence",
+        "explicit list of any unavailable real integrations"
+      ],
+      "acceptance_ids": [
+        "AC-052",
+        "AC-054",
+        "AC-061"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "Follow five-minute end-to-end script with actual source/provider inputs",
+        "Deliver one controlled invitation and reminder through real provider; inspect configured scheduler",
+        "Run real nine-video course tutor evaluation and uploaded-media checks"
+      ],
+      "notes": "The gate is rehearsed and recorded in tests/evaluation/demo-gate.md, which states plainly what is real and what is not. AC-054 is BLOCKED rather than passed: its own wording requires 'real controlled reminder/tutor verified', and both need credentials that do not exist yet.\n\nThe journey itself is the deliverable, and it earned its place: it found three defects in T23's code that every existing test had passed over. All three were writes — the class editor could not save (no Idempotency-Key), a text class could never be published (nothing set source_text), and assignment was refused every time (two fields OfferingCreate does not have). What the T23 tests exercised was navigation and rendering; a journey is what exercises the writes.",
+      "evidence": [
+        "the full journey passes through the real interface: author, publish, grant, cohort, assign, learn, certificate, PDF, report, CSV, tutor",
+        "three defects found and fixed: missing Idempotency-Key on three components, missing source_text, extra fields on OfferingCreate",
+        "tests/evaluation/demo-gate.md records what is real, what is stubbed, and what each gap needs",
+        "AC-052 blocked on the client's media; AC-061 and the tutor's answers blocked on OPENAI_API_KEY",
+        "real outbound email blocked on RESEND_API_KEY, EMAIL_FROM and a verified sender"
+      ]
+    },
+    {
+      "id": "T26",
+      "title": "Add validated bulk roster import",
+      "status": "done",
+      "release": "pilot",
+      "depends_on": [
+        "T11",
+        "T21"
+      ],
+      "requirements": [
+        "FR-03"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/04-ui.md",
+        "spec/03-behavior.md"
+      ],
+      "implementation_targets": [
+        "CSV preview/apply UI reusing create_invitation and add_cohort_members commands",
+        "No new API contract needed: apply uses existing idempotent routes with per-row keys"
+      ],
+      "acceptance_ids": [
+        "AC-055"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "npm run test:integration -- bulk-import"
+      ],
+      "notes": "No new API contract, as the task requires: the apply calls create_invitation once per row and add_cohort_members once — the same commands a manager uses one person at a time. Each row's Idempotency-Key is DERIVED from the file's content and the row's address rather than generated, so applying the same file again is the same request rather than a second invitation.\n\nThe preview is the plan, not an estimate: apply acts on exactly the rows it showed. The parser is written out rather than split(',') because a roster is precisely the file that contains \"Doe, Jane\".\n\nFour of my own expectations were wrong and the code was right: a foreign cohort is 42501 rather than 404 (the id came from the caller, so 'not permitted' discloses nothing), and create_invitation takes a user_id rather than an email because the Auth identity is established first — spec/03's 'Auth and Postgres cannot be one distributed transaction'.",
+      "evidence": [
+        "AC-055 preview: quoted commas, doubled quotes, CRLF, a BOM and no header all read correctly",
+        "AC-055 preview names each row's problems with its line number, and the counts reconcile",
+        "AC-055 apply is idempotent by request id and by the membership key, so a repeated file adds nobody twice",
+        "AC-055 a manager cannot import into another organization, nor import anybody as a manager",
+        "a roster containing an outsider is refused all-or-nothing, disclosing nothing about them",
+        "the import adds nobody to any programme: assignment stays a separate, dated decision"
+      ]
+    },
+    {
+      "id": "T27",
+      "title": "Add new-version cloning UI and checks",
+      "status": "done",
+      "release": "pilot",
+      "depends_on": [
+        "T10"
+      ],
+      "requirements": [
+        "FR-06"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/02-data-and-security.md",
+        "spec/03-behavior.md"
+      ],
+      "implementation_targets": [
+        "clone-version handler and draft UI",
+        "independent asset identity/requirements"
+      ],
+      "acceptance_ids": [
+        "AC-056"
+      ],
+      "operation_ids": [
+        "clone_version"
+      ],
+      "checks": [
+        "npm run test:integration -- version-cloning"
+      ],
+      "notes": "T23 created an EMPTY draft and recorded the omission: spec/04 deferred version cloning and an asset's storage_key is UNIQUE, so a copied class could not point at its source's media. T27 is the release that pays it — the target 'independent asset identity/requirements' IS the answer to that problem: the clone owns its own asset rows at its own keys, and the bytes are copied.\n\nTwo phases, because storage cannot join the transaction: clone_version copies everything the database owns and creates the new assets pending at the keys their objects must land at; the application copies each file server-side and settles it through the clone.finish job. A file that does not copy leaves its asset failed, which blocks publication — a half-copied clone cannot go live, and the author is told which file to upload again.\n\nFound on the way: the clone route returned {version, created} as its data, but the contract's 201 carries a Version with additionalProperties: false. It now returns the version, and the clone's summary is not returned at all — get_version already reports each asset's state on the screen the author lands on.",
+      "evidence": [
+        "AC-056 every module, class, exercise, chunk and asset is cloned at a NEW id; no id is shared with the source",
+        "AC-056 titles, order, kind, requirement and body survive the clone unchanged",
+        "AC-056 each copied file gets its own storage key under the new version; no key collides with the source's",
+        "AC-056 copied assets are pending until the bytes arrive, so a half-copied clone cannot be published",
+        "AC-056 the published version and its learners are untouched: editing the draft does not reach it",
+        "AC-056 a second Open draft returns the existing draft and does not clone the content twice",
+        "clone.finish refuses a non-administrator (42501) and an asset of a published version (23514)",
+        "e2e: the admin opens a draft of the published programme and finds its classes already there"
+      ]
+    },
+    {
+      "id": "T28",
+      "title": "Implement retention and verify recovery",
+      "status": "done",
+      "release": "pilot",
+      "depends_on": [
+        "T22"
+      ],
+      "requirements": [
+        "FR-14"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/05-integrations-operations.md"
+      ],
+      "implementation_targets": [
+        "retention handler and schedule",
+        "separate database/asset backup restore runbook"
+      ],
+      "acceptance_ids": [
+        "AC-057",
+        "AC-058"
+      ],
+      "operation_ids": [
+        "run_retention"
+      ],
+      "checks": [
+        "npm run test:integration -- retention",
+        "Perform restore rehearsal in disposable environment"
+      ],
+      "notes": "The retention handler is one DELETE per rule from spec/05, in an order the foreign keys allow, each counting what it removed and all of them reading one clock. Every rule deletes on the row's OWN timestamp, never on a parent's, so an active learner does not lose old events and a dormant one does not keep them.\n\nThe subtle rule is the tutor ledger: chats go at 30 days and the ledger stays 180, which works only because tutor_usage.request_id has no foreign key to tutor_requests. That absence in the schema is what lets month-end accounting survive the deletion of the chats it accounts for, and a test deletes the chat and re-sums the month.\n\nspec/05's 'purge expired auth links' has nothing to find here: this implementation never puts an Auth action link in the outbox. The statement ships anyway, because spec/05 permits the outbox to hold one temporarily and a job that only purges what today's code writes would silently stop covering tomorrow's.\n\nAC-058 is blocked on performing the rehearsal, not on writing it: the development project has no daily backups, creating and deleting a second project needs authorisation, and the only media in the system is synthetic. tests/evaluation/restore-runbook.md is the procedure and names exactly what is missing.",
+      "evidence": [
+        "AC-057 a chat older than 30 days is removed, requests before sessions; a recent one is untouched",
+        "AC-057 an old session holding a recent question is kept — emptiness alone is not a reason to delete",
+        "AC-057 raw learning events go at 30 days, idempotency records at 30, rate windows at 35",
+        "AC-057 an auth link is stripped from a delivered message without losing the delivery record",
+        "AC-057 class_progress, exercise_completions, certificates and enrollments are identical across a run",
+        "AC-057 the month's spend still sums after the chats it accounted for are deleted; the ledger goes at 180 days",
+        "AC-057 the run is recorded in job_runs with its per-rule counts",
+        "AC-057 pglearn_job refuses a learner and a platform administrator alike (42501)",
+        "e2e: /api/v1/jobs/retention refuses no secret, a wrong secret and a signed-in administrator; a real run returns the contract's JobResult and changes no learner record",
+        "AC-058 blocked: tests/evaluation/restore-runbook.md written, with the measured rehearsal named as what is missing"
+      ]
+    },
+    {
+      "id": "T29",
+      "title": "Measure 40-user load and operational limits",
+      "status": "done",
+      "release": "pilot",
+      "depends_on": [
+        "T24",
+        "T26",
+        "T27",
+        "T28"
+      ],
+      "requirements": [
+        "FR-08",
+        "FR-12",
+        "FR-14"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "spec/05-integrations-operations.md",
+        "tests/fixtures.json"
+      ],
+      "implementation_targets": [
+        "repeatable bounded load scenario and measurements",
+        "quota/spend/latency fixes based on evidence"
+      ],
+      "acceptance_ids": [
+        "AC-059"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "Run 40-user scenario; record concurrency/network/p95/error rate"
+      ],
+      "notes": "scripts/load-40.mjs: forty real Auth identities with real enrollments, each calling as itself so row-level security is doing its work on every request, with think time between actions and a single-learner baseline recorded alongside so a slow number can be attributed rather than guessed at.\n\nThe first version failed its targets and two of the three reasons were the measurement's fault: it gave every learner a DATABASE BACKEND of their own and fired five reads back to back with no pause. The application does not connect that way — it speaks to PostgREST over HTTPS, which multiplexes onto a small pool — so the measurement now does too.\n\nThe third reason was a real finding and is recorded as one: on this instance the connection model dominates everything else. Forty direct backends took p95 from ~200ms to 7-14s while the single-learner baseline was unchanged. Anything in the pilot that opens a connection per user will do the same.\n\nThrough the real path: every data operation inside 1s at p95 (slowest 465ms), the dashboard at 1208ms against a 3s target, no failed calls, and no lost acknowledged updates. Measured from this machine to the hosted development project over the public internet, which is a harsher network than the deployed application's.",
+      "evidence": [
+        "AC-059 40 concurrent learners, 984 calls: p95 221-465ms per data operation, all inside the 1s target",
+        "AC-059 dashboard /learn, signed in, measured during the load: p95 1208ms against a 3s target",
+        "AC-059 no failed calls, and every acknowledged heartbeat accounted for in the coverage the database holds",
+        "AC-059 baseline recorded (one learner, no concurrency: 155-187ms p50) so the load's cost is attributable",
+        "the direct-backend comparison (--pg) recorded as a finding: connection-per-user collapses this instance",
+        "tests/evaluation/load-40.json written by the script; the script exits non-zero when a target is missed"
+      ]
+    },
+    {
+      "id": "T30",
+      "title": "Release pilot and onboard manager",
+      "status": "done",
+      "release": "pilot",
+      "depends_on": [
+        "T25",
+        "T29"
+      ],
+      "requirements": [
+        "FR-14"
+      ],
+      "read": [
+        "spec/01-decisions.md",
+        "tests/acceptance.json",
+        "HANDOFF.md"
+      ],
+      "implementation_targets": [
+        "full gate evidence",
+        "manager runbook and verified roster/content/dates",
+        "recorded pilot deployment/migration version"
+      ],
+      "acceptance_ids": [
+        "AC-060"
+      ],
+      "operation_ids": [],
+      "checks": [
+        "Reconcile all mandatory acceptance evidence and verify manager operation"
+      ],
+      "notes": "The gate is computed, not written: scripts/pilot-gate.mjs reconciles tasks.json against tests/acceptance.json and produces tests/evaluation/pilot-gate.md. It refuses to round up — a scenario marked passed with no evidence anywhere, a task done whose scenario was never run, or an unfinished pilot task all close it, and AC-060 cannot close itself.\n\nWriting it found two real inconsistencies in the ledger: AC-017, AC-052 and AC-061 were recorded 'not_run' when HANDOFF had said for weeks that they were blocked on the client's media and a provider key — they are now blocked, with evidence naming what is missing. And twenty early scenarios looked unevidenced because their evidence had been recorded on the owning TASK rather than the scenario; the gate reads both, since that is a change of habit rather than an absence of evidence.\n\nThe gate distinguishes defects from conditions. Seven scenarios are blocked on inputs the software cannot supply itself; none is a defect, and every one must be settled before real learners are onboarded. handoff/manager-runbook.md is the manager's procedure, written only from the screens — nothing in it needs the database, which is what AC-060 asks for.\n\nAC-060 is recorded BLOCKED rather than passed: the walkthrough of that runbook on pilot data is a person's job, and marking the gate passed on a script's say-so would be the rounding up the gate exists to prevent.",
+      "evidence": [
+        "tests/evaluation/pilot-gate.md: 59 of 67 passed, all evidenced; no critical scenario outstanding; gate OPEN on the software",
+        "the gate closes on an unevidenced pass, a done task with a never-run scenario, or an unfinished pilot task — each tested by construction",
+        "seven release conditions named, each an input the software cannot supply, each with its own evidence of what is missing",
+        "handoff/manager-runbook.md: the manager's procedure end to end, with nothing in it that needs the database",
+        "AC-060 recorded blocked pending the runbook walkthrough on pilot data and the seven conditions"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+/*
+ * PGLabs Design System v2 — "Editorial"
+ *
+ * Type pairing per the Figma "Welcome coach" design system frame:
+ *   - Lora (display) + Nunito Sans (body)
+ *   - Ink navy #1A2230 as the primary dark; slate #667083 as body copy
+ *   - Azure #59C4ED as the brand accent (the deck's teal, retired)
+ *   - Amber #E8A33D and coral #E2624A as data/emphasis accents
+ *   - Cool surface #F4F6F8 with #C9D4E2 hairlines
+ *   - Near-square geometry: the deck sets type on a grid, not in pills
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Nunito+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* --- Ink / slate ramp (deck body + heading colours) --- */
+    --ink-900: #10161f;
+    --ink-800: #1a2230; /* deck ink — headings, dark sections */
+    --ink-700: #2a3f5c;
+    --ink-600: #474f5e;
+    --slate-500: #667083; /* deck body copy — most-used colour in the deck */
+    --slate-400: #8595ab;
+    --slate-300: #9daac0;
+    --slate-200: #c9d4e2; /* hairlines, dividers */
+    --slate-100: #e4eaf2;
+
+    /* --- Surfaces --- */
+    --surface: #f4f6f8; /* deck light section fill */
+    --surface-raised: #ffffff;
+    --surface-sunken: #e9edf2;
+
+    /* --- Brand blue --- */
+    --blue-700: #0e5f81;
+    --blue-600: #11739c; /* text-safe on light grounds */
+    --blue-500: #59c4ed; /* brand accent + button fill */
+    --blue-400: #7ecff1;
+    --blue-100: #ddeffb;
+
+    /* --- Data accents --- */
+    --amber-500: #e8a33d;
+    --amber-100: #fbeed6;
+    --coral-500: #e2624a;
+    --coral-100: #fbe3de;
+    --sky-500: #59c4ed;
+    --sky-100: #dff2fb;
+
+    /* --- Semantic aliases --- */
+    --background: var(--surface-raised);
+    --foreground: var(--ink-800);
+    --primary: var(--blue-500);
+    --primary-foreground: #ffffff;
+    --secondary: var(--surface);
+    --secondary-foreground: var(--ink-800);
+    --muted: var(--surface);
+    --muted-foreground: var(--slate-500);
+    --accent: var(--amber-500);
+    --accent-foreground: var(--ink-800);
+    --border: var(--slate-200);
+    --input: var(--slate-200);
+    --ring: var(--blue-500);
+
+    /* Editorial geometry: near-square, not pill */
+    --radius: 3px;
+  }
+
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    font-family: "Nunito Sans", system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.6;
+    background-color: var(--background);
+    color: var(--slate-500);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Lora", Georgia, serif;
+    font-weight: 600;
+    color: var(--ink-800);
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  /* Deck sets big figures in Playfair with lining/tabular numerals so
+     stat rows align on the decimal. Preserve that on the web. */
+  .tabular {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+}
+
+@layer components {
+  /* Editorial rule used above eyebrow labels throughout the deck */
+  .rule-top {
+    border-top: 1px solid var(--slate-200);
+  }
+}

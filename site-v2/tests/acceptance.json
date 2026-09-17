@@ -1,0 +1,885 @@
+{
+  "version": "1.0",
+  "scenarios": [
+    {
+      "id": "AC-001",
+      "title": "Clean bootstrap",
+      "given": "Fresh repository and local Supabase test environment",
+      "when": "Run installed scripts and test DB reset",
+      "then": "App shell builds; reset creates schema and deterministic fixtures without calling external providers.",
+      "layer": "integration",
+      "requirements": [
+        "FR-14"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "AC-002",
+      "title": "Schema constraints",
+      "given": "Reference schema and auth fixture users",
+      "when": "Insert grant with both subjects, bad dates, duplicate offering enrollment or cross-version progress",
+      "then": "Each statement fails the relevant CHECK/UNIQUE/FK; transaction does not leave a partial row.",
+      "layer": "database",
+      "requirements": [
+        "FR-02",
+        "FR-05"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "AC-003",
+      "title": "No direct table access",
+      "given": "anon and authenticated DB roles",
+      "when": "SELECT or INSERT app.enrollments, including through Data API",
+      "then": "Permission denied or inaccessible schema; no row data disclosed.",
+      "layer": "database",
+      "requirements": [
+        "FR-02"
+      ],
+      "status": "passed",
+      "evidence": " Re-verified at T24 across the whole surface: exactly one function is executable by the browser role (public.pglearn_rpc), the app schema grants it no table privileges at all, RLS is enabled on every app table, and the Data API cannot see app.profiles, app.enrollments, app.certificates or app.tutor_requests even with a key."
+    },
+    {
+      "id": "AC-004",
+      "title": "Function privilege boundary",
+      "given": "Authenticated learner token",
+      "when": "Call pglearn_job/provision or unknown pglearn_rpc action",
+      "then": "Service functions deny execute; unknown action returns stable denial and makes no changes.",
+      "layer": "database",
+      "requirements": [
+        "FR-02"
+      ],
+      "status": "passed",
+      "evidence": " Re-verified at T24 against EVERY dispatched action, read from the dispatcher's own source rather than a list: all 60+ refuse an unauthenticated caller with 28000, all refuse a suspended account with 42501, and only get_me, get_invitation and accept_invitation answer before an invitation is accepted — the exact set spec/02 names."
+    },
+    {
+      "id": "AC-005",
+      "title": "Cross-context relationship",
+      "given": "Org A grant and org B cohort",
+      "when": "Create offering referencing mismatched grant/cohort via handler or privileged insert test",
+      "then": "Relationship trigger rejects; no offering/enrollment created.",
+      "layer": "database",
+      "requirements": [
+        "FR-02",
+        "FR-04"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "AC-006",
+      "title": "Session and profile authority",
+      "given": "Signed-in learner with manipulated profile fields/cookie role metadata",
+      "when": "Try to set platform_admin, email or organization role through update_me",
+      "then": "Unknown fields rejected; DB authority remains unchanged.",
+      "layer": "integration",
+      "requirements": [
+        "FR-01",
+        "FR-02"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "AC-007",
+      "title": "Anonymous and logout",
+      "given": "Unauthenticated or server-revoked session",
+      "when": "Open protected class/API",
+      "then": "Page redirects to login; API returns 401; no cached content from another user.",
+      "layer": "e2e",
+      "requirements": [
+        "FR-01"
+      ],
+      "status": "passed",
+      "evidence": " Re-verified at T24 by sweeping every operation in contracts/api.json: each one that is not health, the scheduler or the webhook answers an anonymous caller with 401, and every page under app/(platform) sends an anonymous visitor to sign in."
+    },
+    {
+      "id": "AC-008",
+      "title": "Invitation acceptance",
+      "given": "Pending unexpired invitation for amber",
+      "when": "Accept as amber, then retry; separately try as ben",
+      "then": "Amber becomes onboarded/active once; retry returns same state; ben gets 404.",
+      "layer": "integration",
+      "requirements": [
+        "FR-01",
+        "FR-03"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "AC-009",
+      "title": "New versus existing account",
+      "given": "One new email and one existing verified user",
+      "when": "Invite both and follow email/callback",
+      "then": "New user sets password before onboarding; existing user signs in and accepts without password reset; neither gains access before acceptance.",
+      "layer": "e2e",
+      "requirements": [
+        "FR-01"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "AC-010",
+      "title": "Invitation retry and expiry",
+      "given": "Repeated create request ID; expired invitation; missing mail response",
+      "when": "Retry same request, then explicitly resend expired invitation",
+      "then": "No duplicate membership/enrollment; resend replaces invitation with 24h expiry; private Auth link never returned to manager.",
+      "layer": "integration",
+      "requirements": [
+        "FR-03",
+        "FR-14"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "AC-011",
+      "title": "Last manager and scope",
+      "given": "One active manager A",
+      "when": "Remove/demote manager or have manager A invite manager B/promote learner",
+      "then": "Last-manager change fails 409; manager role promotion/foreign-org action denied.",
+      "layer": "database",
+      "requirements": [
+        "FR-02",
+        "FR-03"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "AC-012",
+      "title": "Cohort membership removal",
+      "given": "Active enrolled cohort learner",
+      "when": "Remove learner from cohort, then re-add",
+      "then": "Prior progress retained; enrollment cancelled; re-add alone does not reactivate; explicit valid reactivation restores access.",
+      "layer": "integration",
+      "requirements": [
+        "FR-03",
+        "FR-15"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "AC-013",
+      "title": "Catalog subject and expiry",
+      "given": "A grant, personal grant, and B-only program",
+      "when": "Manager A lists catalog/grants then assigns B-only content or personal grant",
+      "then": "Only own entitled summaries visible; invalid assignment denied; personal grant never grants A access.",
+      "layer": "integration",
+      "requirements": [
+        "FR-04"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "AC-014",
+      "title": "Draft editing and ordering",
+      "given": "Two modules with existing classes",
+      "when": "Reorder complete sibling list then submit duplicate/foreign ID list",
+      "then": "Valid order contiguous and persisted; invalid reorder rejected atomically.",
+      "layer": "integration",
+      "requirements": [
+        "FR-06"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "AC-015",
+      "title": "Asset upload authorization",
+      "given": "Admin draft class and learner token",
+      "when": "Authorize supported upload as admin; try learner upload or path traversal filename",
+      "then": "Admin receives exact scoped upload permission; learner denied; key sanitized/no traversal.",
+      "layer": "integration",
+      "requirements": [
+        "FR-06",
+        "FR-07"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "AC-016",
+      "title": "Upload finalization",
+      "given": "Uploaded object with declared/actual mismatch or invalid SRT",
+      "when": "Finalize upload",
+      "then": "Asset not ready; stable error shown; class cannot publish until corrected.",
+      "layer": "integration",
+      "requirements": [
+        "FR-06"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "AC-017",
+      "title": "Caption conversion",
+      "given": "Valid English SRT with timestamps and overlapping cues",
+      "when": "Finalize caption then play generated VTT",
+      "then": "Timestamps/text preserved, overlap allowed, invalid end<=start rejected, raw HTML not executed.",
+      "layer": "integration",
+      "requirements": [
+        "FR-07"
+      ],
+      "status": "blocked",
+      "evidence": "tests/unit/captions.test.ts and tests/integration/assets.test.ts: every conversion rule in the scenario passes — timestamps and text preserved, overlapping cues allowed, an end<=start cue rejected, and raw HTML in a cue carried through as text rather than markup. The remaining clause, 'play generated VTT', needs a real video with a real caption track; tests/fixtures.json says the client's nine videos cannot be substituted. Recorded blocked on that media rather than passed on the half that could be checked."
+    },
+    {
+      "id": "AC-018",
+      "title": "Publication guard",
+      "given": "Draft missing required source/caption or all classes optional",
+      "when": "Publish",
+      "then": "422 PUBLISH_INCOMPLETE with specific fields; version remains draft.",
+      "layer": "integration",
+      "requirements": [
+        "FR-06"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "AC-019",
+      "title": "Published immutability",
+      "given": "Published version with enrollment",
+      "when": "Edit/delete class/assets through route or DB privileged test",
+      "then": "VERSION_PUBLISHED/trigger rejection; original denominator/source/assets unchanged.",
+      "layer": "database",
+      "requirements": [
+        "FR-06",
+        "FR-08"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "AC-020",
+      "title": "Enrollment uniqueness",
+      "given": "Eligible active/invited cohort members",
+      "when": "Assign same offering twice",
+      "then": "Same enrollment IDs returned; assigned count unchanged on second call.",
+      "layer": "integration",
+      "requirements": [
+        "FR-05"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "AC-021",
+      "title": "Personal and multi-org privacy",
+      "given": "personal and multi fixture accounts",
+      "when": "List own enrollments and manager A reports",
+      "then": "Personal learner works without org; manager A sees only A records; multi progress in B is unaffected by A updates.",
+      "layer": "integration",
+      "requirements": [
+        "FR-02",
+        "FR-05"
+      ],
+      "status": "passed",
+      "evidence": " Re-verified at T24 through every action a manager may call: no personal enrollment appears in their report or their export, and neither body names the individual learner."
+    },
+    {
+      "id": "AC-022",
+      "title": "Time boundaries",
+      "given": "Start S, due D, hard end E, active grant",
+      "when": "Read/write at S, D, D+1ms, E",
+      "then": "S permits access; completion at D is on time; D+1ms may complete late; E rejects new learning writes.",
+      "layer": "unit",
+      "requirements": [
+        "FR-05",
+        "FR-15"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "AC-023",
+      "title": "Grant revoked during session",
+      "given": "Authorized playing learner with valid URL",
+      "when": "Revoke grant, request next heartbeat/download renewal",
+      "then": "Write/renewal rejected; existing issued link may remain usable only until expiry; prior progress retained.",
+      "layer": "integration",
+      "requirements": [
+        "FR-15"
+      ],
+      "status": "passed",
+      "evidence": "tests/integration/progress.test.ts — revoking the grant mid-session makes the next heartbeat fail with PGL22/ACCESS_UNAVAILABLE carrying reason 'revoked', while the 30 seconds already recorded stay in played_ranges. AC-062 already covers the download-renewal half. Re-verified at T24 as a sweep: after the grant is revoked, get_learning_class, start_playback, complete_text, complete_exercise, authorize_download and ask_tutor are ALL refused, and what was already recorded is untouched."
+    },
+    {
+      "id": "AC-024",
+      "title": "Cross-session resume",
+      "given": "Acknowledged position 125000ms",
+      "when": "Reload and log in on another browser then Continue",
+      "then": "Same enrollment/class/position restored; no automatic completion from opening.",
+      "layer": "e2e",
+      "requirements": [
+        "FR-08"
+      ],
+      "status": "passed",
+      "evidence": "tests/e2e/resume.spec.ts — position 125000 acknowledged in one browser context is restored by start_playback in a SECOND context with its own cookie jar and sign-in; the card's link points back at the same class; coverage stays 0 and nothing completes. Seeking a real video element to 125s still needs the client's media."
+    },
+    {
+      "id": "AC-025",
+      "title": "Interval coverage threshold",
+      "given": "600000ms media and no exercise",
+      "when": "Accumulate unique [0,539999) then extend to 540000",
+      "then": "First content incomplete; at 540000 content completes exactly; overlapping replay adds zero duplicate coverage.",
+      "layer": "unit",
+      "requirements": [
+        "FR-08"
+      ],
+      "status": "passed",
+      "evidence": "tests/unit/progress.test.ts — [0,539999) incomplete, 540000 exactly complete, an overlapping replay adds zero, and the threshold is integer arithmetic."
+    },
+    {
+      "id": "AC-026",
+      "title": "Seek is not playback",
+      "given": "New 600000ms media session",
+      "when": "Seek to 590000 then submit plausible played [590000,600000)",
+      "then": "Coverage=10000ms, class incomplete despite position at end.",
+      "layer": "unit",
+      "requirements": [
+        "FR-08"
+      ],
+      "status": "passed",
+      "evidence": "tests/unit/progress.test.ts — a seek to 590000 with a plausible 10s interval credits 10000ms and leaves the class incomplete although the position is at the end."
+    },
+    {
+      "id": "AC-027",
+      "title": "Heartbeat replay/order",
+      "given": "Accepted sequence 3 and event UUID",
+      "when": "Retry identical event; send new event sequence 2; reuse event with different body",
+      "then": "Identical replay no new credit; stale accepted=false; changed payload returns 409; position/completion never regresses.",
+      "layer": "integration",
+      "requirements": [
+        "FR-08"
+      ],
+      "status": "passed",
+      "evidence": "tests/integration/progress.test.ts — an identical replay returns current progress with no new event and no activity, a new event at an old sequence returns accepted=false/stale_sequence unchanged, and the same event id with a changed body raises 23505 (409)."
+    },
+    {
+      "id": "AC-028",
+      "title": "Two playback tabs",
+      "given": "Session A active then session B starts for same enrollment",
+      "when": "Send heartbeat from A then from B",
+      "then": "A gets 409 SESSION_SUPERSEDED; B writes; old tab cannot overwrite resume.",
+      "layer": "integration",
+      "requirements": [
+        "FR-08"
+      ],
+      "status": "passed",
+      "evidence": "tests/integration/progress.test.ts and tests/e2e/resume.spec.ts — tab B's start supersedes A; A's next heartbeat is PGL28/SESSION_SUPERSEDED over the database and 409 SESSION_SUPERSEDED over HTTP, and cannot move the resume point B set."
+    },
+    {
+      "id": "AC-029",
+      "title": "Impossible progress evidence",
+      "given": "15s elapsed at rate 1",
+      "when": "Submit 500000ms interval or negative/out-of-duration positions",
+      "then": "422 INVALID_PROGRESS and no state change.",
+      "layer": "unit",
+      "requirements": [
+        "FR-08"
+      ],
+      "status": "passed",
+      "evidence": "tests/unit/progress.test.ts (27 cases) and tests/integration/progress.test.ts — an interval longer than elapsed x rate + 1000 is refused as INVALID_PROGRESS/PGL29 with no state change, and the server's own clock overrides a client's elapsed_ms."
+    },
+    {
+      "id": "AC-030",
+      "title": "Text explicit completion",
+      "given": "Required text class viewed",
+      "when": "GET class then POST text completion",
+      "then": "GET leaves completion null; POST sets content complete and follows exercise rule.",
+      "layer": "integration",
+      "requirements": [
+        "FR-08"
+      ],
+      "status": "passed",
+      "evidence": "tests/integration/progress.test.ts and tests/e2e/resume.spec.ts — reading the text class twice leaves completion null; Mark as complete sets content and class complete and counts one required class; replaying the same event_id records nothing more."
+    },
+    {
+      "id": "AC-031",
+      "title": "Exercise Unicode validation",
+      "given": "Uncompleted exercise",
+      "when": "Submit whitespace-only, confirmation false, 2000 code points, and 2001 code points",
+      "then": "First two reject; 2000 accepts with confirmation; 2001 rejects consistently in UI/API/DB.",
+      "layer": "unit",
+      "requirements": [
+        "FR-09"
+      ],
+      "status": "passed",
+      "evidence": "tests/unit/exercise.test.ts (13 cases) and tests/integration/exercise.test.ts — whitespace-only and unconfirmed are refused, 2000 code points accepted, 2001 refused, asserted identically in the application and against the database. 2000 emoji (4000 UTF-16 units) are accepted by both, which a JavaScript length check would have refused."
+    },
+    {
+      "id": "AC-032",
+      "title": "Exercise atomicity and access",
+      "given": "Learner owns active matching enrollment",
+      "when": "Inject transaction failure while saving response; attempt foreign enrollment/class exercise",
+      "then": "No response/completion on failure; cross-context request denied; retry succeeds once.",
+      "layer": "integration",
+      "requirements": [
+        "FR-02",
+        "FR-09"
+      ],
+      "status": "passed",
+      "evidence": "tests/integration/exercise.test.ts — a failure injected after the insert leaves no response and no completion, and the retry afterwards succeeds exactly once; a retry with the same request id and body returns the first answer; another learner's enrollment and an exercise outside the pinned version are both 404; a different response after completion is PGL40/EXERCISE_ALREADY_COMPLETED and the saved text is untouched. Re-verified at T24 as a sweep: Ben asking about Amber's enrollment, class, playback, exercise, certificate and tutor session is refused on every one."
+    },
+    {
+      "id": "AC-033",
+      "title": "Exercise before content",
+      "given": "Required media class incomplete",
+      "when": "Save response/confirmation then finish media",
+      "then": "Exercise saved read-only; class stays incomplete until media criterion then completes once.",
+      "layer": "integration",
+      "requirements": [
+        "FR-09",
+        "FR-10"
+      ],
+      "status": "passed",
+      "evidence": "tests/integration/exercise.test.ts — the response saves and reads back read-only while the class stays incomplete; finishing the audio then completes it, and completed_at does not move on a later heartbeat. The reverse order (media first, exercise last) completes the class on the spot."
+    },
+    {
+      "id": "AC-034",
+      "title": "Concurrent final completion",
+      "given": "All but final criterion complete",
+      "when": "Submit two concurrent final completions",
+      "then": "One enrollment completion timestamp, one certificate and one certificate notification event.",
+      "layer": "database",
+      "requirements": [
+        "FR-10"
+      ],
+      "status": "passed",
+      "evidence": "tests/integration/certificates.test.ts — two genuinely concurrent connections submit the final completion at once; afterwards there is exactly one response, one enrollment completed_at, one certificate and one certificate outbox record. The test commits rather than rolling back, because a race needs two overlapping transactions, and restores the fixture learner afterwards."
+    },
+    {
+      "id": "AC-035",
+      "title": "Certificate access and snapshot",
+      "given": "Cora issued certificate",
+      "when": "Rename profile; expire course; attempt other-user PDF; revoke certificate",
+      "then": "Original name remains; owner can download after expiry; unauthorized gets 404; after revocation metadata remains and PDF returns 409.",
+      "layer": "integration",
+      "requirements": [
+        "FR-10"
+      ],
+      "status": "passed",
+      "evidence": "tests/integration/certificates.test.ts and tests/e2e/certificate.spec.ts — renaming the profile and the program leaves the snapshot's name and title unchanged; the owner reads and downloads it after the grant has expired; another learner and a manager of another organization get 404 for both metadata and PDF; after revocation the metadata and the banner stay visible while the PDF is 409 CERTIFICATE_REVOKED and the download button is disabled; a repeated revoke with the same reason is idempotent and a different reason is refused; only a platform admin may revoke."
+    },
+    {
+      "id": "AC-036",
+      "title": "Report fixture reconciliation",
+      "given": "Offering A fixed fixture at fixtures.now",
+      "when": "Query report and CSV",
+      "then": "assigned=4, not_started=2, in_progress=1, completed=1, overdue=3, completion_rate=25, average_progress=41.7.",
+      "layer": "integration",
+      "requirements": [
+        "FR-12"
+      ],
+      "status": "passed",
+      "evidence": "tests/integration/reports.test.ts and tests/e2e/reports.spec.ts — the offering A report matches fixtures.json's expected_report field for field (assigned 4, not_started 2, in_progress 1, completed 1, overdue 3, completion_rate 25, average_progress 41.7) and each learner's row_progress_percent; the manager's screen shows the same numbers and rows."
+    },
+    {
+      "id": "AC-037",
+      "title": "Empty and filtered reports",
+      "given": "No matching enrollment or completed time filter",
+      "when": "Query report",
+      "then": "Empty denominator returns null; completed filters exclude incomplete; summary uses all matching records not just one page.",
+      "layer": "integration",
+      "requirements": [
+        "FR-12"
+      ],
+      "status": "passed",
+      "evidence": "tests/integration/reports.test.ts — an empty match returns null for completion_rate and average_progress rather than zero; completion-time filters exclude every incomplete row, with completed_from inclusive and completed_to exclusive; a one-row page still carries the summary of all four matching rows, and paging returns each row exactly once before stopping; cancelled rows leave the active denominator but are returned when asked for by state."
+    },
+    {
+      "id": "AC-038",
+      "title": "CSV injection and scope",
+      "given": "Learner name begins whitespace then = and manager A token",
+      "when": "Export CSV including manipulated org filter",
+      "then": "Dangerous field prefixed with quote and RFC4180 escaped; foreign org filter denied; no chat/response body column.",
+      "layer": "integration",
+      "requirements": [
+        "FR-02",
+        "FR-12"
+      ],
+      "status": "passed",
+      "evidence": "tests/unit/csv.test.ts, tests/integration/reports.test.ts and tests/e2e/reports.spec.ts — a display name of '   =HYPERLINK(...)' is prefixed with an apostrophe and RFC4180-quoted, the check looking past leading whitespace; a manager asking for another organization is refused 403 on both report and export, and is bound to their own organization with no filter at all; the header is ReportRow's field order and carries no response, chat or time-spent column; personal enrollments are invisible to every manager. Re-verified at T24: a manager asking for another organization is 403 rather than filtered, and list_organizations answers a learner with 200 and an empty list — the refusal is in the contents, which discloses nothing."
+    },
+    {
+      "id": "AC-039",
+      "title": "Authorized retrieval",
+      "given": "A learner and B-only source chunks",
+      "when": "Ask course question attempting to retrieve B course",
+      "then": "Only pinned authorized version chunks enter provider input; B text and other conversations absent.",
+      "layer": "integration",
+      "requirements": [
+        "FR-02",
+        "FR-13"
+      ],
+      "status": "passed",
+      "evidence": "tests/integration/tutor-retrieval.test.ts and tests/unit/tutor-prompt.test.ts — every retrieved chunk comes from the enrollment's pinned version; organization B's material, planted and then asked for verbatim, never appears as a source; a class outside the version, another learner's enrollment and a revoked grant are all 404; history is only this learner's completed exchanges for this enrollment, so neither Ben's conversation nor the learner's other programme reaches the prompt. Re-verified at T24: the actor is derived from auth.uid() alone, and a payload carrying user_id, actor, actor_id or sub still answers as the caller."
+    },
+    {
+      "id": "AC-040",
+      "title": "Valid tutor output",
+      "given": "Retrieved source IDs and useful course question",
+      "when": "Provider returns explanation/example with valid subset citations",
+      "then": "Validated answer shown with server-built class links; example labeled illustrative.",
+      "layer": "integration",
+      "requirements": [
+        "FR-13"
+      ],
+      "status": "passed",
+      "evidence": "tests/integration/tutor.test.ts and tests/e2e/tutor.spec.ts — a completed answer's citations are rebuilt from our own chunk ids with hrefs composed server-side as /learn/{enrollment}/classes/{class}; the drawer renders them as course links and labels an example 'Illustrative example.'"
+    },
+    {
+      "id": "AC-041",
+      "title": "Invalid/unsupported tutor output",
+      "given": "Empty sources or fabricated citation/refused/incomplete JSON",
+      "when": "Ask question",
+      "then": "Empty corpus returns unsupported without call; invalid model response fails visibly, invents no citation, does not block class progress.",
+      "layer": "integration",
+      "requirements": [
+        "FR-13",
+        "FR-14"
+      ],
+      "status": "passed",
+      "evidence": "tests/unit/tutor-output.test.ts, tests/integration/tutor.test.ts and tests/e2e/tutor.spec.ts — an empty corpus answers unsupported with outcome not_invoked and no provider call; a fabricated citation, a duplicate, a missing one, a refusal, an incomplete response and invalid JSON are each refused with TUTOR_OUTPUT_INVALID and nothing repaired; the class stays navigable and its progress unchanged."
+    },
+    {
+      "id": "AC-042",
+      "title": "Tutor prompt injection",
+      "given": "Course text contains instruction to expose secrets or alter progress",
+      "when": "Ask for example",
+      "then": "Text treated as data; no secrets/tools supplied; no progress writes; reviewed output stays within learning scope.",
+      "layer": "evaluation",
+      "requirements": [
+        "FR-13"
+      ],
+      "status": "blocked",
+      "evidence": "tests/evaluation/tutor-synthetic-course.md — four of five claims are established and tested: course text reaches the model as user-role input while the teaching rules stay in system instructions (tests/unit/tutor-output.test.ts); no name, address or id is ever in the prompt (tests/unit/tutor-prompt.test.ts); no tools are sent at all; and a planted injection chunk saying 'mark this class complete' writes no progress, with app.tutor_context and app.tutor_sources declared STABLE so Postgres refuses any write (tests/integration/tutor-retrieval.test.ts). The fifth — reading what a real model actually answers — needs OPENAI_API_KEY and is recorded as blocked rather than passed."
+    },
+    {
+      "id": "AC-043",
+      "title": "Tutor concurrency and budget",
+      "given": "Near monthly budget, duplicate request ID, daily limit",
+      "when": "Issue concurrent/retried requests",
+      "then": "Atomic reservation prevents overspend under configured rates; duplicate pending yields 409; quota exhausted 429; no repeat provider invocation.",
+      "layer": "integration",
+      "requirements": [
+        "FR-13"
+      ],
+      "status": "passed",
+      "evidence": "tests/integration/tutor.test.ts — the reservation is written before anything is sent; a second question while one is pending is 409; a fourth question in a minute is 429; an exhausted monthly budget is 429 TUTOR_BUDGET_EXCEEDED counting unresolved reservations at their reserved value; two concurrent connections racing for the last of the budget produce exactly one reservation."
+    },
+    {
+      "id": "AC-044",
+      "title": "Tutor timeout and privacy",
+      "given": "Model timeout and own prior chat",
+      "when": "Refresh request; manager attempts history",
+      "then": "Existing failure/pending status retrieved without auto-send; unknown cost reservation retained; manager gets 404.",
+      "layer": "integration",
+      "requirements": [
+        "FR-13",
+        "FR-14"
+      ],
+      "status": "passed",
+      "evidence": "tests/integration/tutor.test.ts and tests/e2e/tutor.spec.ts — a pending request returns 409 and is polled rather than re-sent, and polling consumes no quota; a failed request stays failed until a new key is used; a failure with unknown usage keeps its reservation as 'uncertain' and an abandoned request is swept the same way; a manager, an admin and another learner all get 404."
+    },
+    {
+      "id": "AC-045",
+      "title": "Reminder priority and daily cap",
+      "given": "Amber overdue and inactive, one second due enrollment",
+      "when": "Run scheduler twice at local noon",
+      "then": "One highest-priority learning outbox event/user/local date; duplicate run makes no new send; pending Dana receives none.",
+      "layer": "integration",
+      "requirements": [
+        "FR-11"
+      ],
+      "status": "passed",
+      "evidence": "tests/integration/outbox.test.ts — at local noon the scheduler plans exactly one message for Amber, the overdue one, and claims her day; a second run at the same instant plans nothing. Dana, who has not accepted her invitation, and Cora, who has finished, receive none. A certificate notification the same day does not consume the learning slot."
+    },
+    {
+      "id": "AC-046",
+      "title": "Reminder date/time rules",
+      "given": "Local date at due-3, due day, overdue and 08:59/09:00",
+      "when": "Evaluate rules with fixed clock including DST timezone",
+      "then": "Only correct local date/rule eligible in 09:00–17:59; no duplicate local-day send after DST offset change.",
+      "layer": "unit",
+      "requirements": [
+        "FR-11"
+      ],
+      "status": "passed",
+      "evidence": "tests/unit/reminders.test.ts (28 cases) — 08:59 is outside the window and 09:00 inside, 17:59 inside and 18:00 outside, all in the learner's own timezone; due_soon is exactly three local days out, due_today holds at exactly the due moment and becomes overdue a millisecond later; on the morning Madrid's clocks go back, 00:30Z and 01:30Z are both 02:30 local on the same local DATE and yield one event key, so the daily claim catches the second."
+    },
+    {
+      "id": "AC-047",
+      "title": "Completion and preference suppression",
+      "given": "Outbox pending, learner completes or opts out/revokes access",
+      "when": "Dispatcher claims then rechecks before provider call",
+      "then": "Pending learning mail suppressed; no provider call; already-dispatched email cannot be recalled.",
+      "layer": "integration",
+      "requirements": [
+        "FR-11"
+      ],
+      "status": "passed",
+      "evidence": "tests/integration/outbox.test.ts — a learner who finishes, opts out or loses access before the sender reaches their message has it suppressed with no provider call and her day released; a message already claimed for sending keeps its state and its claimed day, because an email in flight cannot be recalled."
+    },
+    {
+      "id": "AC-048",
+      "title": "Email uncertain send",
+      "given": "Provider timeout after possible acceptance",
+      "when": "Retry within window then recover at 23h+",
+      "then": "Same key/payload within window; at cutoff uncertain, no blind resend; daily slot retained.",
+      "layer": "integration",
+      "requirements": [
+        "FR-11",
+        "FR-14"
+      ],
+      "status": "passed",
+      "evidence": "tests/integration/outbox.test.ts and tests/integration/operations.test.ts — retries back off 1, 5, 15 and 60 minutes with the same id, recipient and payload; at five attempts or twenty-three hours the message becomes 'uncertain' rather than failed, is not claimed again, and keeps its daily slot; an expired lease recovers without restarting the attempt count; an operator may resend a failed message but is refused with DELIVERY_UNCERTAIN for an unreconciled one."
+    },
+    {
+      "id": "AC-049",
+      "title": "Email webhook ordering",
+      "given": "Valid delivered callback before provider ID save; duplicate event; forged signature",
+      "when": "Process and reconcile callbacks",
+      "then": "One event record; reconciliation reaches delivered; accepted callback cannot downgrade it; forged event 401/no write.",
+      "layer": "integration",
+      "requirements": [
+        "FR-11"
+      ],
+      "status": "passed",
+      "evidence": "tests/integration/email-events.test.ts and tests/e2e/jobs.spec.ts — a verified callback records one event and marks the message delivered; a redelivery leaves one record and changes nothing; an 'accepted' arriving after 'delivered' cannot downgrade it while a bounce is terminal whenever it arrives; a callback that overtakes the provider id is retained and applied by reconciliation; a forged signature, a missing signature and a body altered after signing are each 401 with nothing written."
+    },
+    {
+      "id": "AC-050",
+      "title": "Cron authentication",
+      "given": "GET scheduler with user session, bad secret and correct CRON_SECRET",
+      "when": "Invoke routes",
+      "then": "Only correct Bearer secret runs; job persisted; normal read routes do not mutate.",
+      "layer": "integration",
+      "requirements": [
+        "FR-11"
+      ],
+      "status": "passed",
+      "evidence": "tests/e2e/jobs.spec.ts and tests/unit/email.test.ts — no secret, a wrong secret, a prefix of the secret and a signed-in platform admin are all 401; the correct Bearer secret runs and its plan is in the database, not merely in the response; a second run plans nothing new; ordinary learner GET routes called twice write nothing. The comparison is constant-time and an unset secret never means 'anything goes'."
+    },
+    {
+      "id": "AC-051",
+      "title": "Operations redaction",
+      "given": "Failed invitation with action link in private outbox payload",
+      "when": "Admin opens operations, inspect logs/browser bundle",
+      "then": "Status available; signed link/cookie/key/prompt/response body absent.",
+      "layer": "integration",
+      "requirements": [
+        "FR-14"
+      ],
+      "status": "passed",
+      "evidence": "tests/integration/operations.test.ts and tests/e2e/operations.spec.ts — a failed invitation whose outbox payload really does hold an Auth action link shows its kind, recipient, status, attempts and error on /admin/operations, while the token appears in neither the API response, the rendered HTML, nor any script the browser downloads; the DTO is exactly the contract's seven fields and the Zod schema is strict; a manager and a learner are refused both the page and the API."
+    },
+    {
+      "id": "AC-052",
+      "title": "Published media real check",
+      "given": "Supplied real video/captions uploaded privately",
+      "when": "Play/seek/renew at 390px and desktop; reload resume",
+      "then": "Actual media plays with captions; expired URL reauthorizes without losing position; no public object URL.",
+      "layer": "manual",
+      "requirements": [
+        "FR-07",
+        "FR-08"
+      ],
+      "status": "blocked",
+      "evidence": "tests/evaluation/demo-gate.md records what published media exists today: synthetic files uploaded through the real upload path (AC-015, AC-016, AC-062 pass on them). The scenario asks for a check against the CLIENT's published media, which does not exist in the system yet — the nine videos with their transcripts and captions. Blocked on that delivery."
+    },
+    {
+      "id": "AC-053",
+      "title": "Accessible UI states",
+      "given": "All primary forms and class player",
+      "when": "Keyboard navigate; trigger empty/loading/validation/provider errors",
+      "then": "Visible focus, labels, retained inputs and live save/error status; no keyboard trap; course works if tutor fails.",
+      "layer": "manual",
+      "requirements": [
+        "FR-07",
+        "FR-14"
+      ],
+      "status": "blocked",
+      "evidence": "tests/e2e/admin.spec.ts covers what a machine can check: every visible control on the admin screens is reachable by an accessible name (a label's htmlFor, aria-label or aria-labelledby — a placeholder is not accepted), focus moves through the page under Tab without trapping, aria-current marks the current navigation item, and the editor carries an aria-live region for save and error summaries. What remains is judgement and needs a person: whether the focus ring is actually visible against each background, whether each error message reads sensibly, and whether input is retained across a real provider failure. Recorded as blocked rather than passed, per AGENTS.md."
+    },
+    {
+      "id": "AC-054",
+      "title": "End-to-end demo",
+      "given": "Controlled manager/admin/learner and real provider credentials/assets",
+      "when": "Follow demo script",
+      "then": "Publish→grant→invite→enroll→learn→response→certificate→report works; real controlled reminder/tutor verified; mocked-only features disclosed incomplete.",
+      "layer": "e2e",
+      "requirements": [
+        "FR-01",
+        "FR-03",
+        "FR-06",
+        "FR-10",
+        "FR-11",
+        "FR-12",
+        "FR-13"
+      ],
+      "status": "blocked",
+      "evidence": "tests/e2e/demo-journey.spec.ts runs the whole journey through the real interface against the real database — author, publish, grant, cohort, roster, assign with dates, learner signs in and completes, certificate issued in the completing transaction, real PDF bytes, certificate email queued, manager's report at 100%, CSV export carrying the record and nothing the learner wrote, and the tutor drawer answering. Every step is real except the model behind the tutor.\n\nRecorded BLOCKED rather than passed because AC-054 also requires 'real controlled reminder/tutor verified': the tutor's answers come from lib/tutor/stub.ts (needs OPENAI_API_KEY) and no email is actually sent (needs RESEND_API_KEY, EMAIL_FROM and a verified sender). tests/evaluation/demo-gate.md is the disclosure AC-054's last clause asks for, and lists what remains.\n\nThe rehearsal found three defects that every existing test had passed over: the class editor sent no Idempotency-Key so it could not save; nothing set source_text for a text class so publication always refused; and AssignProgram sent two fields OfferingCreate does not have, so assignment was refused every time."
+    },
+    {
+      "id": "AC-055",
+      "title": "Bulk import validation",
+      "given": "CSV with duplicates, bad email and foreign context",
+      "when": "Preview then apply valid rows",
+      "then": "Preview identifies issues; explicit apply idempotent; manager cannot assign foreign org/role; output reconciles counts.",
+      "layer": "integration",
+      "requirements": [
+        "FR-03"
+      ],
+      "status": "passed",
+      "evidence": "tests/unit/roster.test.ts (17 cases) and tests/integration/bulk-import.test.ts — the preview reads a real CSV (quoted commas, doubled quotes, CRLF, a BOM, no header), names every problem on every row with the line number a person sees, and reconciles: valid + invalid = rows. A differently cased duplicate is recognised as the same person and the first occurrence is the one imported. Applying is idempotent both by request id and by the membership key itself, so the same file applied twice adds nobody twice. A manager is refused a cohort in another organization, an invitation into another organization, and any attempt to import somebody as a manager; a roster containing an outsider is refused all-or-nothing, and the refusal names nothing about them."
+    },
+    {
+      "id": "AC-056",
+      "title": "New version isolation",
+      "given": "Published version with existing enrollments",
+      "when": "Clone draft, edit content, publish version 2",
+      "then": "Existing learners keep original IDs/requirements/media; new assignment can select v2; no silent migration.",
+      "layer": "integration",
+      "requirements": [
+        "FR-06"
+      ],
+      "status": "passed",
+      "evidence": "tests/integration/version-cloning.test.ts (13 cases). Cloning a published version copies every module, class, exercise, content chunk and asset at a NEW id, and no id, storage key or file is shared with the source — asked the other way round by a query for rows the two versions have in common, which returns none. Titles, order, format, requirement and body survive unchanged, so the author starts from the course rather than from nothing. Copied assets are created pending at their own keys and settled through the clone.finish job once the bytes are copied; a copy that fails leaves the asset failed and publication blocked. Editing the draft does not reach the published version, and a second Open draft returns the existing draft rather than cloning twice. On the seeded programme, cloning leaves every existing enrollment on its original version at its original place in the course — no silent migration. The clone publishes with no issues and a new cohort offering selects the new version. clone.finish refuses a non-administrator (42501) and an asset of a published version (23514). e2e (tests/e2e/admin.spec.ts): the administrator opens a draft of the published programme and finds its classes already there."
+    },
+    {
+      "id": "AC-057",
+      "title": "Retention and budget ledger",
+      "given": "Chat >30 days, current month usage, raw progress events",
+      "when": "Run retention job",
+      "then": "Expired text/links removed; progress/certificates remain; durable no-text usage ledger preserves monthly accounting.",
+      "layer": "integration",
+      "requirements": [
+        "FR-14"
+      ],
+      "status": "passed",
+      "evidence": "tests/integration/retention.test.ts (10 cases) and the scheduler e2e. A chat older than thirty days is removed — requests before sessions — while a recent one, and an old session holding a recent question, are kept. Raw learning events and idempotency records go at thirty days, rate windows at thirty-five, and the tutor ledger only at a hundred and eighty. An Auth action link is stripped from a delivered outbox message without losing the delivery record. Across a run that deleted chats and events, class_progress, exercise_completions, certificates and enrollments are unchanged, and the month's spend still sums to the same total after the chats it accounted for are gone — the ledger survives chat deletion because tutor_usage carries no foreign key to tutor_requests. The run is recorded in job_runs with its per-rule counts. The endpoint refuses no secret, a wrong secret and a signed-in platform administrator."
+    },
+    {
+      "id": "AC-058",
+      "title": "Backup restore",
+      "given": "Disposable test target and database/asset backups",
+      "when": "Restore and verify learner record and referenced media",
+      "then": "Acknowledged progress/certificate recover and asset bytes exist; documented RPO<=24h and recovery steps measured.",
+      "layer": "manual",
+      "requirements": [
+        "FR-14"
+      ],
+      "status": "blocked",
+      "evidence": "tests/evaluation/restore-runbook.md is the procedure: what to back up and why the database and the storage bucket are two separate things, RPO <= 24h and restore within one business day, the rehearsal in a disposable project, and a verification that ends with a class actually playing — the step that fails when only the database was restored. It cannot be performed yet: the development project's plan has no daily backups, creating and deleting a second project needs authorisation, and the only media in the system is synthetic (AC-017, AC-052). A rehearsal that was not measured would not be evidence, so this is recorded blocked rather than assumed."
+    },
+    {
+      "id": "AC-059",
+      "title": "Forty-user load",
+      "given": "Realistic 40 synthetic learners with seeded program",
+      "when": "Exercise concurrent dashboard/progress and report reads",
+      "then": "No lost acknowledged updates/isolation failures; measure p95 data operation<1s and dashboard usable<3s on stated network; report failures instead of assuming pass.",
+      "layer": "load",
+      "requirements": [
+        "FR-08",
+        "FR-12",
+        "FR-14"
+      ],
+      "status": "passed",
+      "evidence": "scripts/load-40.mjs, run 2026-09-16 against the hosted development project over the public internet: 40 synthetic learners with real Auth identities and real enrollments, each calling as itself through PostgREST as the application does, with think time between actions. 984 calls in 61s. Every data operation inside the 1s p95 target — record_progress 221ms, list_cohort_members 245ms, report_enrollments 302ms, get_enrollment 359ms, get_learning_class 378ms, start_playback 382ms, get_me 410ms, list_my_enrollments 465ms — against a single-learner baseline of 155-187ms p50, so the load costs 50-250ms at p95 and the median barely moves. The dashboard /learn, signed in and measured DURING the load, is 1208ms against its 3s target. No failed calls, and no lost acknowledged updates: every heartbeat the server acknowledged is accounted for in the coverage the database holds, asked of the database directly. tests/evaluation/load-40.md records what the first measurement got wrong — a database backend per learner, which the application never opens — and the finding that came out of it: on this instance, anything that connects per user takes p95 from 200ms to 14s. The run should be repeated against the pilot instance before real onboarding; nothing here establishes behaviour at four hundred learners."
+    },
+    {
+      "id": "AC-060",
+      "title": "Pilot gate",
+      "given": "All pilot tasks implemented and content/manager ready",
+      "when": "Run full release checklist before real cohort onboarding",
+      "then": "All mandatory scenario evidence present; manager can operate without DB changes; unresolved critical security/progress defect blocks release.",
+      "layer": "manual",
+      "requirements": [
+        "FR-14"
+      ],
+      "status": "blocked",
+      "evidence": "tests/evaluation/pilot-gate.md, generated by scripts/pilot-gate.mjs from tasks.json and tests/acceptance.json rather than written by hand: 59 of 67 scenarios passed, every one of them carrying evidence, no critical security or progress scenario outstanding, and every pilot task done. The gate is OPEN on the software.\n\nIt is recorded blocked, not passed, because two halves of the scenario are a person's and not a script's. First, seven scenarios are blocked on inputs the software cannot supply itself — the client's nine videos with transcripts and captions (AC-017, AC-052, AC-061), OPENAI_API_KEY (AC-042, AC-061), a verified email sender (AC-054), an assistive-technology pass (AC-053), and a backup-bearing plan with a disposable project for the restore rehearsal (AC-058). Second, 'manager can operate without DB changes' needs somebody to follow handoff/manager-runbook.md end to end on the pilot data; the runbook is complete, the walkthrough has not happened. Marking this passed on a script's say-so would be exactly the rounding up the gate exists to prevent."
+    },
+    {
+      "id": "AC-061",
+      "title": "Transcript and content evaluation",
+      "given": "Real nine-video course source text",
+      "when": "Review 12 real questions: 5 explanations,4 examples,3 unsupported plus adversarial cases",
+      "then": "Owner finds explanations/examples useful and grounded; no fabricated sources or unauthorized content; failures recorded for correction.",
+      "layer": "evaluation",
+      "requirements": [
+        "FR-13"
+      ],
+      "status": "blocked",
+      "evidence": "tests/evaluation/tutor-synthetic-course.md establishes what can be established without a provider key: retrieval is confined to the enrolled version, citations resolve to real classes, and an unsupported question is refused rather than answered. Evaluating a transcript's actual content needs both the client's material and OPENAI_API_KEY. Blocked on both."
+    },
+    {
+      "id": "AC-062",
+      "title": "Signed URL reauthorization",
+      "given": "Previously authorized download key and now revoked grant",
+      "when": "Replay original Idempotency-Key to download authorization",
+      "then": "Replay rechecks access and rejects; never returns a newly valid URL from stale permission.",
+      "layer": "integration",
+      "requirements": [
+        "FR-15"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "AC-063",
+      "title": "Soft date bulk update",
+      "given": "One valid and one invalid selected enrollment",
+      "when": "Update offering dates and explicit selected enrollments",
+      "then": "All-or-nothing validation; no completed schedule changed; omitted enrollments retain copied dates, current offering/grant hard gates still apply.",
+      "layer": "integration",
+      "requirements": [
+        "FR-05"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "AC-064",
+      "title": "Foreign Origin mutation",
+      "given": "Valid session cookie, attacker Origin",
+      "when": "POST a learning/admin mutation",
+      "then": "403 before state change; trusted same-origin route works; signed provider webhooks use separate verification.",
+      "layer": "integration",
+      "requirements": [
+        "FR-02"
+      ],
+      "status": "passed",
+      "evidence": " Re-verified at T24 by sweeping every mutating operation in the contract: each refuses a foreign Origin with 403, before authentication is considered."
+    },
+    {
+      "id": "AC-065",
+      "title": "Profile removal preserves history",
+      "given": "Multi-org learner removed from A",
+      "when": "Read own summaries/certificates and learn in B",
+      "then": "A learning blocked, A history owned still visible, B and personal entitlement unaffected.",
+      "layer": "integration",
+      "requirements": [
+        "FR-15"
+      ],
+      "status": "passed",
+      "evidence": " Re-verified at T24: removing a learner's membership leaves their progress rows intact and keeps them reportable, while their own availability becomes membership_inactive."
+    },
+    {
+      "id": "AC-066",
+      "title": "Learner navigation states",
+      "given": "Owned, blocked and absent fixture enrollments",
+      "when": "Open dashboard and class/outline routes",
+      "then": "Owned enrollment renders correct outline; empty/blocked states are clear; unauthorized IDs denied; no completion is caused by GET.",
+      "layer": "e2e",
+      "requirements": [
+        "FR-07",
+        "FR-08"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "AC-067",
+      "title": "Tutor interaction states",
+      "given": "Class tutor drawer and injected success/unsupported/failure responses",
+      "when": "Send question and observe pending, completed and failed requests",
+      "then": "Pending indicator shown; source links validated; example labeled; input retained on failure; navigation/progress unaffected.",
+      "layer": "e2e",
+      "requirements": [
+        "FR-13"
+      ],
+      "status": "passed",
+      "evidence": "tests/e2e/tutor.spec.ts — the drawer answers, labels an example, links its sources, shows an unsupported answer as such, reports a failure with a manual Try again while keeping the question visible, and leaves navigation and progress untouched; a refresh with the same Idempotency-Key returns the stored answer rather than asking again."
+    }
+  ]
+}
