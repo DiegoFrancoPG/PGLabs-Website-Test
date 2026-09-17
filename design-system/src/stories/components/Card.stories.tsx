@@ -10,8 +10,9 @@ const meta = {
   parameters: { layout: "centered", backgrounds: { default: "cream" } },
   tags: ["autodocs"],
   argTypes: {
-    variant: { control: "select", options: ["default", "white", "dark", "mini", "phase", "risk", "audience"] },
+    variant: { control: "select", options: ["default", "white", "muted", "orange", "dark", "mini", "phase", "risk", "audience"] },
     accent: { control: "select", options: ["none", "orange", "blue", "gold"] },
+    shadow: { control: "select", options: ["none", "sm"] },
   },
 } satisfies Meta<typeof Card>;
 
@@ -68,10 +69,30 @@ export const AllVariants: Story = {
     <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", padding: "24px" }}>
       <Card variant="default" style={{ width: "200px" }}><CardTitle>Default</CardTitle><CardDescription>Cream background card</CardDescription></Card>
       <Card variant="white" style={{ width: "200px" }}><CardTitle>White</CardTitle><CardDescription>White background card</CardDescription></Card>
+      <Card variant="muted" style={{ width: "200px" }}><CardTitle>Muted</CardTitle><CardDescription>Muted grey background card</CardDescription></Card>
+      <Card variant="orange" style={{ width: "200px" }}>
+        <CardTitle style={{ color: "#fff" }}>Orange</CardTitle>
+        <CardDescription style={{ color: "rgba(255,255,255,0.75)" }}>Brand orange background card</CardDescription>
+      </Card>
       <Card variant="phase" style={{ width: "200px" }}>
         <div style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#64a0b4", marginBottom: "8px" }} />
         <CardTitle style={{ fontSize: "19px" }}>Phase Card</CardTitle>
         <CardDescription>Centered phase card</CardDescription>
+      </Card>
+    </div>
+  ),
+};
+
+export const WithShadow: Story = {
+  render: () => (
+    <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", padding: "24px" }}>
+      <Card variant="white" shadow="none" style={{ width: "220px" }}>
+        <CardTitle>No Shadow</CardTitle>
+        <CardDescription>Default — no elevation</CardDescription>
+      </Card>
+      <Card variant="white" shadow="sm" style={{ width: "220px" }}>
+        <CardTitle>Shadow sm</CardTitle>
+        <CardDescription>Small shadow for subtle elevation</CardDescription>
       </Card>
     </div>
   ),

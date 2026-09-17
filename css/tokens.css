@@ -1,0 +1,160 @@
+/*
+ * PGLabs Design System — CSS Token Bridge
+ *
+ * Three-layer structure:
+ *   1. shadcn semantic layer  — space-separated RGB channels, matches globals.css
+ *   2. Brand descriptive layer — hex values, matches tailwind.config.ts color keys
+ *   3. Scale tokens           — typography, radius, shadows, layout
+ *
+ * Consuming colors:
+ *   Solid:   rgb(var(--primary))            or  var(--brand-orange)
+ *   Alpha:   rgb(var(--primary) / 0.10)     or  rgb(var(--ch-gold) / 0.08)
+ */
+
+:root {
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   * Layer 1 — shadcn semantic layer
+   *
+   * Values are bare space-separated RGB channels (no rgb() wrapper).
+   * Tailwind reads them as: rgb(var(--primary) / var(--tw-bg-opacity))
+   * Vanilla CSS reads them as: rgb(var(--primary) / 0.50)
+   * Both work — this is the canonical shadcn format.
+   * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+  --background:             252 250 247;   /* #fcfaf7  brand-cream           */
+  --foreground:             44 52 54;      /* #2c3436  brand-dark-grey        */
+
+  --primary:                232 121 100;   /* #e87964  brand-orange           */
+  --primary-foreground:     255 255 255;
+
+  --secondary:              240 237 232;   /* #f0ede8                         */
+  --secondary-foreground:   44 52 54;
+
+  --muted:                  245 242 238;   /* #f5f2ee                         */
+  --muted-foreground:       99 110 114;    /* #636e72  neutral-body           */
+
+  --accent:                 100 160 180;   /* #64a0b4  accent-blue            */
+  --accent-foreground:      255 255 255;
+
+  --destructive:            239 68 68;
+  --destructive-foreground: 255 255 255;
+
+  --card:                   255 255 255;
+  --card-foreground:        44 52 54;
+
+  --popover:                255 255 255;
+  --popover-foreground:     44 52 54;
+
+  --border:                 rgba(0,0,0,0.06);
+  --input:                  rgba(0,0,0,0.06);
+  --ring:                   232 121 100;
+
+  --radius:                 1rem;          /* 16px — base radius              */
+
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   * Layer 2 — Brand descriptive layer
+   *
+   * Hex values — names match tailwind.config.ts color keys exactly.
+   * Use for colors that have no shadcn semantic equivalent (gold, purple,
+   * dark-blue, muted, neutral-muted) or where a hex value is clearer.
+   * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+  --brand-orange:           #e87964;
+  --brand-orange-hover:     #db715d;
+  --brand-cream:            #fcfaf7;
+  --brand-dark-grey:        #2c3436;
+  --brand-dark-blue:        #131a2c;
+
+  --accent-gold:            #d4a76a;       /* no shadcn semantic — use directly */
+  --accent-purple:          #a78bfa;       /* no shadcn semantic — use directly */
+
+  --neutral-muted:          #b2bec3;       /* lighter than muted-foreground     */
+  --neutral-body:           #636e72;       /* = muted-foreground                */
+
+  --light-border:           #dfe6e9;
+
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   * Layer 2b — Alpha channels for non-semantic brand colors
+   *
+   * For primary/accent/muted/background/foreground, compose alpha directly
+   * from the Layer 1 vars: rgb(var(--primary) / 0.10)
+   *
+   * For colors with no Layer 1 semantic (gold, dark-blue), use these:
+   * rgb(var(--ch-gold) / 0.08)
+   * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+  --ch-gold:                212 167 106;   /* accent-gold as RGB channels      */
+  --ch-dark-blue:           19 26 44;      /* brand-dark-blue as RGB channels  */
+
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   * Layer 3a — Typography
+   * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body:    "Inter", sans-serif;
+
+  --fs-h1:        40px;
+  --fs-h1-lg:     52px;
+  --fs-h2:        32px;
+  --fs-h3:        18px;
+  --fs-body:      15px;
+  --fs-body-lg:   18px;
+  --fs-eyebrow:   13px;
+  --fs-sm:        14px;
+  --fs-label:     11px;
+  --fs-xs:        12px;
+
+  --lh-h1:        110%;
+  --lh-h2:        39px;
+  --lh-h3:        23px;
+  --lh-body:      130%;
+  --lh-eyebrow:   19.5px;
+
+  --ls-h1:       -1.54px;
+  --ls-h1-lg:    -1.5px;
+  --ls-h2:       -0.86px;
+  --ls-h3:       -0.18px;
+  --ls-label:     1.1px;
+
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   * Layer 3b — Radius scale
+   * --radius-lg is intentionally aliased to --radius so both names work.
+   * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+  --radius-sm:    6px;
+  --radius-base:  8px;
+  --radius-md:    12px;
+  --radius-lg:    var(--radius);    /* 1rem = 16px */
+  --radius-xl:    24px;
+  --radius-full:  9999px;
+
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   * Layer 3c — Shadows
+   * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+  --shadow-xs:           0 1px 4px rgba(0,0,0,0.06);
+  --shadow-sm:           0 2px 12px rgba(0,0,0,0.05);
+  --shadow-nav:          0 2px 12px rgba(0,0,0,0.20);
+  --shadow-btn-hover:    0 0 8px rgba(0,0,0,0.27);
+  --shadow-glow-orange:  0 0 0 3px rgb(var(--primary) / 0.25);
+  --shadow-glow-blue:    0 0 0 3px rgb(var(--accent) / 0.25);
+  --shadow-glow-gold:    0 0 0 3px rgb(var(--ch-gold) / 0.25);
+
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   * Layer 3d — Layout
+   * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+  --container-max:  1200px;
+  --container-px:   40px;
+  --section-py:     80px;
+  --section-py-lg:  128px;
+  --hero-pt:        120px;
+  --nav-height:     60px;
+}
