@@ -129,3 +129,38 @@ describe("fixture guard", () => {
     }
   });
 });
+
+/*
+ * A deployed environment without CRON_SECRET does not fail visibly: the job
+ * routes simply reject the scheduler, so reminders stop sending and retention
+ * stops deleting while every screen keeps working. The boot check is the only
+ * place that failure is loud.
+ */
+describe("scheduler secret", () => {
+  it("refuses a deployed environment without one", async () => {
+    for (const appEnv of ["pilot", "production"]) {
+      process.env.APP_ENV = appEnv;
+      delete process.env.PGLEARN_USE_FIXTURES;
+      delete process.env.CRON_SECRET;
+      const { assertCoreConfigured } = await loadEnv();
+      expect(() => assertCoreConfigured()).toThrow(/CRON_SECRET/);
+    }
+  });
+
+  it("accepts a deployed environment that has one", async () => {
+    for (const appEnv of ["pilot", "production"]) {
+      process.env.APP_ENV = appEnv;
+      delete process.env.PGLEARN_USE_FIXTURES;
+      process.env.CRON_SECRET = "a-scheduler-secret";
+      const { assertCoreConfigured } = await loadEnv();
+      expect(() => assertCoreConfigured()).not.toThrow();
+    }
+  });
+
+  it("does not require one in development, where nothing calls the jobs", async () => {
+    process.env.APP_ENV = "development";
+    delete process.env.CRON_SECRET;
+    const { assertCoreConfigured } = await loadEnv();
+    expect(() => assertCoreConfigured()).not.toThrow();
+  });
+});

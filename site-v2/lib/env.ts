@@ -138,5 +138,18 @@ export function assertCoreConfigured(): void {
     if (process.env.PGLEARN_USE_FIXTURES) {
       throw new Error("PGLEARN_USE_FIXTURES must never be set outside development or test");
     }
+    /*
+     * The scheduler's secret is optional in development, where nothing calls
+     * the job routes. On a deployed environment it is not optional in any
+     * useful sense: without it both /api/v1/jobs routes reject every caller,
+     * so reminders stop being sent and retention stops deleting — silently,
+     * because a 401 to a platform cron looks exactly like an unauthorized
+     * probe. Fail at boot instead, where an operator sees it.
+     */
+    if (!env.CRON_SECRET) {
+      throw new Error(
+        `CRON_SECRET is required when APP_ENV is ${env.APP_ENV}: without it the reminder and retention jobs reject the scheduler and never run`
+      );
+    }
   }
 }

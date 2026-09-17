@@ -947,6 +947,53 @@ Seven scenarios are blocked on inputs the software cannot supply itself: the cli
 
 `handoff/manager-runbook.md` is the manager's procedure, written only from the screens; nothing in it needs the database, which is what AC-060 asks for. But the scenario also asks that a manager **can operate** — and nobody has yet followed that runbook end to end on pilot data. Marking the gate passed on a script's say-so is exactly the rounding up the gate exists to prevent.
 
+## Production cutover — the first deployment
+
+Not a specification task. The procedure is `handoff/production-cutover.md`; this records what
+changed in the code to support it and what was found while doing so.
+
+- **Decisions taken 16 September 2026:** a new Supabase project on a plan with daily backups (the
+  development project `kviqthksrpyyrduoiupg` stays disposable), Vercel as the host, `APP_ENV=pilot`
+  for the first deployment, and one deployment serving both the marketing site and PGLearn.
+- **Files changed:** `lib/env.ts`, `tests/unit/env.test.ts`, `scripts/provision-storage.mjs` (new),
+  `package.json`, `handoff/production-cutover.md` (new).
+- **Commands and results:** `npm run lint`, `npm run typecheck`, `npm run test:unit` (246),
+  `npm run build` — all PASS, marketing routes still prerendered static.
+  `npm run provision:storage` run against the development project; see below.
+- **Acceptance IDs exercised:** none. Nothing here closes a scenario.
+
+### CRON_SECRET now fails at boot on a deployed environment
+
+It was optional with no startup check, and a deployment missing it does not fail visibly: both
+`/api/v1/jobs` routes reject every caller, so reminders stop being sent and retention stops
+deleting, while every screen keeps working. A 401 to a platform cron is indistinguishable from an
+unauthorized probe, so nothing would have reported it. `assertCoreConfigured` now refuses to boot in
+`pilot` or `production` without it. Development is untouched, where nothing calls the job routes.
+
+### Nothing provisioned the storage bucket
+
+`lib/storage.ts` assumes `SUPABASE_STORAGE_BUCKET` exists and is private; no code creates it, which
+is correct — an application that could create its own bucket could also re-create it public after
+somebody had fixed it. `scripts/provision-storage.mjs` is the operator command, idempotent, and it
+applies privacy and the size limit as **two separate writes** so a plan that refuses the limit can
+never leave a public bucket public.
+
+It deliberately sets no `allowedMimeTypes`. Browsers report no type for `.vtt` and `.srt`, so
+`components/admin/UploadAsset.tsx` sends `application/octet-stream` for them; a bucket-level
+allowlist would reject caption uploads the server then validates correctly. Finalization inspects
+what the object actually is, which is the check that matters.
+
+### The free plan cannot hold the media this product supports
+
+Found by running the command rather than by reading the pricing page. `updateBucket` with a 1 GiB
+limit is refused with `The object exceeded the maximum allowed size` — a bucket's file size limit
+cannot exceed the **project's** global upload limit, and the free plan caps that at 50 MiB with no
+way to raise it. spec/03 supports 1 GiB video and the AI Literacy series is nine videos.
+
+So the paid plan is not only about AC-058's backups, as previously recorded. It is also the only way
+the product's own upload limits can be configured at all. The script reports this specifically
+rather than surfacing the provider's message, which reads like a rejected file.
+
 ## Update this section after each implementation task
 
 - Task ID and status:
@@ -961,6 +1008,9 @@ Seven scenarios are blocked on inputs the software cannot supply itself: the cli
 
 ## Change log
 
+- Production cutover: cutover runbook written; CRON_SECRET made a boot requirement on deployed
+  environments; storage provisioning given an operator command. The free Supabase plan found to cap
+  uploads at 50 MiB, which the product's own 1 GiB limit cannot fit under.
 - v1.0: implementation contracts established; all application tasks are todo.
 - T00: site-v2 adopted as the host application; deviations D-01 and D-02 recorded.
 - T01: bootstrap complete; Next 14 → 16 and React 18 → 19 under ADR-01; AC-001 partially exercised.
