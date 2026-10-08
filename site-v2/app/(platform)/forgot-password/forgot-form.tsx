@@ -2,10 +2,10 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { Button } from "@ds/components/ui/button";
-import { Input } from "@ds/components/ui/input";
-import { Label } from "@ds/components/ui/label";
-import { Alert } from "@ds/components/ui/alert";
+import { Button } from "@/components/pglearn/ui/button";
+import { Input } from "@/components/pglearn/ui/input";
+import { Label } from "@/components/pglearn/ui/label";
+import { Alert } from "@/components/pglearn/ui/alert";
 import { requestReset } from "./actions";
 
 function SubmitButton() {

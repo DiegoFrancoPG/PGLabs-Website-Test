@@ -7,10 +7,10 @@ import { RpcError } from "@/lib/rpc";
 import { listOrganizations } from "@/features/organizations/organizations";
 import { reportEnrollments, type ReportFilters } from "@/features/reporting/reports";
 import { AppShell } from "@/components/layout/AppShell";
-import { Alert } from "@ds/components/ui/alert";
-import { Badge } from "@ds/components/ui/badge";
-import { Button } from "@ds/components/ui/button";
-import { Card } from "@ds/components/ui/card";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Badge } from "@/components/pglearn/ui/badge";
+import { Button } from "@/components/pglearn/ui/button";
+import { Card } from "@/components/pglearn/ui/card";
 
 /*
  * spec/04 /admin/reports: "Organization selector plus manager report filters.
@@ -72,21 +72,21 @@ export default async function AdminReportsPage({
   return (
     <AppShell active="admin">
       <main className="mx-auto max-w-6xl px-6 py-12">
-        <h1 className="font-display text-h2-sm text-ink-800">Reports</h1>
-        <p className="mt-2 text-body-sm text-steel-500">
+        <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Reports</h1>
+        <p className="mt-2 text-sm text-ui-muted-foreground">
           Every organization, and the individuals who hold a personal grant.
         </p>
 
         <form method="get" className="mt-8 flex flex-wrap items-end gap-4">
           <div>
-            <label htmlFor="organization_id" className="block text-label uppercase text-steel-500">
+            <label htmlFor="organization_id" className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
               Organization
             </label>
             <select
               id="organization_id"
               name="organization_id"
               defaultValue={organizationId ?? ""}
-              className="mt-1 rounded-lg border border-steel-300 p-2 text-body-sm"
+              className="mt-1 pglearn-field"
             >
               {/* spec/04: "Explicit All organizations choice." */}
               <option value="">All organizations</option>
@@ -99,14 +99,14 @@ export default async function AdminReportsPage({
           </div>
 
           <div>
-            <label htmlFor="state" className="block text-label uppercase text-steel-500">
+            <label htmlFor="state" className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
               Status
             </label>
             <select
               id="state"
               name="state"
               defaultValue={(search.state as string) ?? ""}
-              className="mt-1 rounded-lg border border-steel-300 p-2 text-body-sm"
+              className="mt-1 pglearn-field"
             >
               <option value="">All active</option>
               <option value="not_started">Not started</option>
@@ -117,14 +117,14 @@ export default async function AdminReportsPage({
           </div>
 
           <div>
-            <label htmlFor="overdue" className="block text-label uppercase text-steel-500">
+            <label htmlFor="overdue" className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
               Overdue
             </label>
             <select
               id="overdue"
               name="overdue"
               defaultValue={(search.overdue as string) ?? ""}
-              className="mt-1 rounded-lg border border-steel-300 p-2 text-body-sm"
+              className="mt-1 pglearn-field"
             >
               <option value="">Any</option>
               <option value="true">Overdue only</option>
@@ -160,14 +160,14 @@ export default async function AdminReportsPage({
 
         {report.items.length === 0 ? (
           <Card className="mt-8 p-8">
-            <p className="text-body-lg">No enrollments match these filters.</p>
+            <p className="text-base leading-relaxed">No enrollments match these filters.</p>
           </Card>
         ) : (
           <div className="mt-8 overflow-x-auto">
-            <table className="w-full min-w-[52rem] border-collapse text-body-sm">
+            <table className="w-full min-w-[52rem] border-collapse text-sm">
               <caption className="sr-only">Enrollments across every organization</caption>
               <thead>
-                <tr className="border-b border-steel-300 text-left">
+                <tr className="border-b border-ui-border text-left">
                   <Th>Learner</Th>
                   <Th>Where</Th>
                   <Th>Program</Th>
@@ -178,18 +178,18 @@ export default async function AdminReportsPage({
               </thead>
               <tbody>
                 {report.items.map((row) => (
-                  <tr key={row.enrollment_id} className="border-b border-steel-200">
+                  <tr key={row.enrollment_id} className="border-b border-ui-border">
                     <td className="py-3 pr-4">
-                      <span className="text-ink-800">{row.learner_name}</span>
+                      <span className="text-ui-foreground">{row.learner_name}</span>
                       <br />
-                      <span className="text-steel-500">{row.learner_email}</span>
+                      <span className="text-ui-muted-foreground">{row.learner_email}</span>
                     </td>
                     <td className="py-3 pr-4">
                       {/* spec/04: "personal rows labeled Personal." */}
                       {row.organization ?? <Badge variant="outline">Personal</Badge>}
                     </td>
                     <td className="py-3 pr-4">
-                      {row.program} <span className="text-steel-500">v{row.version_number}</span>
+                      {row.program} <span className="text-ui-muted-foreground">v{row.version_number}</span>
                     </td>
                     <td className="py-3 pr-4">{row.state.replace("_", " ")}</td>
                     <td className="tabular py-3 pr-4">{row.progress_percent}%</td>
@@ -212,7 +212,7 @@ export default async function AdminReportsPage({
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th scope="col" className="py-2 pr-4 text-label uppercase text-steel-500">
+    <th scope="col" className="py-2 pr-4 text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
       {children}
     </th>
   );
@@ -221,8 +221,8 @@ function Th({ children }: { children: React.ReactNode }) {
 function Metric({ label, value }: { label: string; value: number | string }) {
   return (
     <Card className="p-4">
-      <p className="text-label uppercase text-steel-500">{label}</p>
-      <p className="tabular mt-1 font-display text-h4 text-ink-800">{value}</p>
+      <p className="text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">{label}</p>
+      <p className="tabular mt-1 font-heading text-lg font-semibold text-ui-foreground">{value}</p>
     </Card>
   );
 }
@@ -230,12 +230,12 @@ function Metric({ label, value }: { label: string; value: number | string }) {
 function NoAccess() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="font-display text-h2-sm text-ink-800">This page is not available</h1>
+      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This page is not available</h1>
       <Alert variant="info" className="mt-6">
         Platform-wide reporting is for platform administrators.
       </Alert>
-      <p className="mt-8 text-body-sm">
-        <Link href="/learn" className="text-brand-600 underline underline-offset-4">
+      <p className="mt-8 text-sm">
+        <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>
       </p>

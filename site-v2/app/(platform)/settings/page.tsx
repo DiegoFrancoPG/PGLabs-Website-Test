@@ -21,7 +21,7 @@ export default async function SettingsPage() {
   return (
     <AppShell active="settings">
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="font-display text-h2-sm text-ink-800">Settings</h1>
+      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Settings</h1>
       <SettingsForm profile={me.profile} timezones={timezones} />
     </main>
     </AppShell>

@@ -4,11 +4,11 @@ import { redirect } from "next/navigation";
 import { verifiedUser } from "@/lib/auth";
 import { getEnrollment, availabilityReason } from "@/features/learning/learning";
 import { RpcError } from "@/lib/rpc";
-import { Button } from "@ds/components/ui/button";
-import { Badge } from "@ds/components/ui/badge";
+import { Button } from "@/components/pglearn/ui/button";
+import { Badge } from "@/components/pglearn/ui/badge";
 import { AppShell } from "@/components/layout/AppShell";
-import { Alert } from "@ds/components/ui/alert";
-import { Progress } from "@ds/components/ui/progress";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Progress } from "@/components/pglearn/ui/progress";
 
 /*
  * spec/04 /learn/[enrollmentId]: "Program outline grouped by modules,
@@ -45,19 +45,19 @@ export default async function OutlinePage({
   return (
     <AppShell active="learn">
     <main className="mx-auto max-w-3xl px-6 py-16">
-      <p className="text-body-sm">
-        <Link href="/learn" className="text-brand-600 underline underline-offset-4">
+      <p className="text-sm">
+        <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>
       </p>
 
-      <h1 className="mt-6 font-display text-h2-sm text-ink-800">{enrollment.program_title}</h1>
+      <h1 className="mt-6 font-heading text-2xl font-semibold tracking-tight text-ui-foreground">{enrollment.program_title}</h1>
 
       <div className="mt-5 flex items-baseline justify-between gap-4">
-        <p className="text-body-sm text-steel-500">
+        <p className="text-sm text-ui-muted-foreground">
           {enrollment.required_completed} of {enrollment.required_total} required classes complete
         </p>
-        <p className="tabular text-body-sm font-semibold text-ink-800">
+        <p className="tabular text-sm font-semibold text-ui-foreground">
           {enrollment.progress_percent}%
         </p>
       </div>
@@ -81,11 +81,11 @@ export default async function OutlinePage({
           const moduleClasses = classes.filter((c) => c.module_id === module.id);
           return (
             <section key={module.id}>
-              <h2 className="font-display text-h4 text-ink-800">{module.title}</h2>
-              <ul className="mt-4 divide-y divide-steel-100 border-y border-steel-100">
+              <h2 className="font-heading text-lg font-semibold text-ui-foreground">{module.title}</h2>
+              <ul className="mt-4 divide-y divide-ui-border border-y border-ui-border">
                 {moduleClasses.map((entry) => (
                   <li key={entry.id} className="flex flex-wrap items-center gap-3 py-3.5">
-                    <span className="flex-1 text-body-sm text-ink-800">{entry.title}</span>
+                    <span className="flex-1 text-sm text-ui-foreground">{entry.title}</span>
 
                     <Badge variant={entry.required ? "default" : "outline"}>
                       {entry.required ? "Required" : "Optional"}
@@ -98,7 +98,7 @@ export default async function OutlinePage({
                       link that fails once you click it.
                     */}
                     {locked ? (
-                      <span className="text-body-sm text-steel-400">Unavailable</span>
+                      <span className="text-sm text-ui-muted-foreground">Unavailable</span>
                     ) : (
                       <Button variant="subtle" size="sm" asChild>
                         <Link href={`/learn/${enrollment.id}/classes/${entry.id}`}>
@@ -132,12 +132,12 @@ export default async function OutlinePage({
 function Unavailable() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="font-display text-h2-sm text-ink-800">This program is not available</h1>
+      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This program is not available</h1>
       <Alert variant="info" className="mt-6">
         It may have been withdrawn, or it may belong to a different account.
       </Alert>
-      <p className="mt-8 text-body-sm">
-        <Link href="/learn" className="text-brand-600 underline underline-offset-4">
+      <p className="mt-8 text-sm">
+        <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>
       </p>

@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert } from "@ds/components/ui/alert";
-import { Badge } from "@ds/components/ui/badge";
-import { Button } from "@ds/components/ui/button";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Badge } from "@/components/pglearn/ui/badge";
+import { Button } from "@/components/pglearn/ui/button";
 import type { TutorAnswer } from "@/features/tutor/tutor";
 
 /*
@@ -126,9 +126,9 @@ export function TutorDrawer({
   }
 
   return (
-    <section className="mt-10 border-t border-steel-200 pt-8">
+    <section className="mt-10 border-t border-ui-border pt-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-h4 text-ink-800">Course tutor</h2>
+        <h2 className="font-heading text-lg font-semibold text-ui-foreground">Course tutor</h2>
         <Button
           type="button"
           variant="outline"
@@ -147,7 +147,7 @@ export function TutorDrawer({
         * anything the learner does next.
         */}
       <div id="tutor-panel" hidden={!open} className="mt-5">
-        <p className="text-body-sm text-steel-500">
+        <p className="text-sm text-ui-muted-foreground">
           The tutor answers from this course only, and cannot mark anything complete.
         </p>
 
@@ -176,7 +176,7 @@ export function TutorDrawer({
             void send(question, intent);
           }}
         >
-          <label htmlFor="tutor-question" className="text-label uppercase text-ink-700">
+          <label htmlFor="tutor-question" className="text-xs font-medium uppercase tracking-wider text-ui-foreground">
             Your question
           </label>
           <textarea
@@ -185,7 +185,7 @@ export function TutorDrawer({
             maxLength={2000}
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
-            className="mt-2 w-full rounded-lg border border-steel-300 p-3 text-body-sm"
+            className="mt-2 w-full rounded-lg border border-ui-border p-3 text-sm"
           />
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <Button
@@ -199,7 +199,7 @@ export function TutorDrawer({
             <fieldset className="flex items-center gap-3 border-0 p-0">
               <legend className="sr-only">What kind of answer</legend>
               {SUGGESTIONS.map((suggestion) => (
-                <label key={suggestion.intent} className="flex items-center gap-1 text-body-sm">
+                <label key={suggestion.intent} className="flex items-center gap-1 text-sm">
                   <input
                     type="radio"
                     name="intent"
@@ -216,7 +216,7 @@ export function TutorDrawer({
 
         {/* The pending indicator, announced rather than only spun. */}
         {pendingId && (
-          <p role="status" aria-live="polite" className="mt-4 text-body-sm text-steel-500">
+          <p role="status" aria-live="polite" className="mt-4 text-sm text-ui-muted-foreground">
             The tutor is answering…
           </p>
         )}
@@ -242,8 +242,8 @@ export function TutorDrawer({
 function Answer({ answer, onRetry }: { answer: TutorAnswer; onRetry: () => void }) {
   if (answer.status === "failed") {
     return (
-      <div className="rounded-lg border border-steel-200 p-4">
-        <p className="text-body-sm text-steel-500">{answer.question}</p>
+      <div className="rounded-lg border border-ui-border p-4">
+        <p className="text-sm text-ui-muted-foreground">{answer.question}</p>
         <Alert variant="warning" className="mt-3">
           The tutor could not answer that one.
         </Alert>
@@ -257,8 +257,8 @@ function Answer({ answer, onRetry }: { answer: TutorAnswer; onRetry: () => void 
   }
 
   return (
-    <div className="rounded-lg border border-steel-200 p-4">
-      <p className="text-body-sm text-steel-500">{answer.question}</p>
+    <div className="rounded-lg border border-ui-border p-4">
+      <p className="text-sm text-ui-muted-foreground">{answer.question}</p>
 
       {answer.mode === "example" && (
         <Badge variant="outline" className="mt-3">
@@ -271,16 +271,16 @@ function Answer({ answer, onRetry }: { answer: TutorAnswer; onRetry: () => void 
         </Badge>
       )}
 
-      <p className="mt-3 whitespace-pre-wrap text-body-sm text-ink-800">{answer.answer}</p>
+      <p className="mt-3 whitespace-pre-wrap text-sm text-ui-foreground">{answer.answer}</p>
 
       {answer.citations.length > 0 && (
         <div className="mt-4">
-          <h3 className="text-label uppercase text-steel-500">In the course</h3>
+          <h3 className="text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">In the course</h3>
           <ul className="mt-2 flex flex-col gap-1">
             {answer.citations.map((citation) => (
-              <li key={citation.source_id} className="text-body-sm">
+              <li key={citation.source_id} className="text-sm">
                 {/* The href was built by the server from ids it verified. */}
-                <a href={citation.href} className="text-brand-600 underline underline-offset-4">
+                <a href={citation.href} className="pglearn-link">
                   {citation.title}
                 </a>
               </li>

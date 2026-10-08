@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import { verifiedUser } from "@/lib/auth";
 import { getMe } from "@/features/identity/me";
 import { AppShell } from "@/components/layout/AppShell";
-import { Alert } from "@ds/components/ui/alert";
-import { Card } from "@ds/components/ui/card";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Card } from "@/components/pglearn/ui/card";
 
 /*
  * Choosing which organization to manage.
@@ -34,7 +34,7 @@ export default async function ManageIndexPage() {
   return (
     <AppShell active="manage">
       <main className="mx-auto max-w-3xl px-6 py-12">
-        <h1 className="font-display text-h2-sm text-ink-800">Choose an organization</h1>
+        <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Choose an organization</h1>
 
         {managed.length === 0 ? (
           <Alert variant="info" className="mt-6">
@@ -43,7 +43,7 @@ export default async function ManageIndexPage() {
           </Alert>
         ) : (
           <>
-            <p className="mt-2 text-body-sm text-steel-500">
+            <p className="mt-2 text-sm text-ui-muted-foreground">
               Everything you see afterwards — including any export — belongs to the organization you
               pick here.
             </p>
@@ -52,7 +52,7 @@ export default async function ManageIndexPage() {
                 <Card key={context.organization_id} className="p-5">
                   <Link
                     href={`/manage/${context.organization_id}`}
-                    className="font-display text-h5 text-brand-600 underline underline-offset-4"
+                    className="font-heading text-base font-semibold pglearn-link"
                   >
                     {context.organization_name}
                   </Link>

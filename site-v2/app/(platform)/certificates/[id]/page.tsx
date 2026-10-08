@@ -5,10 +5,10 @@ import { verifiedUser } from "@/lib/auth";
 import { RpcError } from "@/lib/rpc";
 import { getCertificate } from "@/features/learning/certificates";
 import { AppShell } from "@/components/layout/AppShell";
-import { Alert } from "@ds/components/ui/alert";
-import { Badge } from "@ds/components/ui/badge";
-import { Button } from "@ds/components/ui/button";
-import { Card } from "@ds/components/ui/card";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Badge } from "@/components/pglearn/ui/badge";
+import { Button } from "@/components/pglearn/ui/button";
+import { Card } from "@/components/pglearn/ui/card";
 
 /*
  * spec/04 /certificates/[id]: "Name, program, completion date, issuer, status,
@@ -54,14 +54,14 @@ export default async function CertificatePage({
   return (
     <AppShell active="learn">
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <p className="text-body-sm">
-        <Link href="/learn" className="text-brand-600 underline underline-offset-4">
+      <p className="text-sm">
+        <Link href="/learn" className="pglearn-link">
           Your learning
         </Link>
       </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <h1 className="font-display text-h2-sm text-ink-800">Certificate of completion</h1>
+        <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Certificate of completion</h1>
         {revoked ? <Badge variant="coral">Revoked</Badge> : <Badge variant="azure">Valid</Badge>}
       </div>
 
@@ -92,7 +92,7 @@ export default async function CertificatePage({
             <Button variant="outline" disabled>
               Download PDF
             </Button>
-            <p className="mt-2 text-body-sm text-steel-500">
+            <p className="mt-2 text-sm text-ui-muted-foreground">
               A revoked certificate cannot be downloaded.
             </p>
           </>
@@ -110,8 +110,8 @@ export default async function CertificatePage({
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-label uppercase text-steel-500">{label}</dt>
-      <dd className="mt-1 text-body-lg text-ink-800">{value}</dd>
+      <dt className="text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">{label}</dt>
+      <dd className="mt-1 text-base leading-relaxed text-ui-foreground">{value}</dd>
     </div>
   );
 }
@@ -119,12 +119,12 @@ function Field({ label, value }: { label: string; value: string }) {
 function Unavailable() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="font-display text-h2-sm text-ink-800">This certificate is not available</h1>
+      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This certificate is not available</h1>
       <Alert variant="info" className="mt-6">
         It may belong to a different account.
       </Alert>
-      <p className="mt-8 text-body-sm">
-        <Link href="/learn" className="text-brand-600 underline underline-offset-4">
+      <p className="mt-8 text-sm">
+        <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>
       </p>

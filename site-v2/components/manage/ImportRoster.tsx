@@ -3,10 +3,10 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { previewRoster, PROBLEM_TEXT, type RosterPreview } from "@/lib/roster";
-import { Alert } from "@ds/components/ui/alert";
-import { Badge } from "@ds/components/ui/badge";
-import { Button } from "@ds/components/ui/button";
-import { Card } from "@ds/components/ui/card";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Badge } from "@/components/pglearn/ui/badge";
+import { Button } from "@/components/pglearn/ui/button";
+import { Card } from "@/components/pglearn/ui/card";
 
 /*
  * Importing a roster from a CSV: preview, then an explicit apply.
@@ -180,24 +180,24 @@ export function ImportRoster({
 
       {preview && !applied && (
         <Card className="mt-4 p-5">
-          <h3 className="font-display text-h5 text-ink-800">{fileName}</h3>
-          <p className="mt-2 text-body-sm">
+          <h3 className="font-heading text-base font-semibold text-ui-foreground">{fileName}</h3>
+          <p className="mt-2 text-sm">
             {preview.totals.rows} row{preview.totals.rows === 1 ? "" : "s"}:{" "}
             <strong>{preview.totals.valid}</strong> will be invited and added,{" "}
             <strong>{preview.totals.invalid}</strong> cannot be used.
           </p>
-          <p className="mt-1 text-body-sm text-steel-500">
+          <p className="mt-1 text-sm text-ui-muted-foreground">
             Nothing has happened yet. Importing invites each person and puts them in this cohort —
             it does not assign them any learning.
           </p>
 
           {preview.invalid.length > 0 && (
             <div className="mt-4">
-              <h4 className="text-label uppercase text-steel-500">Rows that cannot be used</h4>
-              <ul className="mt-2 flex flex-col gap-1 text-body-sm">
+              <h4 className="text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">Rows that cannot be used</h4>
+              <ul className="mt-2 flex flex-col gap-1 text-sm">
                 {preview.invalid.map((row) => (
                   <li key={row.line}>
-                    <span className="text-steel-500">Line {row.line}:</span>{" "}
+                    <span className="text-ui-muted-foreground">Line {row.line}:</span>{" "}
                     {row.email || "(no address)"} — {row.problems.map((p) => PROBLEM_TEXT[p]).join(" ")}
                   </li>
                 ))}
@@ -207,15 +207,15 @@ export function ImportRoster({
 
           {preview.valid.length > 0 && (
             <div className="mt-4">
-              <h4 className="text-label uppercase text-steel-500">Will be imported</h4>
-              <ul className="mt-2 flex flex-col gap-1 text-body-sm">
+              <h4 className="text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">Will be imported</h4>
+              <ul className="mt-2 flex flex-col gap-1 text-sm">
                 {preview.valid.slice(0, 10).map((row) => (
                   <li key={row.line}>
-                    {row.displayName} <span className="text-steel-500">{row.email}</span>
+                    {row.displayName} <span className="text-ui-muted-foreground">{row.email}</span>
                   </li>
                 ))}
                 {preview.valid.length > 10 && (
-                  <li className="text-steel-500">
+                  <li className="text-ui-muted-foreground">
                     and {preview.valid.length - 10} more
                   </li>
                 )}
@@ -243,21 +243,21 @@ export function ImportRoster({
       {applied && (
         <Card className="mt-4 p-5">
           <div role="status" aria-live="polite">
-            <h3 className="font-display text-h5 text-ink-800">Imported</h3>
+            <h3 className="font-heading text-base font-semibold text-ui-foreground">Imported</h3>
             {/* AC-055: "output reconciles counts." Every row is accounted for. */}
-            <ul className="mt-3 flex flex-col gap-1 text-body-sm">
+            <ul className="mt-3 flex flex-col gap-1 text-sm">
               <li>{applied.invited} invited</li>
               <li>{applied.alreadyThere} already had an account</li>
               <li>{applied.added} added to this cohort</li>
               <li>{applied.failed.length} could not be imported</li>
-              <li className="text-steel-500">
+              <li className="text-ui-muted-foreground">
                 {preview?.totals.invalid ?? 0} row
                 {(preview?.totals.invalid ?? 0) === 1 ? "" : "s"} were skipped before importing
               </li>
             </ul>
 
             {applied.failed.length > 0 && (
-              <ul className="mt-3 flex flex-col gap-1 text-body-sm">
+              <ul className="mt-3 flex flex-col gap-1 text-sm">
                 {applied.failed.map((failure) => (
                   <li key={failure.email}>
                     {failure.email} — {failure.reason}
@@ -266,7 +266,7 @@ export function ImportRoster({
               </ul>
             )}
 
-            <p className="mt-3 text-body-sm text-steel-500">
+            <p className="mt-3 text-sm text-ui-muted-foreground">
               Nobody has been assigned any learning. Use Assign a program for that.
             </p>
           </div>

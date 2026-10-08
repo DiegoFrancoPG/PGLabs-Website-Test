@@ -6,6 +6,6 @@ Read and follow the shared project instructions in AGENTS.md. Then read README.m
 
 This directory is both the PG Labs marketing site and the PGLearn application. `app/(marketing)/` is the public site; `app/(platform)/` is PGLearn. Route-group names in parentheses do not appear in URLs, so the paths in `spec/04-ui.md` are accurate as written.
 
-Two defaults differ from specification v1.0 and are recorded with reasons in HANDOFF.md: the repository layout (D-01, adapts ADR-01 — root `app/`, not `src/app/`) and the design system (D-02, overrides ADR-16 — PG Labs `design-system-v2`, not slate/indigo). Everything in spec/02, spec/03, spec/05 and `contracts/` applies verbatim.
+Two defaults differ from specification v1.0 and are recorded with reasons in HANDOFF.md: the repository layout (D-01, adapts ADR-01 — root `app/`, not `src/app/`) and the design system (D-02, overrides ADR-16 — PG Labs `design-system-v2`, not slate/indigo; for `app/(platform)/` itself D-04 replaces that with the scoped SkillSphere shadcn theme in `components/pglearn/`). Everything in spec/02, spec/03, spec/05 and `contracts/` applies verbatim.
 
 Do not regress the marketing routes while implementing PGLearn. `npm run build` must keep prerendering them as static.

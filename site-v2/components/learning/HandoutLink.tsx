@@ -38,11 +38,11 @@ export function HandoutLink({
       <button
         type="button"
         onClick={open}
-        className="text-brand-600 underline underline-offset-4"
+        className="pglearn-link"
       >
         {name}
       </button>
-      {error && <span className="ml-2 text-coral-600">{error}</span>}
+      {error && <span className="ml-2 text-ui-destructive">{error}</span>}
     </>
   );
 }

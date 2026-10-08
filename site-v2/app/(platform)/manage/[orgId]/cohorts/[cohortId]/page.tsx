@@ -12,9 +12,9 @@ import { AppShell } from "@/components/layout/AppShell";
 import { InviteLearner } from "@/components/manage/InviteLearner";
 import { ImportRoster } from "@/components/manage/ImportRoster";
 import { AssignProgram } from "@/components/manage/AssignProgram";
-import { Alert } from "@ds/components/ui/alert";
-import { Badge } from "@ds/components/ui/badge";
-import { Card } from "@ds/components/ui/card";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Badge } from "@/components/pglearn/ui/badge";
+import { Card } from "@/components/pglearn/ui/card";
 
 /*
  * spec/04 /manage/[orgId]/cohorts/[cohortId]: "Name, roster, invite
@@ -78,20 +78,20 @@ export default async function CohortPage({
   return (
     <AppShell active="manage">
       <main className="mx-auto max-w-4xl px-6 py-12">
-        <p className="text-body-sm">
-          <Link href={`/manage/${orgId}`} className="text-brand-600 underline underline-offset-4">
+        <p className="text-sm">
+          <Link href={`/manage/${orgId}`} className="pglearn-link">
             {organization?.name ?? "Organization"}
           </Link>
         </p>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <h1 className="font-display text-h2-sm text-ink-800">{cohort.name}</h1>
+          <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">{cohort.name}</h1>
           {cohort.archived_at && <Badge variant="outline">Archived</Badge>}
         </div>
 
         <section className="mt-10">
-          <h2 className="font-display text-h4 text-ink-800">Roster</h2>
-          <p className="mt-2 text-body-sm text-steel-500">
+          <h2 className="font-heading text-lg font-semibold text-ui-foreground">Roster</h2>
+          <p className="mt-2 text-sm text-ui-muted-foreground">
             Adding somebody here does not assign them anything. Assignment is the separate step
             below, because it carries dates.
           </p>
@@ -104,32 +104,32 @@ export default async function CohortPage({
 
           {members.items.length === 0 ? (
             <Card className="mt-5 p-6">
-              <p className="text-body-sm">Nobody is in this cohort yet.</p>
+              <p className="text-sm">Nobody is in this cohort yet.</p>
             </Card>
           ) : (
             <div className="mt-5 overflow-x-auto">
-              <table className="w-full min-w-[36rem] border-collapse text-body-sm">
+              <table className="w-full min-w-[36rem] border-collapse text-sm">
                 <caption className="sr-only">Members of {cohort.name}</caption>
                 <thead>
-                  <tr className="border-b border-steel-300 text-left">
-                    <th scope="col" className="py-2 pr-4 text-label uppercase text-steel-500">
+                  <tr className="border-b border-ui-border text-left">
+                    <th scope="col" className="py-2 pr-4 text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
                       Learner
                     </th>
-                    <th scope="col" className="py-2 pr-4 text-label uppercase text-steel-500">
+                    <th scope="col" className="py-2 pr-4 text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
                       Account
                     </th>
-                    <th scope="col" className="py-2 text-label uppercase text-steel-500">
+                    <th scope="col" className="py-2 text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
                       In cohort
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {members.items.map((member) => (
-                    <tr key={member.user_id} className="border-b border-steel-200">
+                    <tr key={member.user_id} className="border-b border-ui-border">
                       <td className="py-3 pr-4">
-                        <span className="text-ink-800">{member.display_name}</span>
+                        <span className="text-ui-foreground">{member.display_name}</span>
                         <br />
-                        <span className="text-steel-500">{member.email}</span>
+                        <span className="text-ui-muted-foreground">{member.email}</span>
                       </td>
                       <td className="py-3 pr-4">
                         <Badge
@@ -151,17 +151,17 @@ export default async function CohortPage({
           )}
         </section>
 
-        <section className="mt-12 border-t border-steel-200 pt-8">
-          <h2 className="font-display text-h4 text-ink-800">Assigned learning</h2>
+        <section className="mt-12 border-t border-ui-border pt-8">
+          <h2 className="font-heading text-lg font-semibold text-ui-foreground">Assigned learning</h2>
 
           {cohortOfferings.length === 0 ? (
-            <p className="mt-2 text-body-sm text-steel-500">
+            <p className="mt-2 text-sm text-ui-muted-foreground">
               Nothing has been assigned to this cohort yet.
             </p>
           ) : (
             <ul className="mt-3 flex flex-col gap-2">
               {cohortOfferings.map((offering) => (
-                <li key={offering.id} className="text-body-sm">
+                <li key={offering.id} className="text-sm">
                   Starts {formatDate(offering.starts_at)}, due {formatDate(offering.due_at)}
                   {offering.access_ends_at
                     ? `, access ends ${formatDate(offering.access_ends_at)}`
@@ -212,12 +212,12 @@ export default async function CohortPage({
 function NoAccess() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="font-display text-h2-sm text-ink-800">This cohort is not available</h1>
+      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This cohort is not available</h1>
       <Alert variant="info" className="mt-6">
         It may not exist, or it may belong to an organization you do not manage.
       </Alert>
-      <p className="mt-8 text-body-sm">
-        <Link href="/learn" className="text-brand-600 underline underline-offset-4">
+      <p className="mt-8 text-sm">
+        <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>
       </p>

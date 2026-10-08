@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Alert } from "@ds/components/ui/alert";
-import { Button } from "@ds/components/ui/button";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Button } from "@/components/pglearn/ui/button";
 
 /* A cohort is a group of learners assigned the same programme on the same dates. */
 export function NewCohort({ organizationId }: { organizationId: string }) {
@@ -43,7 +43,7 @@ export function NewCohort({ organizationId }: { organizationId: string }) {
   return (
     <form onSubmit={create} className="flex flex-wrap items-end gap-3">
       <div>
-        <label htmlFor="cohort-name" className="block text-label uppercase text-steel-500">
+        <label htmlFor="cohort-name" className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
           Name
         </label>
         <input
@@ -52,7 +52,7 @@ export function NewCohort({ organizationId }: { organizationId: string }) {
           maxLength={120}
           value={name}
           onChange={(event) => setName(event.target.value)}
-          className="mt-1 rounded-lg border border-steel-300 p-2 text-body-sm"
+          className="mt-1 pglearn-field"
         />
       </div>
       <Button type="submit" variant="primary" size="sm" disabled={pending}>

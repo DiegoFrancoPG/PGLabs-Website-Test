@@ -30,6 +30,17 @@ Learner, manager and admin screens use the PG Labs `design-system-v2` tokens and
 
 Accessibility constraint carried from the token definitions: `brand-500` (#59C4ED) is only 2:1 on white and must never carry small type. Platform text on light grounds uses `brand-600`/`brand-700`; `azure-500` is the button fill with an `ink-800` label.
 
+**D-04 — PGLearn look and feel (supersedes D-02 for `app/(platform)/` only, 8 October 2026).**
+From `/login` onward, PGLearn uses the SkillSphere shadcn theme (template v1.0.0) at the product owner's request; the marketing site keeps `design-system-v2` unchanged. How it is contained:
+
+- The theme's tokens are CSS variables (`--ui-*`, OKLCH channels) defined only under `.pglearn` in `app/globals.css`; the (platform) layout renders that wrapper. Tailwind exposes them as `ui-*` colours (`bg-ui-card`, `text-ui-muted-foreground`, …) because the design system already owns the bare shadcn names with fixed brand values.
+- Platform primitives live in `components/pglearn/ui/` and keep the design system's component APIs and variant names (`primary`, `subtle`, `azure`, `coral`, …), so callers changed only their import path. `@ds/components/ui/*` is no longer imported by any platform file.
+- Type is Geist (the `geist` package, self-hosted, no build-time font fetch). Raw form controls use `.pglearn-field`, text links `.pglearn-link`.
+- Dark mode is per-browser via the `pglearn-theme` cookie and toggles `.dark` on the `.pglearn` wrapper, never on `<html>`, so it cannot reach marketing pages. Select popovers portal into the wrapper so they inherit the theme.
+- The template is Tailwind v4; the site is Tailwind v3. Only its tokens, geometry and visual language were ported — no template code or dependencies beyond `geist` were added.
+
+Accessibility: alerts keep their `role`/`aria-live` contract, and focus is a 3px primary ring on every control. `--ui-primary` (≈ #3B82F6) carries white button labels at 3.7:1, which is the template's own choice and meets 3:1 for large/bold UI text but not 4.5:1 for small text; body links use it underlined.
+
 **No security, data or API contract changes.** spec/02 (private `app` schema, RLS, the three `pglearn_*` entrypoints, the authorization predicates, the disclosure matrix), spec/03, spec/05 and `contracts/` are adopted verbatim.
 
 ## T00 — Prepare site-v2 as the PGLearn application shell

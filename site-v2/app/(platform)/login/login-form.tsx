@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { Button } from "@ds/components/ui/button";
-import { Input } from "@ds/components/ui/input";
-import { Label } from "@ds/components/ui/label";
-import { Alert } from "@ds/components/ui/alert";
+import { Button } from "@/components/pglearn/ui/button";
+import { Input } from "@/components/pglearn/ui/input";
+import { Label } from "@/components/pglearn/ui/label";
+import { Alert } from "@/components/pglearn/ui/alert";
 import { signIn } from "./actions";
 
 /*
@@ -43,7 +43,7 @@ export function LoginForm() {
 
       <SubmitButton />
 
-      <Link href="/forgot-password" className="text-body-sm text-brand-600 underline underline-offset-4">
+      <Link href="/forgot-password" className="text-sm pglearn-link">
         Forgot your password?
       </Link>
     </form>

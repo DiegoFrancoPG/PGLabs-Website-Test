@@ -7,8 +7,8 @@ import { RpcError } from "@/lib/rpc";
 import { getVersion, listPrograms } from "@/features/content/content";
 import { AppShell } from "@/components/layout/AppShell";
 import { VersionEditor } from "@/components/admin/VersionEditor";
-import { Alert } from "@ds/components/ui/alert";
-import { Badge } from "@ds/components/ui/badge";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Badge } from "@/components/pglearn/ui/badge";
 
 /*
  * spec/04 /admin/programs/[programId]/versions/[versionId]:
@@ -60,17 +60,17 @@ export default async function VersionPage({
   return (
     <AppShell active="admin">
       <main className="mx-auto max-w-4xl px-6 py-12">
-        <p className="text-body-sm">
+        <p className="text-sm">
           <Link
             href={`/admin/programs/${programId}`}
-            className="text-brand-600 underline underline-offset-4"
+            className="pglearn-link"
           >
             {program?.title ?? "Program"}
           </Link>
         </p>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <h1 className="font-display text-h2-sm text-ink-800">
+          <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">
             Version {detail.version.version_number}
           </h1>
           {published ? (
@@ -99,12 +99,12 @@ export default async function VersionPage({
 function NoAccess() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="font-display text-h2-sm text-ink-800">This version is not available</h1>
+      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This version is not available</h1>
       <Alert variant="info" className="mt-6">
         It may not exist, or program authoring may not be yours to do.
       </Alert>
-      <p className="mt-8 text-body-sm">
-        <Link href="/learn" className="text-brand-600 underline underline-offset-4">
+      <p className="mt-8 text-sm">
+        <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>
       </p>

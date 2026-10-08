@@ -10,10 +10,10 @@ import { listGrants } from "@/features/organizations/grants";
 import { AppShell } from "@/components/layout/AppShell";
 import { NewOrganization } from "@/components/admin/NewOrganization";
 import { GrantAccess } from "@/components/admin/GrantAccess";
-import { Alert } from "@ds/components/ui/alert";
-import { Badge } from "@ds/components/ui/badge";
-import { Button } from "@ds/components/ui/button";
-import { Card } from "@ds/components/ui/card";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Badge } from "@/components/pglearn/ui/badge";
+import { Button } from "@/components/pglearn/ui/button";
+import { Card } from "@/components/pglearn/ui/card";
 
 /*
  * spec/04 /admin/organizations: "Create name/timezone/initial manager
@@ -64,8 +64,8 @@ export default async function OrganizationsPage() {
   return (
     <AppShell active="admin">
       <main className="mx-auto max-w-4xl px-6 py-12">
-        <h1 className="font-display text-h2-sm text-ink-800">Organizations</h1>
-        <p className="mt-2 text-body-sm text-steel-500">
+        <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Organizations</h1>
+        <p className="mt-2 text-sm text-ui-muted-foreground">
           Each client organization, its managers, and which programs it may assign.
         </p>
 
@@ -75,8 +75,8 @@ export default async function OrganizationsPage() {
 
         {organizations.items.length === 0 ? (
           <Card className="mt-8 p-8">
-            <p className="text-body-lg">There are no organizations yet.</p>
-            <p className="mt-2 text-body-sm text-steel-500">
+            <p className="text-base leading-relaxed">There are no organizations yet.</p>
+            <p className="mt-2 text-sm text-ui-muted-foreground">
               Creating one also invites its first manager, who confirms their own account.
             </p>
           </Card>
@@ -88,8 +88,8 @@ export default async function OrganizationsPage() {
                 <Card key={organization.id} className="p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <h2 className="font-display text-h5 text-ink-800">{organization.name}</h2>
-                      <p className="mt-1 text-body-sm text-steel-500">{organization.timezone}</p>
+                      <h2 className="font-heading text-base font-semibold text-ui-foreground">{organization.name}</h2>
+                      <p className="mt-1 text-sm text-ui-muted-foreground">{organization.timezone}</p>
                     </div>
                     <Badge variant={organization.status === "active" ? "azure" : "coral"}>
                       {organization.status}
@@ -97,18 +97,18 @@ export default async function OrganizationsPage() {
                   </div>
 
                   <div className="mt-4">
-                    <h3 className="text-label uppercase text-steel-500">Catalog access</h3>
+                    <h3 className="text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">Catalog access</h3>
                     {held.length === 0 ? (
-                      <p className="mt-2 text-body-sm text-steel-500">
+                      <p className="mt-2 text-sm text-ui-muted-foreground">
                         No programs granted, so nothing can be assigned here yet.
                       </p>
                     ) : (
                       <ul className="mt-2 flex flex-col gap-1">
                         {held.map((grant) => (
-                          <li key={grant.id} className="text-body-sm">
+                          <li key={grant.id} className="text-sm">
                             {programs.items.find((p) => p.id === grant.program_id)?.title ??
                               "A program"}{" "}
-                            <span className="text-steel-500">
+                            <span className="text-ui-muted-foreground">
                               from {formatDate(grant.starts_at)}
                               {grant.ends_at ? ` until ${formatDate(grant.ends_at)}` : ""}
                             </span>{" "}
@@ -145,12 +145,12 @@ export default async function OrganizationsPage() {
 function NoAccess() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="font-display text-h2-sm text-ink-800">This page is not available</h1>
+      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This page is not available</h1>
       <Alert variant="info" className="mt-6">
         Organization administration is for platform administrators.
       </Alert>
-      <p className="mt-8 text-body-sm">
-        <Link href="/learn" className="text-brand-600 underline underline-offset-4">
+      <p className="mt-8 text-sm">
+        <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>
       </p>

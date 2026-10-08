@@ -11,9 +11,9 @@ import { ExerciseForm } from "@/components/learning/ExerciseForm";
 import { TutorDrawer } from "@/components/learning/TutorDrawer";
 import { getExerciseCompletion, type ExerciseSaved } from "@/features/learning/exercises";
 import { AppShell } from "@/components/layout/AppShell";
-import { Alert } from "@ds/components/ui/alert";
-import { Badge } from "@ds/components/ui/badge";
-import { Button } from "@ds/components/ui/button";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Badge } from "@/components/pglearn/ui/badge";
+import { Button } from "@/components/pglearn/ui/button";
 
 /*
  * spec/04 /learn/[enrollmentId]/classes/[classId].
@@ -78,17 +78,17 @@ export default async function ClassPage({
   return (
     <AppShell active="learn">
     <main className="mx-auto max-w-3xl px-6 py-16">
-      <p className="text-body-sm">
+      <p className="text-sm">
         <Link
           href={`/learn/${enrollmentId}`}
-          className="text-brand-600 underline underline-offset-4"
+          className="pglearn-link"
         >
           {outline.enrollment.program_title}
         </Link>
       </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <h1 className="font-display text-h2-sm text-ink-800">{detail.class.title}</h1>
+        <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">{detail.class.title}</h1>
         <Badge variant={detail.class.required ? "default" : "outline"}>
           {detail.class.required ? "Required" : "Optional"}
         </Badge>
@@ -97,7 +97,7 @@ export default async function ClassPage({
 
       {detail.class.kind === "text" ? (
         <>
-          <article className="mt-8 whitespace-pre-wrap text-body-lg">
+          <article className="mt-8 whitespace-pre-wrap text-base leading-relaxed">
             {detail.class.body_md}
           </article>
           {/* AC-030: reading is not completing. */}
@@ -125,14 +125,14 @@ export default async function ClassPage({
 
       {handouts.length > 0 && (
         <section className="mt-10">
-          <h2 className="text-label uppercase text-ink-700">Handouts</h2>
+          <h2 className="text-xs font-medium uppercase tracking-wider text-ui-foreground">Handouts</h2>
           <ul className="mt-3 flex flex-col gap-2">
             {handouts.map((asset) => (
-              <li key={asset.id} className="text-body-sm">
+              <li key={asset.id} className="text-sm">
                 {/* spec/04 shows name, type and size. The URL is minted on the
                     click, because authorization is re-evaluated every time. */}
                 <HandoutLink assetId={asset.id} enrollmentId={enrollmentId} name={asset.original_name} />{" "}
-                <span className="text-steel-500">
+                <span className="text-ui-muted-foreground">
                   ({asset.mime_type}, {Math.ceil(Number(asset.bytes) / 1024)} KB)
                 </span>
               </li>
@@ -161,7 +161,7 @@ export default async function ClassPage({
         className={detail.class.title}
       />
 
-      <nav className="mt-12 flex justify-between gap-4 border-t border-steel-200 pt-6">
+      <nav className="mt-12 flex justify-between gap-4 border-t border-ui-border pt-6">
         {previous ? (
           <Button variant="outline" size="sm" asChild>
             <Link href={`/learn/${enrollmentId}/classes/${previous.id}`}>Previous</Link>
@@ -185,12 +185,12 @@ export default async function ClassPage({
 function Unavailable() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="font-display text-h2-sm text-ink-800">This class is not available</h1>
+      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This class is not available</h1>
       <Alert variant="info" className="mt-6">
         It may have been withdrawn, or it may belong to a different account.
       </Alert>
-      <p className="mt-8 text-body-sm">
-        <Link href="/learn" className="text-brand-600 underline underline-offset-4">
+      <p className="mt-8 text-sm">
+        <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>
       </p>
@@ -201,14 +201,14 @@ function Unavailable() {
 function Blocked({ enrollmentId }: { enrollmentId: string }) {
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="font-display text-h2-sm text-ink-800">You cannot open this class right now</h1>
+      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">You cannot open this class right now</h1>
       <Alert variant="info" className="mt-6">
         Your access to this program has changed. Your record is still available.
       </Alert>
-      <p className="mt-8 text-body-sm">
+      <p className="mt-8 text-sm">
         <Link
           href={`/learn/${enrollmentId}`}
-          className="text-brand-600 underline underline-offset-4"
+          className="pglearn-link"
         >
           See your record
         </Link>

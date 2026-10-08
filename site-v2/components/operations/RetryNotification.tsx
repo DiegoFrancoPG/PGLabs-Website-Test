@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@ds/components/ui/button";
+import { Button } from "@/components/pglearn/ui/button";
 
 /*
  * Sending a failed message again — deliberately, once, by somebody who has
@@ -47,7 +47,7 @@ export function RetryNotification({ notificationId }: { notificationId: string }
       <Button type="button" variant="outline" size="sm" onClick={retry} disabled={pending}>
         {pending ? "Queuing…" : "Send again"}
       </Button>
-      {error && <span className="ml-2 text-coral-600">{error}</span>}
+      {error && <span className="ml-2 text-ui-destructive">{error}</span>}
     </>
   );
 }

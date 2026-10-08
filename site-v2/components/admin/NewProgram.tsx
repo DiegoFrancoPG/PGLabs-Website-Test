@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Alert } from "@ds/components/ui/alert";
-import { Button } from "@ds/components/ui/button";
-import { Card } from "@ds/components/ui/card";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Button } from "@/components/pglearn/ui/button";
+import { Card } from "@/components/pglearn/ui/card";
 
 /*
  * Creating a program, which also creates its first draft version — one action,
@@ -51,9 +51,9 @@ export function NewProgram() {
   return (
     <Card className="p-5">
       <form onSubmit={create}>
-        <h2 className="font-display text-h5 text-ink-800">New program</h2>
+        <h2 className="font-heading text-base font-semibold text-ui-foreground">New program</h2>
 
-        <label htmlFor="program-title" className="mt-4 block text-label uppercase text-steel-500">
+        <label htmlFor="program-title" className="mt-4 block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
           Title
         </label>
         <input
@@ -63,10 +63,10 @@ export function NewProgram() {
           maxLength={160}
           value={title}
           onChange={(event) => setTitle(event.target.value)}
-          className="mt-1 w-full rounded-lg border border-steel-300 p-2 text-body-sm"
+          className="mt-1 w-full pglearn-field"
         />
 
-        <label htmlFor="program-summary" className="mt-4 block text-label uppercase text-steel-500">
+        <label htmlFor="program-summary" className="mt-4 block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
           Summary
         </label>
         <textarea
@@ -76,7 +76,7 @@ export function NewProgram() {
           maxLength={2000}
           value={summary}
           onChange={(event) => setSummary(event.target.value)}
-          className="mt-1 w-full rounded-lg border border-steel-300 p-2 text-body-sm"
+          className="mt-1 w-full pglearn-field"
         />
 
         <div className="mt-5 flex gap-3">

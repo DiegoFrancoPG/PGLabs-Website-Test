@@ -11,11 +11,11 @@ import {
 import { isOverdue } from "@/lib/schedule";
 import { AppShell } from "@/components/layout/AppShell";
 import { signOut } from "../login/actions";
-import { Button } from "@ds/components/ui/button";
-import { Badge } from "@ds/components/ui/badge";
-import { Card } from "@ds/components/ui/card";
-import { Progress } from "@ds/components/ui/progress";
-import { Alert } from "@ds/components/ui/alert";
+import { Button } from "@/components/pglearn/ui/button";
+import { Badge } from "@/components/pglearn/ui/badge";
+import { Card } from "@/components/pglearn/ui/card";
+import { Progress } from "@/components/pglearn/ui/progress";
+import { Alert } from "@/components/pglearn/ui/alert";
 
 /*
  * spec/04 /learn: "Program cards: title, organization or Personal,
@@ -60,8 +60,8 @@ function ProgramCard({
     <Card className="p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="font-display text-h4 text-ink-800">{enrollment.program_title}</h2>
-          <p className="mt-1 text-body-sm text-steel-500">
+          <h2 className="font-heading text-lg font-semibold text-ui-foreground">{enrollment.program_title}</h2>
+          <p className="mt-1 text-sm text-ui-muted-foreground">
             {enrollment.organization_id ? "Your organization" : "Personal"}
           </p>
         </div>
@@ -74,11 +74,11 @@ function ProgramCard({
 
       <div className="mt-5">
         <div className="flex items-baseline justify-between gap-4">
-          <p className="text-body-sm text-steel-500">
+          <p className="text-sm text-ui-muted-foreground">
             {enrollment.required_completed} of {enrollment.required_total} required classes
           </p>
           {/* The percentage is visible text, not only the bar's aria value. */}
-          <p className="tabular text-body-sm font-semibold text-ink-800">
+          <p className="tabular text-sm font-semibold text-ui-foreground">
             {enrollment.progress_percent}%
           </p>
         </div>
@@ -89,7 +89,7 @@ function ProgramCard({
         />
       </div>
 
-      <p className="mt-4 text-body-sm text-steel-500">
+      <p className="mt-4 text-sm text-ui-muted-foreground">
         Due {formatDate(enrollment.due_at, timezone)}
       </p>
 
@@ -154,11 +154,11 @@ export default async function LearnPage() {
   return (
     <AppShell active="learn">
     <main className="mx-auto max-w-3xl px-6 py-12">
-      <h1 className="font-display text-h2-sm text-ink-800">Your learning</h1>
-      <p className="mt-2 text-body-sm text-steel-500">{me.profile.email}</p>
+      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Your learning</h1>
+      <p className="mt-2 text-sm text-ui-muted-foreground">{me.profile.email}</p>
 
       {enrollments.length === 0 ? (
-        <p className="mt-12 text-body-lg">You haven&rsquo;t been assigned a program yet.</p>
+        <p className="mt-12 text-base leading-relaxed">You haven&rsquo;t been assigned a program yet.</p>
       ) : (
         <div className="mt-10 flex flex-col gap-5">
           {enrollments.map((enrollment) => (
@@ -184,7 +184,7 @@ export default async function LearnPage() {
 function FinishSetUp({ email }: { email: string }) {
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="font-display text-h2-sm text-ink-800">Finish setting up your account</h1>
+      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Finish setting up your account</h1>
       <Alert variant="info" className="mt-6">
         You are signed in as {email}, but your invitation has not been accepted yet. Open the
         invitation link that was emailed to you to finish.
