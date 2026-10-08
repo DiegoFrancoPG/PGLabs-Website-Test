@@ -13,6 +13,7 @@ const badgeVariants = cva(
     variants: {
       variant: {
         default: "bg-ui-primary text-ui-primary-foreground",
+        secondary: "bg-ui-secondary text-ui-secondary-foreground",
         azure: "bg-ui-success/10 text-ui-success",
         gold: "bg-ui-warning/15 text-ui-foreground",
         coral: "bg-ui-destructive/10 text-ui-destructive",

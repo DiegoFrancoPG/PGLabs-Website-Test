@@ -4,6 +4,7 @@ import { verifiedUser } from "@/lib/auth";
 import { getMe } from "@/features/identity/me";
 import { SettingsForm } from "./settings-form";
 import { AppShell } from "@/components/layout/AppShell";
+import { pageContainer } from "@/components/pglearn/layout";
 
 export const metadata: Metadata = { title: "Settings" };
 
@@ -20,7 +21,7 @@ export default async function SettingsPage() {
 
   return (
     <AppShell active="settings">
-    <main className="mx-auto max-w-2xl px-6 py-16">
+    <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
       <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Settings</h1>
       <SettingsForm profile={me.profile} timezones={timezones} />
     </main>

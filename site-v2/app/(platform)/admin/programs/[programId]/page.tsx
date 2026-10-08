@@ -11,6 +11,7 @@ import { Alert } from "@/components/pglearn/ui/alert";
 import { Badge } from "@/components/pglearn/ui/badge";
 import { Button } from "@/components/pglearn/ui/button";
 import { Card } from "@/components/pglearn/ui/card";
+import { pageContainer } from "@/components/pglearn/layout";
 
 /*
  * A program and its versions.
@@ -55,7 +56,7 @@ export default async function ProgramPage({
 
   return (
     <AppShell active="admin">
-      <main className="mx-auto max-w-4xl px-6 py-12">
+      <main className={`${pageContainer} py-12 [&>*]:max-w-4xl`}>
         <p className="text-sm">
           <Link href="/admin/programs" className="pglearn-link">
             Programs
@@ -123,7 +124,7 @@ export default async function ProgramPage({
 
 function NoAccess() {
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
+    <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
       <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This program is not available</h1>
       <Alert variant="info" className="mt-6">
         It may not exist, or program authoring may not be yours to do.

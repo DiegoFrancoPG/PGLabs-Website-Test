@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { verifiedUser } from "@/lib/auth";
-import { getEnrollment, availabilityReason } from "@/features/learning/learning";
+import { getEnrollment } from "@/features/learning/learning";
+import { getMe } from "@/features/identity/me";
 import { RpcError } from "@/lib/rpc";
-import { Button } from "@/components/pglearn/ui/button";
-import { Badge } from "@/components/pglearn/ui/badge";
 import { AppShell } from "@/components/layout/AppShell";
+import { ProgramOutline } from "@/components/learning/ProgramOutline";
 import { Alert } from "@/components/pglearn/ui/alert";
-import { Progress } from "@/components/pglearn/ui/progress";
+import { pageContainer } from "@/components/pglearn/layout";
 
 /*
  * spec/04 /learn/[enrollmentId]: "Program outline grouped by modules,
@@ -31,99 +31,17 @@ export default async function OutlinePage({
   if (!(await verifiedUser())) redirect(`/login?next=/learn/${enrollmentId}`);
 
   let detail;
+  let me;
   try {
-    detail = await getEnrollment(enrollmentId);
+    [detail, me] = await Promise.all([getEnrollment(enrollmentId), getMe()]);
   } catch (err) {
     if (err instanceof RpcError && err.code === "NOT_FOUND") return <Unavailable />;
     throw err;
   }
 
-  const { enrollment, modules, classes } = detail;
-  const reason = availabilityReason(enrollment.availability);
-  const locked = reason !== null;
-
   return (
     <AppShell active="learn">
-    <main className="mx-auto max-w-3xl px-6 py-16">
-      <p className="text-sm">
-        <Link href="/learn" className="pglearn-link">
-          Back to your learning
-        </Link>
-      </p>
-
-      <h1 className="mt-6 font-heading text-2xl font-semibold tracking-tight text-ui-foreground">{enrollment.program_title}</h1>
-
-      <div className="mt-5 flex items-baseline justify-between gap-4">
-        <p className="text-sm text-ui-muted-foreground">
-          {enrollment.required_completed} of {enrollment.required_total} required classes complete
-        </p>
-        <p className="tabular text-sm font-semibold text-ui-foreground">
-          {enrollment.progress_percent}%
-        </p>
-      </div>
-      <Progress value={enrollment.progress_percent} className="mt-2" aria-label="Program progress" />
-
-      {locked && (
-        <Alert variant="info" className="mt-6">
-          {reason} You can still see your record below.
-        </Alert>
-      )}
-
-      {enrollment.state === "completed" && (
-        <Alert variant="success" className="mt-6">
-          {/* spec/04: explicit course completion wording, no claim of mastery. */}
-          You have completed every required class in this course.
-        </Alert>
-      )}
-
-      <div className="mt-10 flex flex-col gap-8">
-        {modules.map((module) => {
-          const moduleClasses = classes.filter((c) => c.module_id === module.id);
-          return (
-            <section key={module.id}>
-              <h2 className="font-heading text-lg font-semibold text-ui-foreground">{module.title}</h2>
-              <ul className="mt-4 divide-y divide-ui-border border-y border-ui-border">
-                {moduleClasses.map((entry) => (
-                  <li key={entry.id} className="flex flex-wrap items-center gap-3 py-3.5">
-                    <span className="flex-1 text-sm text-ui-foreground">{entry.title}</span>
-
-                    <Badge variant={entry.required ? "default" : "outline"}>
-                      {entry.required ? "Required" : "Optional"}
-                    </Badge>
-
-                    {entry.completed && <Badge variant="azure">Complete</Badge>}
-
-                    {/*
-                      Locked means no way into the player, per spec/04 — not a
-                      link that fails once you click it.
-                    */}
-                    {locked ? (
-                      <span className="text-sm text-ui-muted-foreground">Unavailable</span>
-                    ) : (
-                      <Button variant="subtle" size="sm" asChild>
-                        <Link href={`/learn/${enrollment.id}/classes/${entry.id}`}>
-                          {entry.completed ? "Review" : "Open"}
-                        </Link>
-                      </Button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          );
-        })}
-      </div>
-
-      {!locked && enrollment.continue_class_id && (
-        <div className="mt-10">
-          <Button variant="primary" asChild>
-            <Link href={`/learn/${enrollment.id}/classes/${enrollment.continue_class_id}`}>
-              Continue
-            </Link>
-          </Button>
-        </div>
-      )}
-    </main>
+      <ProgramOutline detail={detail} timezone={me.profile.timezone} now={new Date().toISOString()} />
     </AppShell>
   );
 }
@@ -131,7 +49,7 @@ export default async function OutlinePage({
 /* One response for "no such enrollment" and "not yours". */
 function Unavailable() {
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
+    <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
       <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This program is not available</h1>
       <Alert variant="info" className="mt-6">
         It may have been withdrawn, or it may belong to a different account.

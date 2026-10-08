@@ -11,6 +11,7 @@ import { Alert } from "@/components/pglearn/ui/alert";
 import { Badge } from "@/components/pglearn/ui/badge";
 import { Button } from "@/components/pglearn/ui/button";
 import { Card } from "@/components/pglearn/ui/card";
+import { pageContainer } from "@/components/pglearn/layout";
 
 /*
  * spec/04 /admin/reports: "Organization selector plus manager report filters.
@@ -71,7 +72,7 @@ export default async function AdminReportsPage({
 
   return (
     <AppShell active="admin">
-      <main className="mx-auto max-w-6xl px-6 py-12">
+      <main className={`${pageContainer} py-12`}>
         <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Reports</h1>
         <p className="mt-2 text-sm text-ui-muted-foreground">
           Every organization, and the individuals who hold a personal grant.
@@ -229,7 +230,7 @@ function Metric({ label, value }: { label: string; value: number | string }) {
 
 function NoAccess() {
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
+    <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
       <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This page is not available</h1>
       <Alert variant="info" className="mt-6">
         Platform-wide reporting is for platform administrators.
