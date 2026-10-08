@@ -13,6 +13,7 @@ import { RetryNotification } from "@/components/operations/RetryNotification";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Badge } from "@/components/pglearn/ui/badge";
 import { Card } from "@/components/pglearn/ui/card";
+import { pageContainer } from "@/components/pglearn/layout";
 
 /*
  * spec/04 /admin/operations: "Notification status/recipient/attempts/error, job
@@ -67,7 +68,7 @@ export default async function OperationsPage() {
   const uncertain = notifications.items.filter((item) => item.status === "uncertain");
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-16">
+    <main className={`${pageContainer} py-16 [&>*]:max-w-5xl`}>
       <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Operations</h1>
       <p className="mt-2 text-sm text-ui-muted-foreground">
         Delivery status and scheduled runs. Message contents are never shown here.
@@ -196,7 +197,7 @@ function Configured({ label, state }: { label: string; state: string }) {
 
 function NoAccess() {
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
+    <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
       <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This page is not available</h1>
       <Alert variant="info" className="mt-6">
         Operations is for platform administrators.

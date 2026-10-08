@@ -6,6 +6,7 @@ import { getMe } from "@/features/identity/me";
 import { AppShell } from "@/components/layout/AppShell";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Card } from "@/components/pglearn/ui/card";
+import { pageContainer } from "@/components/pglearn/layout";
 
 /*
  * Choosing which organization to manage.
@@ -33,7 +34,7 @@ export default async function ManageIndexPage() {
 
   return (
     <AppShell active="manage">
-      <main className="mx-auto max-w-3xl px-6 py-12">
+      <main className={`${pageContainer} py-12 [&>*]:max-w-3xl`}>
         <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Choose an organization</h1>
 
         {managed.length === 0 ? (

@@ -4,6 +4,7 @@ import { LogOut } from "lucide-react";
 import { getMe } from "@/features/identity/me";
 import { signOut } from "@/app/(platform)/login/actions";
 import { Button } from "@/components/pglearn/ui/button";
+import { pageContainer } from "@/components/pglearn/layout";
 import { Logo } from "@/components/pglearn/Logo";
 import { ThemeToggle } from "@/components/pglearn/ThemeToggle";
 import { THEME_COOKIE, parseTheme } from "@/components/pglearn/theme";
@@ -42,7 +43,7 @@ export async function AppShell({
   return (
     <div className="min-h-screen bg-ui-muted/60">
       <header className="sticky top-0 z-40 border-b border-ui-border bg-ui-background/85 backdrop-blur supports-[backdrop-filter]:bg-ui-background/70">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6 lg:flex-nowrap">
+        <div className={`${pageContainer} flex flex-wrap items-center gap-x-6 gap-y-2 py-3 lg:flex-nowrap`}>
           <Link href="/learn">
             <Logo />
           </Link>

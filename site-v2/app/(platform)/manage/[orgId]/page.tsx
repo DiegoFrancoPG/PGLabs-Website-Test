@@ -11,6 +11,7 @@ import { reportEnrollments } from "@/features/reporting/reports";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Button } from "@/components/pglearn/ui/button";
 import { Card } from "@/components/pglearn/ui/card";
+import { pageContainer } from "@/components/pglearn/layout";
 
 /*
  * spec/04 /manage/[orgId]: "Assigned/started/completed/overdue totals, cohorts,
@@ -51,7 +52,7 @@ export default async function ManagePage({ params }: { params: Promise<{ orgId: 
 
   return (
     <AppShell active="manage">
-    <main className="mx-auto max-w-4xl px-6 py-12">
+    <main className={`${pageContainer} py-12 [&>*]:max-w-4xl`}>
       <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">{organization?.name ?? "Organization"}</h1>
       <p className="mt-2 text-sm text-ui-muted-foreground">
         Learning across this organization. Individual records are on the reports screen.
@@ -127,7 +128,7 @@ function Total({ label, value }: { label: string; value: number | string }) {
 
 function NoAccess() {
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
+    <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
       <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This organization is not available</h1>
       <Alert variant="info" className="mt-6">
         You are not a manager of it, or it may no longer be active.

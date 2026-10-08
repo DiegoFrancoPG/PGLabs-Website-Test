@@ -15,6 +15,7 @@ import { AssignProgram } from "@/components/manage/AssignProgram";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Badge } from "@/components/pglearn/ui/badge";
 import { Card } from "@/components/pglearn/ui/card";
+import { pageContainer } from "@/components/pglearn/layout";
 
 /*
  * spec/04 /manage/[orgId]/cohorts/[cohortId]: "Name, roster, invite
@@ -77,7 +78,7 @@ export default async function CohortPage({
 
   return (
     <AppShell active="manage">
-      <main className="mx-auto max-w-4xl px-6 py-12">
+      <main className={`${pageContainer} py-12 [&>*]:max-w-4xl`}>
         <p className="text-sm">
           <Link href={`/manage/${orgId}`} className="pglearn-link">
             {organization?.name ?? "Organization"}
@@ -211,7 +212,7 @@ export default async function CohortPage({
 
 function NoAccess() {
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
+    <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
       <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This cohort is not available</h1>
       <Alert variant="info" className="mt-6">
         It may not exist, or it may belong to an organization you do not manage.

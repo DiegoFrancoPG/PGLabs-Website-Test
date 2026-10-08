@@ -9,6 +9,7 @@ import { Alert } from "@/components/pglearn/ui/alert";
 import { Badge } from "@/components/pglearn/ui/badge";
 import { Button } from "@/components/pglearn/ui/button";
 import { Card } from "@/components/pglearn/ui/card";
+import { pageContainer } from "@/components/pglearn/layout";
 
 /*
  * spec/04 /certificates/[id]: "Name, program, completion date, issuer, status,
@@ -53,7 +54,7 @@ export default async function CertificatePage({
 
   return (
     <AppShell active="learn">
-    <main className="mx-auto max-w-2xl px-6 py-16">
+    <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
       <p className="text-sm">
         <Link href="/learn" className="pglearn-link">
           Your learning
@@ -118,7 +119,7 @@ function Field({ label, value }: { label: string; value: string }) {
 
 function Unavailable() {
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
+    <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
       <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This certificate is not available</h1>
       <Alert variant="info" className="mt-6">
         It may belong to a different account.

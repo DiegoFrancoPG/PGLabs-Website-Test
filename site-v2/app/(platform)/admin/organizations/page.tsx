@@ -14,6 +14,7 @@ import { Alert } from "@/components/pglearn/ui/alert";
 import { Badge } from "@/components/pglearn/ui/badge";
 import { Button } from "@/components/pglearn/ui/button";
 import { Card } from "@/components/pglearn/ui/card";
+import { pageContainer } from "@/components/pglearn/layout";
 
 /*
  * spec/04 /admin/organizations: "Create name/timezone/initial manager
@@ -63,7 +64,7 @@ export default async function OrganizationsPage() {
 
   return (
     <AppShell active="admin">
-      <main className="mx-auto max-w-4xl px-6 py-12">
+      <main className={`${pageContainer} py-12 [&>*]:max-w-4xl`}>
         <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Organizations</h1>
         <p className="mt-2 text-sm text-ui-muted-foreground">
           Each client organization, its managers, and which programs it may assign.
@@ -144,7 +145,7 @@ export default async function OrganizationsPage() {
 
 function NoAccess() {
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
+    <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
       <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This page is not available</h1>
       <Alert variant="info" className="mt-6">
         Organization administration is for platform administrators.

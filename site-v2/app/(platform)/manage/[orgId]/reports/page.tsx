@@ -10,6 +10,7 @@ import { Alert } from "@/components/pglearn/ui/alert";
 import { Badge } from "@/components/pglearn/ui/badge";
 import { Button } from "@/components/pglearn/ui/button";
 import { Card } from "@/components/pglearn/ui/card";
+import { pageContainer } from "@/components/pglearn/layout";
 
 /*
  * spec/04 /manage/[orgId]/reports: "Offering/status/overdue filters,
@@ -95,7 +96,7 @@ export default async function ReportsPage({
   const { summary } = report;
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-16">
+    <main className={`${pageContainer} py-16`}>
       <p className="text-sm">
         <Link href={`/manage/${orgId}`} className="pglearn-link">
           {organization?.name ?? "Organization"}
@@ -348,7 +349,7 @@ function Metric({ label, value }: { label: string; value: number | string }) {
 
 function NoAccess() {
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
+    <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
       <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This organization is not available</h1>
       <Alert variant="info" className="mt-6">
         You are not a manager of it, or it may no longer be active.

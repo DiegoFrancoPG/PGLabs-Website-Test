@@ -9,6 +9,7 @@ import { Badge } from "@/components/pglearn/ui/badge";
 import { AppShell } from "@/components/layout/AppShell";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Progress } from "@/components/pglearn/ui/progress";
+import { pageContainer } from "@/components/pglearn/layout";
 
 /*
  * spec/04 /learn/[enrollmentId]: "Program outline grouped by modules,
@@ -44,7 +45,7 @@ export default async function OutlinePage({
 
   return (
     <AppShell active="learn">
-    <main className="mx-auto max-w-3xl px-6 py-16">
+    <main className={`${pageContainer} py-16 [&>*]:max-w-3xl`}>
       <p className="text-sm">
         <Link href="/learn" className="pglearn-link">
           Back to your learning
@@ -131,7 +132,7 @@ export default async function OutlinePage({
 /* One response for "no such enrollment" and "not yours". */
 function Unavailable() {
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
+    <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
       <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This program is not available</h1>
       <Alert variant="info" className="mt-6">
         It may have been withdrawn, or it may belong to a different account.
