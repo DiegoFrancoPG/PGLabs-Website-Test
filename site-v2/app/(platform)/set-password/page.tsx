@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { verifiedUser } from "@/lib/auth";
 import { SetPasswordForm } from "./set-password-form";
+import { AuthCard } from "@/components/pglearn/AuthCard";
 
 export const metadata: Metadata = { title: "Choose a password" };
 
@@ -18,12 +19,12 @@ export default async function SetPasswordPage({
   const { next } = await searchParams;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-16">
-      <h1 className="font-display text-h2-sm text-ink-800">Choose a password</h1>
-      <p className="mt-3 text-body-sm text-steel-500">
+    <AuthCard>
+      <h1 className="text-center font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Choose a password</h1>
+      <p className="mt-2 text-center text-sm text-ui-muted-foreground">
         Use at least 12 characters. A short phrase you will remember works better than a short word.
       </p>
       <SetPasswordForm next={next ?? ""} />
-    </main>
+    </AuthCard>
   );
 }

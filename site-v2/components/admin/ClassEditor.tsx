@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { UploadAsset } from "@/components/admin/UploadAsset";
-import { Alert } from "@ds/components/ui/alert";
-import { Badge } from "@ds/components/ui/badge";
-import { Button } from "@ds/components/ui/button";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Badge } from "@/components/pglearn/ui/badge";
+import { Button } from "@/components/pglearn/ui/button";
 
 /*
  * One class: what it is, what it holds, and what it still needs.
@@ -133,10 +133,10 @@ export function ClassEditor({
   const failed = assets.filter((asset) => asset.state === "failed");
 
   return (
-    <div className="rounded-lg border border-steel-200 p-4">
+    <div className="rounded-lg border border-ui-border p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-body-sm text-ink-800">{cls.title}</span>
+          <span className="text-sm text-ui-foreground">{cls.title}</span>
           <Badge variant="outline">{cls.kind}</Badge>
           {cls.required ? <Badge variant="default">Required</Badge> : null}
           {/* What publication will complain about, said before it does. */}
@@ -159,7 +159,7 @@ export function ClassEditor({
 
       {open && (
         <div className="mt-4">
-          <label htmlFor={`title-${cls.id}`} className="block text-label uppercase text-steel-500">
+          <label htmlFor={`title-${cls.id}`} className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
             Title
           </label>
           <input
@@ -168,12 +168,12 @@ export function ClassEditor({
             disabled={readOnly}
             maxLength={160}
             onChange={(event) => setTitle(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-steel-300 p-2 text-body-sm disabled:bg-mist-100"
+            className="mt-1 w-full pglearn-field"
           />
 
           <div className="mt-4 flex flex-wrap gap-6">
             <div>
-              <label htmlFor={`kind-${cls.id}`} className="block text-label uppercase text-steel-500">
+              <label htmlFor={`kind-${cls.id}`} className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
                 Format
               </label>
               <select
@@ -181,7 +181,7 @@ export function ClassEditor({
                 value={kind}
                 disabled={readOnly}
                 onChange={(event) => setKind(event.target.value as ClassRow["kind"])}
-                className="mt-1 rounded-lg border border-steel-300 p-2 text-body-sm disabled:bg-mist-100"
+                className="mt-1 pglearn-field"
               >
                 <option value="video">Video</option>
                 <option value="audio">Audio</option>
@@ -189,7 +189,7 @@ export function ClassEditor({
               </select>
             </div>
 
-            <label className="mt-6 flex items-center gap-2 text-body-sm">
+            <label className="mt-6 flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
                 checked={required}
@@ -204,7 +204,7 @@ export function ClassEditor({
             <>
               <label
                 htmlFor={`body-${cls.id}`}
-                className="mt-4 block text-label uppercase text-steel-500"
+                className="mt-4 block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground"
               >
                 Body
               </label>
@@ -215,13 +215,13 @@ export function ClassEditor({
                 disabled={readOnly}
                 maxLength={100000}
                 onChange={(event) => setBody(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-steel-300 p-2 text-body-sm disabled:bg-mist-100"
+                className="mt-1 w-full pglearn-field"
               />
             </>
           ) : (
             <div className="mt-4">
-              <p className="text-label uppercase text-steel-500">Media</p>
-              <p className="mt-1 text-body-sm">
+              <p className="text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">Media</p>
+              <p className="mt-1 text-sm">
                 {primary ? (
                   <>
                     {primary.original_name}{" "}
@@ -230,7 +230,7 @@ export function ClassEditor({
                     </Badge>
                   </>
                 ) : (
-                  <span className="text-steel-500">Nothing uploaded yet.</span>
+                  <span className="text-ui-muted-foreground">Nothing uploaded yet.</span>
                 )}
               </p>
               {!readOnly && (
@@ -242,7 +242,7 @@ export function ClassEditor({
                 </div>
               )}
               {cls.duration_ms && (
-                <p className="mt-2 text-body-sm text-steel-500">
+                <p className="mt-2 text-sm text-ui-muted-foreground">
                   Duration {Math.round(Number(cls.duration_ms) / 1000)}s, read from the file.
                 </p>
               )}
@@ -266,7 +266,7 @@ export function ClassEditor({
 
           <label
             htmlFor={`exercise-${cls.id}`}
-            className="mt-4 block text-label uppercase text-steel-500"
+            className="mt-4 block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground"
           >
             Practical exercise (optional)
           </label>
@@ -278,7 +278,7 @@ export function ClassEditor({
             maxLength={10000}
             placeholder="What should the learner practise?"
             onChange={(event) => setInstructions(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-steel-300 p-2 text-body-sm disabled:bg-mist-100"
+            className="mt-1 w-full pglearn-field"
           />
 
           {!readOnly && (
@@ -289,7 +289,7 @@ export function ClassEditor({
               <Button type="button" variant="outline" size="sm" disabled={busy} onClick={remove}>
                 Remove class
               </Button>
-              <span role="status" aria-live="polite" className="text-body-sm text-steel-500">
+              <span role="status" aria-live="polite" className="text-sm text-ui-muted-foreground">
                 {saved ? "Saved." : ""}
               </span>
             </div>

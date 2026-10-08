@@ -4,9 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { VersionDetail } from "@/features/content/content";
 import { ClassEditor } from "@/components/admin/ClassEditor";
-import { Alert } from "@ds/components/ui/alert";
-import { Button } from "@ds/components/ui/button";
-import { Card } from "@ds/components/ui/card";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Button } from "@/components/pglearn/ui/button";
+import { Card } from "@/components/pglearn/ui/card";
 
 /*
  * The draft, and everything that can be done to it.
@@ -106,9 +106,9 @@ export function VersionEditor({
       </div>
 
       <section>
-        <h2 className="text-label uppercase text-ink-700">This version</h2>
+        <h2 className="text-xs font-medium uppercase tracking-wider text-ui-foreground">This version</h2>
         <Card className="mt-3 p-5">
-          <label htmlFor="version-title" className="block text-label uppercase text-steel-500">
+          <label htmlFor="version-title" className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
             Title
           </label>
           <input
@@ -117,12 +117,12 @@ export function VersionEditor({
             disabled={readOnly}
             maxLength={160}
             onChange={(event) => setTitle(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-steel-300 p-2 text-body-sm disabled:bg-mist-100"
+            className="mt-1 w-full pglearn-field"
           />
 
           <label
             htmlFor="version-description"
-            className="mt-4 block text-label uppercase text-steel-500"
+            className="mt-4 block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground"
           >
             Description
           </label>
@@ -134,7 +134,7 @@ export function VersionEditor({
             disabled={readOnly}
             maxLength={20000}
             onChange={(event) => setDescription(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-steel-300 p-2 text-body-sm disabled:bg-mist-100"
+            className="mt-1 w-full pglearn-field"
           />
 
           {!readOnly && (
@@ -163,7 +163,7 @@ export function VersionEditor({
 
       <section className="mt-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-label uppercase text-ink-700">Modules and classes</h2>
+          <h2 className="text-xs font-medium uppercase tracking-wider text-ui-foreground">Modules and classes</h2>
           {!readOnly && (
             <Button
               type="button"
@@ -189,7 +189,7 @@ export function VersionEditor({
 
         {modules.length === 0 ? (
           <Card className="mt-3 p-6">
-            <p className="text-body-sm">
+            <p className="text-sm">
               This version has no modules yet. A version needs at least one module with one
               required class before it can be published.
             </p>
@@ -199,7 +199,7 @@ export function VersionEditor({
             {modules.map((module, index) => (
               <Card key={module.id} className="p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h3 className="font-display text-h5 text-ink-800">{module.title}</h3>
+                  <h3 className="font-heading text-base font-semibold text-ui-foreground">{module.title}</h3>
                   {!readOnly && (
                     <div className="flex gap-2">
                       {/* spec/04 asks for up/down reorder rather than drag, which
@@ -265,7 +265,7 @@ export function VersionEditor({
                     />
                   ))}
                   {classesFor(module.id).length === 0 && (
-                    <p className="text-body-sm text-steel-500">No classes in this module yet.</p>
+                    <p className="text-sm text-ui-muted-foreground">No classes in this module yet.</p>
                   )}
                 </div>
 
@@ -302,9 +302,9 @@ export function VersionEditor({
       </section>
 
       {!readOnly && (
-        <section className="mt-12 border-t border-steel-200 pt-8">
-          <h2 className="font-display text-h4 text-ink-800">Publish</h2>
-          <p className="mt-2 text-body-sm text-steel-500">
+        <section className="mt-12 border-t border-ui-border pt-8">
+          <h2 className="font-heading text-lg font-semibold text-ui-foreground">Publish</h2>
+          <p className="mt-2 text-sm text-ui-muted-foreground">
             Publishing makes this version read-only and available to assign. Learners already on an
             earlier version stay on it. This cannot be undone.
           </p>
@@ -315,7 +315,7 @@ export function VersionEditor({
               <ul className="mt-2 flex list-disc flex-col gap-1 pl-5">
                 {issues.map((issue) => (
                   <li key={`${issue.path}-${issue.message}`}>
-                    <span className="text-steel-500">{issue.path}</span> — {issue.message}
+                    <span className="text-ui-muted-foreground">{issue.path}</span> — {issue.message}
                   </li>
                 ))}
               </ul>

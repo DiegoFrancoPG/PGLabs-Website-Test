@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Alert } from "@ds/components/ui/alert";
-import { Button } from "@ds/components/ui/button";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Button } from "@/components/pglearn/ui/button";
 
 /*
  * Granting an organization access to a program.
@@ -56,7 +56,7 @@ export function GrantAccess({
   }
 
   if (programs.length === 0) {
-    return <span className="text-body-sm text-steel-500">No programs to grant yet.</span>;
+    return <span className="text-sm text-ui-muted-foreground">No programs to grant yet.</span>;
   }
 
   if (!open) {
@@ -73,7 +73,7 @@ export function GrantAccess({
         <div>
           <label
             htmlFor={`grant-program-${organizationId}`}
-            className="block text-label uppercase text-steel-500"
+            className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground"
           >
             Program
           </label>
@@ -81,7 +81,7 @@ export function GrantAccess({
             id={`grant-program-${organizationId}`}
             value={programId}
             onChange={(event) => setProgramId(event.target.value)}
-            className="mt-1 rounded-lg border border-steel-300 p-2 text-body-sm"
+            className="mt-1 pglearn-field"
           >
             {programs.map((program) => (
               <option key={program.id} value={program.id}>
@@ -94,7 +94,7 @@ export function GrantAccess({
         <div>
           <label
             htmlFor={`grant-from-${organizationId}`}
-            className="block text-label uppercase text-steel-500"
+            className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground"
           >
             From
           </label>
@@ -104,14 +104,14 @@ export function GrantAccess({
             required
             value={startsAt}
             onChange={(event) => setStartsAt(event.target.value)}
-            className="mt-1 rounded-lg border border-steel-300 p-2 text-body-sm"
+            className="mt-1 pglearn-field"
           />
         </div>
 
         <div>
           <label
             htmlFor={`grant-until-${organizationId}`}
-            className="block text-label uppercase text-steel-500"
+            className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground"
           >
             Until (optional)
           </label>
@@ -120,7 +120,7 @@ export function GrantAccess({
             type="date"
             value={endsAt}
             onChange={(event) => setEndsAt(event.target.value)}
-            className="mt-1 rounded-lg border border-steel-300 p-2 text-body-sm"
+            className="mt-1 pglearn-field"
           />
         </div>
 

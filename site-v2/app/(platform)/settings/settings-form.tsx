@@ -2,18 +2,18 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { Button } from "@ds/components/ui/button";
-import { Input } from "@ds/components/ui/input";
-import { Label } from "@ds/components/ui/label";
-import { Alert } from "@ds/components/ui/alert";
-import { Checkbox } from "@ds/components/ui/checkbox";
+import { Button } from "@/components/pglearn/ui/button";
+import { Input } from "@/components/pglearn/ui/input";
+import { Label } from "@/components/pglearn/ui/label";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Checkbox } from "@/components/pglearn/ui/checkbox";
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from "@ds/components/ui/select";
+} from "@/components/pglearn/ui/select";
 import { saveSettings, type SettingsState } from "./actions";
 
 interface Props {
@@ -56,7 +56,7 @@ export function SettingsForm({ profile, timezones }: Props) {
           aria-describedby={state.fieldErrors?.display_name ? "display_name-error" : undefined}
         />
         {state.fieldErrors?.display_name && (
-          <p id="display_name-error" className="text-body-sm text-coral-500">
+          <p id="display_name-error" className="text-sm text-ui-destructive">
             {state.fieldErrors.display_name}
           </p>
         )}
@@ -77,16 +77,16 @@ export function SettingsForm({ profile, timezones }: Props) {
           </SelectContent>
         </Select>
         {state.fieldErrors?.timezone && (
-          <p className="text-body-sm text-coral-500">{state.fieldErrors.timezone}</p>
+          <p className="text-sm text-ui-destructive">{state.fieldErrors.timezone}</p>
         )}
-        <p className="text-body-sm text-steel-500">
+        <p className="text-sm text-ui-muted-foreground">
           Due dates and reminders are shown in this timezone.
         </p>
       </div>
 
       <div className="flex items-start gap-3">
         <Checkbox id="reminders_enabled" name="reminders_enabled" defaultChecked={profile.reminders_enabled} />
-        <Label htmlFor="reminders_enabled" className="normal-case tracking-normal text-body-sm">
+        <Label htmlFor="reminders_enabled" className="normal-case tracking-normal text-sm">
           Email me learning reminders
         </Label>
       </div>
@@ -95,10 +95,10 @@ export function SettingsForm({ profile, timezones }: Props) {
         spec/04: "role/email never editable here." The address is shown so the
         user knows which account they are in, and is not a form control.
       */}
-      <div className="border-t border-steel-200 pt-6">
-        <p className="text-label uppercase text-ink-700">Email address</p>
-        <p className="mt-1 text-body-sm text-steel-500">{profile.email}</p>
-        <p className="mt-2 text-body-sm text-steel-500">
+      <div className="border-t border-ui-border pt-6">
+        <p className="text-xs font-medium uppercase tracking-wider text-ui-foreground">Email address</p>
+        <p className="mt-1 text-sm text-ui-muted-foreground">{profile.email}</p>
+        <p className="mt-2 text-sm text-ui-muted-foreground">
           Your email address comes from your account and cannot be changed here.
         </p>
       </div>

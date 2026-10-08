@@ -6,10 +6,10 @@ import { RpcError } from "@/lib/rpc";
 import { listOrganizations } from "@/features/organizations/organizations";
 import { listOfferings } from "@/features/content/enrollment";
 import { reportEnrollments, type ReportFilters, type ReportRow } from "@/features/reporting/reports";
-import { Alert } from "@ds/components/ui/alert";
-import { Badge } from "@ds/components/ui/badge";
-import { Button } from "@ds/components/ui/button";
-import { Card } from "@ds/components/ui/card";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Badge } from "@/components/pglearn/ui/badge";
+import { Button } from "@/components/pglearn/ui/button";
+import { Card } from "@/components/pglearn/ui/card";
 
 /*
  * spec/04 /manage/[orgId]/reports: "Offering/status/overdue filters,
@@ -96,20 +96,20 @@ export default async function ReportsPage({
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-16">
-      <p className="text-body-sm">
-        <Link href={`/manage/${orgId}`} className="text-brand-600 underline underline-offset-4">
+      <p className="text-sm">
+        <Link href={`/manage/${orgId}`} className="pglearn-link">
           {organization?.name ?? "Organization"}
         </Link>
       </p>
-      <h1 className="mt-4 font-display text-h2-sm text-ink-800">Reports</h1>
+      <h1 className="mt-4 font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Reports</h1>
       {/*
         * spec/04: "show the selected name in all manager screens and export
         * context". Labelled, so the context is announced rather than being a
         * loose line of text — and so a test can name it without competing with
         * the breadcrumb and the table caption.
         */}
-      <p className="mt-2 text-body-sm text-steel-500">
-        <span className="text-steel-500">Organization: </span>
+      <p className="mt-2 text-sm text-ui-muted-foreground">
+        <span className="text-ui-muted-foreground">Organization: </span>
         <span aria-label="Selected organization">{organization?.name}</span>
       </p>
 
@@ -119,7 +119,7 @@ export default async function ReportsPage({
             id="offering_id"
             name="offering_id"
             defaultValue={(search.offering_id as string) ?? ""}
-            className="w-full rounded-lg border border-steel-300 p-2 text-body-sm"
+            className="w-full pglearn-field"
           >
             <option value="">All offerings</option>
             {/*
@@ -141,7 +141,7 @@ export default async function ReportsPage({
             id="state"
             name="state"
             defaultValue={(search.state as string) ?? ""}
-            className="w-full rounded-lg border border-steel-300 p-2 text-body-sm"
+            className="w-full pglearn-field"
           >
             <option value="">All active</option>
             <option value="not_started">Not started</option>
@@ -156,7 +156,7 @@ export default async function ReportsPage({
             id="overdue"
             name="overdue"
             defaultValue={(search.overdue as string) ?? ""}
-            className="w-full rounded-lg border border-steel-300 p-2 text-body-sm"
+            className="w-full pglearn-field"
           >
             <option value="">Any</option>
             <option value="true">Overdue only</option>
@@ -170,7 +170,7 @@ export default async function ReportsPage({
             name="completed_from"
             type="date"
             defaultValue={(search.completed_from as string) ?? ""}
-            className="w-full rounded-lg border border-steel-300 p-2 text-body-sm"
+            className="w-full pglearn-field"
           />
         </Field>
 
@@ -180,7 +180,7 @@ export default async function ReportsPage({
             name="completed_to"
             type="date"
             defaultValue={(search.completed_to as string) ?? ""}
-            className="w-full rounded-lg border border-steel-300 p-2 text-body-sm"
+            className="w-full pglearn-field"
           />
         </Field>
 
@@ -203,7 +203,7 @@ export default async function ReportsPage({
       </form>
 
       {/* spec/04: "Explain date filter basis." */}
-      <p className="mt-3 text-body-sm text-steel-500">
+      <p className="mt-3 text-sm text-ui-muted-foreground">
         Date filters apply to when a learner completed the program, in UTC. From is inclusive and
         before is exclusive, and both exclude anybody who has not finished.
       </p>
@@ -222,20 +222,20 @@ export default async function ReportsPage({
 
       {report.items.length === 0 ? (
         <Card className="mt-8 p-8">
-          <p className="text-body-lg">No enrollments match these filters.</p>
-          <p className="mt-2 text-body-sm text-steel-500">
+          <p className="text-base leading-relaxed">No enrollments match these filters.</p>
+          <p className="mt-2 text-sm text-ui-muted-foreground">
             Clear the filters, or choose a different offering.
           </p>
         </Card>
       ) : (
         /* spec/04: "table horizontal scrolling is acceptable on mobile". */
         <div className="mt-8 overflow-x-auto">
-          <table className="w-full min-w-[56rem] border-collapse text-body-sm">
+          <table className="w-full min-w-[56rem] border-collapse text-sm">
             <caption className="sr-only">
               Enrollments for {organization?.name}, matching the selected filters
             </caption>
             <thead>
-              <tr className="border-b border-steel-300 text-left">
+              <tr className="border-b border-ui-border text-left">
                 <Th>Learner</Th>
                 <Th>Program</Th>
                 <Th>Status</Th>
@@ -271,11 +271,11 @@ export default async function ReportsPage({
 
 function Row({ row }: { row: ReportRow }) {
   return (
-    <tr className="border-b border-steel-200">
+    <tr className="border-b border-ui-border">
       <td className="py-3 pr-4">
-        <span className="text-ink-800">{row.learner_name}</span>
+        <span className="text-ui-foreground">{row.learner_name}</span>
         <br />
-        <span className="text-steel-500">{row.learner_email}</span>
+        <span className="text-ui-muted-foreground">{row.learner_email}</span>
         {row.invitation_state !== "accepted" && (
           <>
             {" "}
@@ -284,12 +284,12 @@ function Row({ row }: { row: ReportRow }) {
         )}
       </td>
       <td className="py-3 pr-4">
-        {row.program} <span className="text-steel-500">v{row.version_number}</span>
+        {row.program} <span className="text-ui-muted-foreground">v{row.version_number}</span>
       </td>
       <td className="py-3 pr-4">{row.state.replace("_", " ")}</td>
       <td className="tabular py-3 pr-4">
         {row.progress_percent}%{" "}
-        <span className="text-steel-500">
+        <span className="text-ui-muted-foreground">
           ({row.required_completed}/{row.required_total})
         </span>
       </td>
@@ -298,7 +298,7 @@ function Row({ row }: { row: ReportRow }) {
         {row.completed_at ? (
           <>
             {formatDateTime(row.completed_at)}
-            {row.on_time === false && <span className="text-coral-600"> late</span>}
+            {row.on_time === false && <span className="text-ui-destructive"> late</span>}
           </>
         ) : (
           "—"
@@ -312,7 +312,7 @@ function Row({ row }: { row: ReportRow }) {
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th scope="col" className="py-2 pr-4 text-label uppercase text-steel-500">
+    <th scope="col" className="py-2 pr-4 text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
       {children}
     </th>
   );
@@ -329,7 +329,7 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={htmlFor} className="text-label uppercase text-steel-500">
+      <label htmlFor={htmlFor} className="text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
         {label}
       </label>
       <div className="mt-1">{children}</div>
@@ -340,8 +340,8 @@ function Field({
 function Metric({ label, value }: { label: string; value: number | string }) {
   return (
     <Card className="p-4">
-      <p className="text-label uppercase text-steel-500">{label}</p>
-      <p className="tabular mt-1 font-display text-h4 text-ink-800">{value}</p>
+      <p className="text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">{label}</p>
+      <p className="tabular mt-1 font-heading text-lg font-semibold text-ui-foreground">{value}</p>
     </Card>
   );
 }
@@ -349,12 +349,12 @@ function Metric({ label, value }: { label: string; value: number | string }) {
 function NoAccess() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="font-display text-h2-sm text-ink-800">This organization is not available</h1>
+      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This organization is not available</h1>
       <Alert variant="info" className="mt-6">
         You are not a manager of it, or it may no longer be active.
       </Alert>
-      <p className="mt-8 text-body-sm">
-        <Link href="/learn" className="text-brand-600 underline underline-offset-4">
+      <p className="mt-8 text-sm">
+        <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>
       </p>

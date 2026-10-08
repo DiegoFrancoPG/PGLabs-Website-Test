@@ -8,9 +8,9 @@ import { listPrograms } from "@/features/content/content";
 import { reportEnrollments } from "@/features/reporting/reports";
 import { AppShell } from "@/components/layout/AppShell";
 import { InviteIndividual } from "@/components/admin/InviteIndividual";
-import { Alert } from "@ds/components/ui/alert";
-import { Badge } from "@ds/components/ui/badge";
-import { Card } from "@ds/components/ui/card";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Badge } from "@/components/pglearn/ui/badge";
+import { Card } from "@/components/pglearn/ui/card";
 
 /*
  * spec/04 /admin/individuals: "Invite individual email/name; choose individual
@@ -57,8 +57,8 @@ export default async function IndividualsPage() {
   return (
     <AppShell active="admin">
       <main className="mx-auto max-w-4xl px-6 py-12">
-        <h1 className="font-display text-h2-sm text-ink-800">Individuals</h1>
-        <p className="mt-2 text-body-sm text-steel-500">
+        <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Individuals</h1>
+        <p className="mt-2 text-sm text-ui-muted-foreground">
           Learners who hold a programme in their own right rather than through an organization. No
           organization is created for them, and no manager can see their record.
         </p>
@@ -81,38 +81,38 @@ export default async function IndividualsPage() {
         </div>
 
         <section className="mt-10">
-          <h2 className="font-display text-h4 text-ink-800">Enrolled individuals</h2>
+          <h2 className="font-heading text-lg font-semibold text-ui-foreground">Enrolled individuals</h2>
           {individuals.length === 0 ? (
             <Card className="mt-4 p-6">
-              <p className="text-body-sm">Nobody holds a personal grant yet.</p>
+              <p className="text-sm">Nobody holds a personal grant yet.</p>
             </Card>
           ) : (
             <div className="mt-4 overflow-x-auto">
-              <table className="w-full min-w-[40rem] border-collapse text-body-sm">
+              <table className="w-full min-w-[40rem] border-collapse text-sm">
                 <caption className="sr-only">Individual learners and their programmes</caption>
                 <thead>
-                  <tr className="border-b border-steel-300 text-left">
-                    <th scope="col" className="py-2 pr-4 text-label uppercase text-steel-500">
+                  <tr className="border-b border-ui-border text-left">
+                    <th scope="col" className="py-2 pr-4 text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
                       Learner
                     </th>
-                    <th scope="col" className="py-2 pr-4 text-label uppercase text-steel-500">
+                    <th scope="col" className="py-2 pr-4 text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
                       Account
                     </th>
-                    <th scope="col" className="py-2 pr-4 text-label uppercase text-steel-500">
+                    <th scope="col" className="py-2 pr-4 text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
                       Program
                     </th>
-                    <th scope="col" className="py-2 text-label uppercase text-steel-500">
+                    <th scope="col" className="py-2 text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
                       Progress
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {individuals.map((row) => (
-                    <tr key={row.enrollment_id} className="border-b border-steel-200">
+                    <tr key={row.enrollment_id} className="border-b border-ui-border">
                       <td className="py-3 pr-4">
-                        <span className="text-ink-800">{row.learner_name}</span>
+                        <span className="text-ui-foreground">{row.learner_name}</span>
                         <br />
-                        <span className="text-steel-500">{row.learner_email}</span>
+                        <span className="text-ui-muted-foreground">{row.learner_email}</span>
                       </td>
                       <td className="py-3 pr-4">
                         {/* spec/04: "Show identity invitation state". */}
@@ -121,11 +121,11 @@ export default async function IndividualsPage() {
                         </Badge>
                       </td>
                       <td className="py-3 pr-4">
-                        {row.program} <span className="text-steel-500">v{row.version_number}</span>
+                        {row.program} <span className="text-ui-muted-foreground">v{row.version_number}</span>
                       </td>
                       <td className="tabular py-3">
                         {row.progress_percent}%{" "}
-                        <span className="text-steel-500">
+                        <span className="text-ui-muted-foreground">
                           ({row.required_completed}/{row.required_total})
                         </span>
                       </td>
@@ -144,12 +144,12 @@ export default async function IndividualsPage() {
 function NoAccess() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="font-display text-h2-sm text-ink-800">This page is not available</h1>
+      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This page is not available</h1>
       <Alert variant="info" className="mt-6">
         Individual enrolment is for platform administrators.
       </Alert>
-      <p className="mt-8 text-body-sm">
-        <Link href="/learn" className="text-brand-600 underline underline-offset-4">
+      <p className="mt-8 text-sm">
+        <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>
       </p>

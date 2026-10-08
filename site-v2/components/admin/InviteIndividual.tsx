@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Alert } from "@ds/components/ui/alert";
-import { Button } from "@ds/components/ui/button";
-import { Card } from "@ds/components/ui/card";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Button } from "@/components/pglearn/ui/button";
+import { Card } from "@/components/pglearn/ui/card";
 
 /*
  * Inviting one person and giving them a programme of their own.
@@ -133,7 +133,7 @@ export function InviteIndividual({
   return (
     <Card className="p-5">
       <form onSubmit={enrol}>
-        <h2 className="font-display text-h5 text-ink-800">Invite an individual</h2>
+        <h2 className="font-heading text-base font-semibold text-ui-foreground">Invite an individual</h2>
 
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Name" id="individual-name">
@@ -143,7 +143,7 @@ export function InviteIndividual({
               maxLength={120}
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="w-full rounded-lg border border-steel-300 p-2 text-body-sm"
+              className="w-full pglearn-field"
             />
           </Field>
 
@@ -155,7 +155,7 @@ export function InviteIndividual({
               maxLength={254}
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-lg border border-steel-300 p-2 text-body-sm"
+              className="w-full pglearn-field"
             />
           </Field>
 
@@ -164,7 +164,7 @@ export function InviteIndividual({
               id="individual-program"
               value={programId}
               onChange={(event) => setProgramId(event.target.value)}
-              className="w-full rounded-lg border border-steel-300 p-2 text-body-sm"
+              className="w-full pglearn-field"
             >
               {programs.map((program) => (
                 <option key={program.id} value={program.id}>
@@ -181,7 +181,7 @@ export function InviteIndividual({
               required
               value={startsAt}
               onChange={(event) => setStartsAt(event.target.value)}
-              className="w-full rounded-lg border border-steel-300 p-2 text-body-sm"
+              className="w-full pglearn-field"
             />
           </Field>
 
@@ -192,7 +192,7 @@ export function InviteIndividual({
               required
               value={dueAt}
               onChange={(event) => setDueAt(event.target.value)}
-              className="w-full rounded-lg border border-steel-300 p-2 text-body-sm"
+              className="w-full pglearn-field"
             />
           </Field>
 
@@ -202,7 +202,7 @@ export function InviteIndividual({
               type="date"
               value={accessEndsAt}
               onChange={(event) => setAccessEndsAt(event.target.value)}
-              className="w-full rounded-lg border border-steel-300 p-2 text-body-sm"
+              className="w-full pglearn-field"
             />
           </Field>
         </div>
@@ -244,7 +244,7 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="block text-label uppercase text-steel-500">
+      <label htmlFor={id} className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
         {label}
       </label>
       <div className="mt-1">{children}</div>

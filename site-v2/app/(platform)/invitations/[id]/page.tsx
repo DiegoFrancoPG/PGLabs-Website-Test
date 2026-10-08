@@ -5,8 +5,9 @@ import { verifiedUser } from "@/lib/auth";
 import { getInvitation } from "@/features/identity/invitations";
 import { getMe } from "@/features/identity/me";
 import { RpcError } from "@/lib/rpc";
-import { Alert } from "@ds/components/ui/alert";
+import { Alert } from "@/components/pglearn/ui/alert";
 import { AcceptForm } from "./accept-form";
+import { AuthCard } from "@/components/pglearn/AuthCard";
 
 export const metadata: Metadata = { title: "Your invitation" };
 
@@ -35,17 +36,17 @@ export default async function InvitationPage({ params }: { params: Promise<{ id:
 
   if (invitation.status !== "pending") {
     return (
-      <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-16">
-        <h1 className="font-display text-h2-sm text-ink-800">This invitation has expired</h1>
-        <p className="mt-4 text-body-lg">
+      <AuthCard>
+        <h1 className="text-center font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This invitation has expired</h1>
+        <p className="mt-4 text-base leading-relaxed">
           Invitations are valid for 24 hours. Ask whoever invited you to send a new one.
         </p>
-        <p className="mt-8 text-body-sm">
-          <Link href="/login" className="text-brand-600 underline underline-offset-4">
+        <p className="mt-8 text-sm">
+          <Link href="/login" className="pglearn-link">
             Back to sign in
           </Link>
         </p>
-      </main>
+      </AuthCard>
     );
   }
 
@@ -55,26 +56,26 @@ export default async function InvitationPage({ params }: { params: Promise<{ id:
     : null;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-16">
-      <h1 className="font-display text-h2-sm text-ink-800">You have been invited</h1>
+    <AuthCard>
+      <h1 className="text-center font-heading text-2xl font-semibold tracking-tight text-ui-foreground">You have been invited</h1>
 
-      <dl className="mt-8 flex flex-col gap-4 border-y border-steel-200 py-6">
+      <dl className="mt-8 flex flex-col gap-4 border-y border-ui-border py-6">
         <div>
-          <dt className="text-label uppercase text-ink-700">Account</dt>
-          <dd className="mt-1 text-body-sm">{me.profile.email}</dd>
+          <dt className="text-xs font-medium uppercase tracking-wider text-ui-foreground">Account</dt>
+          <dd className="mt-1 text-sm">{me.profile.email}</dd>
         </div>
         <div>
-          <dt className="text-label uppercase text-ink-700">Organization</dt>
-          <dd className="mt-1 text-body-sm">{organization ?? "Personal — no organization"}</dd>
+          <dt className="text-xs font-medium uppercase tracking-wider text-ui-foreground">Organization</dt>
+          <dd className="mt-1 text-sm">{organization ?? "Personal — no organization"}</dd>
         </div>
         <div>
-          <dt className="text-label uppercase text-ink-700">Role</dt>
-          <dd className="mt-1 text-body-sm capitalize">{invitation.role}</dd>
+          <dt className="text-xs font-medium uppercase tracking-wider text-ui-foreground">Role</dt>
+          <dd className="mt-1 text-sm capitalize">{invitation.role}</dd>
         </div>
       </dl>
 
       <AcceptForm invitationId={invitation.id} />
-    </main>
+    </AuthCard>
   );
 }
 
@@ -84,17 +85,17 @@ export default async function InvitationPage({ params }: { params: Promise<{ id:
  */
 function Unavailable() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-16">
-      <h1 className="font-display text-h2-sm text-ink-800">This invitation is not available</h1>
+    <AuthCard>
+      <h1 className="text-center font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This invitation is not available</h1>
       <Alert variant="info" className="mt-6">
         It may have been withdrawn, or it may be for a different account. If you have more than one
         email address, check that you are signed in with the right one.
       </Alert>
-      <p className="mt-8 text-body-sm">
-        <Link href="/login" className="text-brand-600 underline underline-offset-4">
+      <p className="mt-8 text-sm">
+        <Link href="/login" className="pglearn-link">
           Back to sign in
         </Link>
       </p>
-    </main>
+    </AuthCard>
   );
 }

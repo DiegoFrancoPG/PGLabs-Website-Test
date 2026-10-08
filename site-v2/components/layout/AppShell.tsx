@@ -1,7 +1,12 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { LogOut } from "lucide-react";
 import { getMe } from "@/features/identity/me";
 import { signOut } from "@/app/(platform)/login/actions";
-import { Button } from "@ds/components/ui/button";
+import { Button } from "@/components/pglearn/ui/button";
+import { Logo } from "@/components/pglearn/Logo";
+import { ThemeToggle } from "@/components/pglearn/ThemeToggle";
+import { THEME_COOKIE, parseTheme } from "@/components/pglearn/theme";
 
 /*
  * The one application shell (spec/04).
@@ -27,21 +32,27 @@ export async function AppShell({
   /** Which top-level area is being shown, for aria-current. */
   active?: "learn" | "manage" | "admin" | "settings";
 }) {
-  const me = await getMe();
+  const [me, cookieStore] = await Promise.all([getMe(), cookies()]);
+  const theme = parseTheme(cookieStore.get(THEME_COOKIE)?.value);
 
   const managed = me.contexts.filter(
     (context) => context.role === "manager" && context.status === "active"
   );
 
   return (
-    <div className="min-h-screen bg-surface">
-      <header className="border-b border-steel-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-6 py-4">
-          <Link href="/learn" className="font-display text-h5 text-brand-600">
-            PGLearn
+    <div className="min-h-screen bg-ui-muted/60">
+      <header className="sticky top-0 z-40 border-b border-ui-border bg-ui-background/85 backdrop-blur supports-[backdrop-filter]:bg-ui-background/70">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6 lg:flex-nowrap">
+          <Link href="/learn">
+            <Logo />
           </Link>
 
-          <nav aria-label="Main" className="flex flex-1 flex-wrap items-center gap-x-5 gap-y-2">
+          {/* On a phone the navigation takes its own row and scrolls sideways, so
+              the wordmark and the account actions stay on one line above it. */}
+          <nav
+            aria-label="Main"
+            className="order-last -mx-1 flex w-full items-center gap-1 overflow-x-auto px-1 pb-1 lg:order-none lg:mx-0 lg:w-auto lg:flex-1 lg:overflow-visible lg:px-0 lg:pb-0"
+          >
             <NavLink href="/learn" current={active === "learn"}>
               My learning
             </NavLink>
@@ -77,17 +88,21 @@ export async function AppShell({
             {/* Settings is navigation, so it lives inside the landmark rather
                 than beside it — a screen reader listing the navigation should
                 find every place this person can go. */}
-            <NavLink href="/settings" current={active === "settings"} className="ml-auto">
+            <NavLink href="/settings" current={active === "settings"} className="lg:ml-auto">
               Settings
             </NavLink>
           </nav>
 
-          {/* Signing out is an action, not a destination. */}
-          <form action={signOut}>
-            <Button type="submit" variant="subtle" size="sm">
-              Sign out
-            </Button>
-          </form>
+          <div className="ml-auto flex items-center gap-1 lg:ml-0">
+            <ThemeToggle initial={theme} />
+            {/* Signing out is an action, not a destination. */}
+            <form action={signOut}>
+              <Button type="submit" variant="outline" size="sm">
+                <LogOut aria-hidden />
+                Sign out
+              </Button>
+            </form>
+          </div>
         </div>
       </header>
 
@@ -111,10 +126,10 @@ function NavLink({
     <Link
       href={href}
       // aria-current is what tells a screen reader which page this is, and it
-      // is also what the visible underline is keyed to — one source, not two.
+      // is also what the visible highlight is keyed to — one source, not two.
       aria-current={current ? "page" : undefined}
-      className={`text-body-sm underline-offset-4 hover:underline ${
-        current ? "font-semibold text-ink-800 underline" : "text-steel-500"
+      className={`shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors hover:bg-ui-muted hover:text-ui-foreground ${
+        current ? "bg-ui-accent text-ui-accent-foreground" : "text-ui-muted-foreground"
       } ${className}`}
     >
       {children}

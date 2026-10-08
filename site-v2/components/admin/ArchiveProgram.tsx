@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@ds/components/ui/button";
+import { Button } from "@/components/pglearn/ui/button";
 
 /*
  * Archiving hides a program from new assignments. It does not touch anybody's
@@ -44,7 +44,7 @@ export function ArchiveProgram({
       <Button type="button" variant="outline" size="sm" onClick={toggle} disabled={pending}>
         {pending ? "Saving…" : archived ? "Restore" : "Archive"}
       </Button>
-      {error && <span className="ml-2 text-body-sm text-coral-600">{error}</span>}
+      {error && <span className="ml-2 text-sm text-ui-destructive">{error}</span>}
     </>
   );
 }

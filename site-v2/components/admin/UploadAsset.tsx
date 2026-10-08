@@ -2,8 +2,8 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Alert } from "@ds/components/ui/alert";
-import { Button } from "@ds/components/ui/button";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Button } from "@/components/pglearn/ui/button";
 
 /*
  * Uploading a file, in the three steps T09 built.
@@ -119,7 +119,7 @@ export function UploadAsset({
         {progress !== null ? `Uploading ${progress}%` : label}
       </Button>
 
-      <span role="status" aria-live="polite" className="ml-2 text-body-sm text-steel-500">
+      <span role="status" aria-live="polite" className="ml-2 text-sm text-ui-muted-foreground">
         {status ?? ""}
       </span>
 

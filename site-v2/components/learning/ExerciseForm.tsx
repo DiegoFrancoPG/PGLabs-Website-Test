@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Alert } from "@ds/components/ui/alert";
-import { Button } from "@ds/components/ui/button";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Button } from "@/components/pglearn/ui/button";
 import { countCodePoints, normalizeResponse, MAX_CODE_POINTS } from "@/lib/exercise";
 
 /*
@@ -40,14 +40,14 @@ export function ExerciseForm({
 
   if (saved) {
     return (
-      <section className="mt-10 border-t border-steel-200 pt-8">
-        <h2 className="font-display text-h4 text-ink-800">Practical exercise</h2>
-        <p className="mt-3 whitespace-pre-wrap text-body-sm">{instructions}</p>
-        <h3 className="mt-6 text-label uppercase text-ink-700">Your response</h3>
-        <p className="mt-2 whitespace-pre-wrap rounded-lg bg-mist-100 p-4 text-body-sm">
+      <section className="mt-10 border-t border-ui-border pt-8">
+        <h2 className="font-heading text-lg font-semibold text-ui-foreground">Practical exercise</h2>
+        <p className="mt-3 whitespace-pre-wrap text-sm">{instructions}</p>
+        <h3 className="mt-6 text-xs font-medium uppercase tracking-wider text-ui-foreground">Your response</h3>
+        <p className="mt-2 whitespace-pre-wrap rounded-lg bg-ui-muted p-4 text-sm">
           {saved.response}
         </p>
-        <p className="mt-2 text-body-sm text-steel-500">
+        <p className="mt-2 text-sm text-ui-muted-foreground">
           Saved on {new Date(saved.confirmed_at).toLocaleDateString("en-CA")}. A response cannot be
           changed once it is saved.
         </p>
@@ -79,12 +79,12 @@ export function ExerciseForm({
   }
 
   return (
-    <section className="mt-10 border-t border-steel-200 pt-8">
-      <h2 className="font-display text-h4 text-ink-800">Practical exercise</h2>
-      <p className="mt-3 whitespace-pre-wrap text-body-sm">{instructions}</p>
+    <section className="mt-10 border-t border-ui-border pt-8">
+      <h2 className="font-heading text-lg font-semibold text-ui-foreground">Practical exercise</h2>
+      <p className="mt-3 whitespace-pre-wrap text-sm">{instructions}</p>
 
       <form onSubmit={save} className="mt-6">
-        <label htmlFor="exercise-response" className="text-label uppercase text-ink-700">
+        <label htmlFor="exercise-response" className="text-xs font-medium uppercase tracking-wider text-ui-foreground">
           Your response
         </label>
         <textarea
@@ -96,16 +96,16 @@ export function ExerciseForm({
           onChange={(event) => setResponse(event.target.value)}
           aria-describedby="exercise-count"
           aria-invalid={tooLong}
-          className="mt-2 w-full rounded-lg border border-steel-300 p-3 text-body-sm"
+          className="mt-2 w-full rounded-lg border border-ui-border p-3 text-sm"
         />
         <p
           id="exercise-count"
-          className={`mt-1 text-body-sm ${tooLong ? "text-coral-600" : "text-steel-500"}`}
+          className={`mt-1 text-sm ${tooLong ? "text-ui-destructive" : "text-ui-muted-foreground"}`}
         >
           {used} of {MAX_CODE_POINTS} characters
         </p>
 
-        <label className="mt-4 flex items-start gap-2 text-body-sm">
+        <label className="mt-4 flex items-start gap-2 text-sm">
           <input
             type="checkbox"
             checked={confirmed}

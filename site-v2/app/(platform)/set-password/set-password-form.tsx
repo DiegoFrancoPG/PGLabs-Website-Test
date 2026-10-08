@@ -2,10 +2,10 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { Button } from "@ds/components/ui/button";
-import { Input } from "@ds/components/ui/input";
-import { Label } from "@ds/components/ui/label";
-import { Alert } from "@ds/components/ui/alert";
+import { Button } from "@/components/pglearn/ui/button";
+import { Input } from "@/components/pglearn/ui/input";
+import { Label } from "@/components/pglearn/ui/label";
+import { Alert } from "@/components/pglearn/ui/alert";
 import { setPassword, type SetPasswordState } from "./actions";
 
 function SubmitButton() {
@@ -38,7 +38,7 @@ export function SetPasswordForm({ next }: { next: string }) {
           aria-describedby={state.fieldErrors?.password ? "password-error" : undefined}
         />
         {state.fieldErrors?.password && (
-          <p id="password-error" className="text-body-sm text-coral-500">
+          <p id="password-error" className="text-sm text-ui-destructive">
             {state.fieldErrors.password}
           </p>
         )}
@@ -55,7 +55,7 @@ export function SetPasswordForm({ next }: { next: string }) {
           aria-describedby={state.fieldErrors?.confirm ? "confirm-error" : undefined}
         />
         {state.fieldErrors?.confirm && (
-          <p id="confirm-error" className="text-body-sm text-coral-500">
+          <p id="confirm-error" className="text-sm text-ui-destructive">
             {state.fieldErrors.confirm}
           </p>
         )}

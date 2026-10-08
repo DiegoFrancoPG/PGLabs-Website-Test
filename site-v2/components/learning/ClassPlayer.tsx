@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert } from "@ds/components/ui/alert";
-import { Button } from "@ds/components/ui/button";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Button } from "@/components/pglearn/ui/button";
 import type { Progress } from "@/features/learning/playback";
 
 /*
@@ -275,7 +275,7 @@ export function ClassPlayer({
       {mediaUrl ? (
         <Tag
           ref={media as never}
-          className="w-full rounded-lg bg-ink-800"
+          className="w-full rounded-lg bg-black"
           src={mediaUrl}
           controls
           preload="metadata"
@@ -291,11 +291,11 @@ export function ClassPlayer({
           )}
         </Tag>
       ) : (
-        <p className="text-body-sm text-steel-500">Preparing playback…</p>
+        <p className="text-sm text-ui-muted-foreground">Preparing playback…</p>
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className="text-body-sm text-steel-500" id="rate-label">
+        <span className="text-sm text-ui-muted-foreground" id="rate-label">
           Speed
         </span>
         <div role="group" aria-labelledby="rate-label" className="flex flex-wrap gap-1">

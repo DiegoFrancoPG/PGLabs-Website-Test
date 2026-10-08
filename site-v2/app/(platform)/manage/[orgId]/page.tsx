@@ -8,9 +8,9 @@ import { listCohorts } from "@/features/organizations/cohorts";
 import { AppShell } from "@/components/layout/AppShell";
 import { NewCohort } from "@/components/manage/NewCohort";
 import { reportEnrollments } from "@/features/reporting/reports";
-import { Alert } from "@ds/components/ui/alert";
-import { Button } from "@ds/components/ui/button";
-import { Card } from "@ds/components/ui/card";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Button } from "@/components/pglearn/ui/button";
+import { Card } from "@/components/pglearn/ui/card";
 
 /*
  * spec/04 /manage/[orgId]: "Assigned/started/completed/overdue totals, cohorts,
@@ -52,8 +52,8 @@ export default async function ManagePage({ params }: { params: Promise<{ orgId: 
   return (
     <AppShell active="manage">
     <main className="mx-auto max-w-4xl px-6 py-12">
-      <h1 className="font-display text-h2-sm text-ink-800">{organization?.name ?? "Organization"}</h1>
-      <p className="mt-2 text-body-sm text-steel-500">
+      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">{organization?.name ?? "Organization"}</h1>
+      <p className="mt-2 text-sm text-ui-muted-foreground">
         Learning across this organization. Individual records are on the reports screen.
       </p>
 
@@ -82,14 +82,14 @@ export default async function ManagePage({ params }: { params: Promise<{ orgId: 
         </Button>
       </div>
 
-      <section className="mt-12 border-t border-steel-200 pt-8">
+      <section className="mt-12 border-t border-ui-border pt-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-display text-h4 text-ink-800">Cohorts</h2>
+          <h2 className="font-heading text-lg font-semibold text-ui-foreground">Cohorts</h2>
           <NewCohort organizationId={orgId} />
         </div>
 
         {cohorts.items.length === 0 ? (
-          <p className="mt-3 text-body-sm text-steel-500">
+          <p className="mt-3 text-sm text-ui-muted-foreground">
             No cohorts yet. A cohort is a group of learners who are assigned the same programme on
             the same dates.
           </p>
@@ -99,12 +99,12 @@ export default async function ManagePage({ params }: { params: Promise<{ orgId: 
               <li key={cohort.id}>
                 <Link
                   href={`/manage/${orgId}/cohorts/${cohort.id}`}
-                  className="text-body-lg text-brand-600 underline underline-offset-4"
+                  className="text-base leading-relaxed pglearn-link"
                 >
                   {cohort.name}
                 </Link>
                 {cohort.archived_at && (
-                  <span className="ml-2 text-body-sm text-steel-500">archived</span>
+                  <span className="ml-2 text-sm text-ui-muted-foreground">archived</span>
                 )}
               </li>
             ))}
@@ -119,8 +119,8 @@ export default async function ManagePage({ params }: { params: Promise<{ orgId: 
 function Total({ label, value }: { label: string; value: number | string }) {
   return (
     <Card className="p-5">
-      <p className="text-label uppercase text-steel-500">{label}</p>
-      <p className="tabular mt-2 font-display text-h3 text-ink-800">{value}</p>
+      <p className="text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">{label}</p>
+      <p className="tabular mt-2 font-heading text-xl font-semibold text-ui-foreground">{value}</p>
     </Card>
   );
 }
@@ -128,12 +128,12 @@ function Total({ label, value }: { label: string; value: number | string }) {
 function NoAccess() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="font-display text-h2-sm text-ink-800">This organization is not available</h1>
+      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This organization is not available</h1>
       <Alert variant="info" className="mt-6">
         You are not a manager of it, or it may no longer be active.
       </Alert>
-      <p className="mt-8 text-body-sm">
-        <Link href="/learn" className="text-brand-600 underline underline-offset-4">
+      <p className="mt-8 text-sm">
+        <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>
       </p>

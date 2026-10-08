@@ -1,4 +1,8 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
+import { THEME_COOKIE, parseTheme } from "@/components/pglearn/theme";
 
 /*
  * PGLearn application shell.
@@ -27,10 +31,25 @@ export const metadata: Metadata = {
  */
 export const dynamic = "force-dynamic";
 
-export default function PlatformLayout({
+/*
+ * `.pglearn` scopes the SkillSphere theme (app/globals.css): its colour
+ * variables, Geist type and the optional dark mode exist only beneath this
+ * element, so nothing here can restyle the marketing site.
+ */
+export default async function PlatformLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <div className="min-h-screen bg-surface">{children}</div>;
+  const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
+
+  return (
+    <div
+      className={`pglearn ${GeistSans.variable} ${GeistMono.variable} min-h-screen bg-ui-background text-ui-foreground antialiased ${
+        theme === "dark" ? "dark" : ""
+      }`}
+    >
+      {children}
+    </div>
+  );
 }

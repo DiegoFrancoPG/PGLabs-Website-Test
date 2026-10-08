@@ -2,8 +2,8 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { Button } from "@ds/components/ui/button";
-import { Alert } from "@ds/components/ui/alert";
+import { Button } from "@/components/pglearn/ui/button";
+import { Alert } from "@/components/pglearn/ui/alert";
 import { accept } from "./actions";
 
 function SubmitButton() {

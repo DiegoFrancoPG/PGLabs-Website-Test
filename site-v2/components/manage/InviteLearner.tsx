@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Alert } from "@ds/components/ui/alert";
-import { Button } from "@ds/components/ui/button";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Button } from "@/components/pglearn/ui/button";
 
 /*
  * Inviting somebody and putting them in this cohort.
@@ -88,7 +88,7 @@ export function InviteLearner({
     <form onSubmit={invite}>
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label htmlFor="invite-name" className="block text-label uppercase text-steel-500">
+          <label htmlFor="invite-name" className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
             Name
           </label>
           <input
@@ -97,11 +97,11 @@ export function InviteLearner({
             maxLength={120}
             value={name}
             onChange={(event) => setName(event.target.value)}
-            className="mt-1 rounded-lg border border-steel-300 p-2 text-body-sm"
+            className="mt-1 pglearn-field"
           />
         </div>
         <div>
-          <label htmlFor="invite-email" className="block text-label uppercase text-steel-500">
+          <label htmlFor="invite-email" className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
             Email
           </label>
           <input
@@ -111,7 +111,7 @@ export function InviteLearner({
             maxLength={254}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="mt-1 rounded-lg border border-steel-300 p-2 text-body-sm"
+            className="mt-1 pglearn-field"
           />
         </div>
         <Button type="submit" variant="primary" size="sm" disabled={pending}>

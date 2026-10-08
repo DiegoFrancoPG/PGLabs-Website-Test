@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Alert } from "@ds/components/ui/alert";
-import { Button } from "@ds/components/ui/button";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Button } from "@/components/pglearn/ui/button";
 
 /*
  * AC-030: a text class is completed by an explicit act, never by being read.
@@ -26,7 +26,7 @@ export function MarkTextComplete({
 
   if (complete) {
     return (
-      <p className="mt-8 text-body-sm text-steel-500">You marked this class as complete.</p>
+      <p className="mt-8 text-sm text-ui-muted-foreground">You marked this class as complete.</p>
     );
   }
 

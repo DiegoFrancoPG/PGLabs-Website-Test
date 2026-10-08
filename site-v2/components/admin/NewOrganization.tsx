@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Alert } from "@ds/components/ui/alert";
-import { Button } from "@ds/components/ui/button";
-import { Card } from "@ds/components/ui/card";
+import { Alert } from "@/components/pglearn/ui/alert";
+import { Button } from "@/components/pglearn/ui/button";
+import { Card } from "@/components/pglearn/ui/card";
 
 /*
  * Creating an organization provisions its first manager at the same time.
@@ -76,7 +76,7 @@ export function NewOrganization() {
   return (
     <Card className="p-5">
       <form onSubmit={create}>
-        <h2 className="font-display text-h5 text-ink-800">New organization</h2>
+        <h2 className="font-heading text-base font-semibold text-ui-foreground">New organization</h2>
 
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Name" id="org-name">
@@ -86,7 +86,7 @@ export function NewOrganization() {
               maxLength={120}
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="w-full rounded-lg border border-steel-300 p-2 text-body-sm"
+              className="w-full pglearn-field"
             />
           </Field>
 
@@ -97,7 +97,7 @@ export function NewOrganization() {
               value={timezone}
               onChange={(event) => setTimezone(event.target.value)}
               placeholder="Europe/Madrid"
-              className="w-full rounded-lg border border-steel-300 p-2 text-body-sm"
+              className="w-full pglearn-field"
             />
           </Field>
 
@@ -108,7 +108,7 @@ export function NewOrganization() {
               maxLength={120}
               value={managerName}
               onChange={(event) => setManagerName(event.target.value)}
-              className="w-full rounded-lg border border-steel-300 p-2 text-body-sm"
+              className="w-full pglearn-field"
             />
           </Field>
 
@@ -120,7 +120,7 @@ export function NewOrganization() {
               maxLength={254}
               value={managerEmail}
               onChange={(event) => setManagerEmail(event.target.value)}
-              className="w-full rounded-lg border border-steel-300 p-2 text-body-sm"
+              className="w-full pglearn-field"
             />
           </Field>
         </div>
@@ -162,7 +162,7 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="block text-label uppercase text-steel-500">
+      <label htmlFor={id} className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
         {label}
       </label>
       <div className="mt-1">{children}</div>
