@@ -119,7 +119,7 @@ export function AssignProgram({
 
   if (assignable.length === 0 || members.length === 0) {
     return (
-      <p className="text-sm text-ui-muted-foreground">
+      <p className="text-ui-body text-ui-muted-foreground">
         {members.length === 0
           ? "Add somebody to the roster before assigning learning."
           : "Every granted program is still a draft. Publish a version before assigning it."}
@@ -138,11 +138,11 @@ export function AssignProgram({
   return (
     <Card className="p-5">
       <form onSubmit={assign}>
-        <h3 className="font-heading text-base font-semibold text-ui-foreground">Assign a program</h3>
+        <h3 className="font-heading font-heading text-ui-heading text-ui-foreground">Assign a program</h3>
 
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="assign-grant" className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+            <label htmlFor="assign-grant" className="block text-ui-eyebrow uppercase text-ui-muted-foreground">
               Program
             </label>
             <select
@@ -163,13 +163,13 @@ export function AssignProgram({
               * anything else would mean typing a uuid. A learner stays on the
               * version they were enrolled in whatever is published later.
               */}
-            <p className="mt-1 text-sm text-ui-muted-foreground">
+            <p className="mt-1 text-ui-body text-ui-muted-foreground">
               The current published version is assigned.
             </p>
           </div>
 
           <div>
-            <label htmlFor="assign-starts" className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+            <label htmlFor="assign-starts" className="block text-ui-eyebrow uppercase text-ui-muted-foreground">
               Starts
             </label>
             <input
@@ -183,7 +183,7 @@ export function AssignProgram({
           </div>
 
           <div>
-            <label htmlFor="assign-due" className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+            <label htmlFor="assign-due" className="block text-ui-eyebrow uppercase text-ui-muted-foreground">
               Due
             </label>
             <input
@@ -197,7 +197,7 @@ export function AssignProgram({
           </div>
 
           <div>
-            <label htmlFor="assign-access" className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+            <label htmlFor="assign-access" className="block text-ui-eyebrow uppercase text-ui-muted-foreground">
               Access ends (optional)
             </label>
             <input
@@ -207,17 +207,17 @@ export function AssignProgram({
               onChange={(event) => setAccessEndsAt(event.target.value)}
               className="mt-1 w-full pglearn-field"
             />
-            <p className="mt-1 text-sm text-ui-muted-foreground">
+            <p className="mt-1 text-ui-body text-ui-muted-foreground">
               After this date learning stops, even if the programme is unfinished.
             </p>
           </div>
         </div>
 
         <fieldset className="mt-5 border-0 p-0">
-          <legend className="text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">Who</legend>
+          <legend className="text-ui-eyebrow uppercase text-ui-muted-foreground">Who</legend>
           <div className="mt-2 flex flex-col gap-1">
             {members.map((member) => (
-              <label key={member.userId} className="flex items-center gap-2 text-sm">
+              <label key={member.userId} className="flex items-center gap-2 text-ui-body">
                 <input
                   type="checkbox"
                   checked={selected.includes(member.userId)}

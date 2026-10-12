@@ -79,7 +79,7 @@ export default async function ClassPage({
   return (
     <AppShell active="learn">
     <main className={`${pageContainer} py-16 [&>*]:max-w-3xl`}>
-      <p className="text-sm">
+      <p className="text-ui-body">
         <Link
           href={`/learn/${enrollmentId}`}
           className="pglearn-link"
@@ -89,7 +89,7 @@ export default async function ClassPage({
       </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">{detail.class.title}</h1>
+        <h1 className="font-heading text-ui-title text-ui-foreground">{detail.class.title}</h1>
         <Badge variant={detail.class.required ? "default" : "outline"}>
           {detail.class.required ? "Required" : "Optional"}
         </Badge>
@@ -98,7 +98,7 @@ export default async function ClassPage({
 
       {detail.class.kind === "text" ? (
         <>
-          <article className="mt-8 whitespace-pre-wrap text-base leading-relaxed">
+          <article className="mt-8 whitespace-pre-wrap text-ui-lead">
             {detail.class.body_md}
           </article>
           {/* AC-030: reading is not completing. */}
@@ -126,10 +126,10 @@ export default async function ClassPage({
 
       {handouts.length > 0 && (
         <section className="mt-10">
-          <h2 className="text-xs font-medium uppercase tracking-wider text-ui-foreground">Handouts</h2>
+          <h2 className="text-ui-eyebrow uppercase text-ui-foreground">Handouts</h2>
           <ul className="mt-3 flex flex-col gap-2">
             {handouts.map((asset) => (
-              <li key={asset.id} className="text-sm">
+              <li key={asset.id} className="text-ui-body">
                 {/* spec/04 shows name, type and size. The URL is minted on the
                     click, because authorization is re-evaluated every time. */}
                 <HandoutLink assetId={asset.id} enrollmentId={enrollmentId} name={asset.original_name} />{" "}
@@ -186,11 +186,11 @@ export default async function ClassPage({
 function Unavailable() {
   return (
     <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
-      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This class is not available</h1>
+      <h1 className="font-heading text-ui-title text-ui-foreground">This class is not available</h1>
       <Alert variant="info" className="mt-6">
         It may have been withdrawn, or it may belong to a different account.
       </Alert>
-      <p className="mt-8 text-sm">
+      <p className="mt-8 text-ui-body">
         <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>
@@ -202,11 +202,11 @@ function Unavailable() {
 function Blocked({ enrollmentId }: { enrollmentId: string }) {
   return (
     <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
-      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">You cannot open this class right now</h1>
+      <h1 className="font-heading text-ui-title text-ui-foreground">You cannot open this class right now</h1>
       <Alert variant="info" className="mt-6">
         Your access to this program has changed. Your record is still available.
       </Alert>
-      <p className="mt-8 text-sm">
+      <p className="mt-8 text-ui-body">
         <Link
           href={`/learn/${enrollmentId}`}
           className="pglearn-link"

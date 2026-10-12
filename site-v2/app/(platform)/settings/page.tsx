@@ -22,7 +22,7 @@ export default async function SettingsPage() {
   return (
     <AppShell active="settings">
     <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
-      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Settings</h1>
+      <h1 className="font-heading text-ui-title text-ui-foreground">Settings</h1>
       <SettingsForm profile={me.profile} timezones={timezones} />
     </main>
     </AppShell>

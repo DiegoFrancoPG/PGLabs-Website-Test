@@ -97,19 +97,19 @@ export default async function ReportsPage({
 
   return (
     <main className={`${pageContainer} py-16`}>
-      <p className="text-sm">
+      <p className="text-ui-body">
         <Link href={`/manage/${orgId}`} className="pglearn-link">
           {organization?.name ?? "Organization"}
         </Link>
       </p>
-      <h1 className="mt-4 font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Reports</h1>
+      <h1 className="mt-4 font-heading text-ui-title text-ui-foreground">Reports</h1>
       {/*
         * spec/04: "show the selected name in all manager screens and export
         * context". Labelled, so the context is announced rather than being a
         * loose line of text — and so a test can name it without competing with
         * the breadcrumb and the table caption.
         */}
-      <p className="mt-2 text-sm text-ui-muted-foreground">
+      <p className="mt-2 text-ui-body text-ui-muted-foreground">
         <span className="text-ui-muted-foreground">Organization: </span>
         <span aria-label="Selected organization">{organization?.name}</span>
       </p>
@@ -204,7 +204,7 @@ export default async function ReportsPage({
       </form>
 
       {/* spec/04: "Explain date filter basis." */}
-      <p className="mt-3 text-sm text-ui-muted-foreground">
+      <p className="mt-3 text-ui-body text-ui-muted-foreground">
         Date filters apply to when a learner completed the program, in UTC. From is inclusive and
         before is exclusive, and both exclude anybody who has not finished.
       </p>
@@ -223,15 +223,15 @@ export default async function ReportsPage({
 
       {report.items.length === 0 ? (
         <Card className="mt-8 p-8">
-          <p className="text-base leading-relaxed">No enrollments match these filters.</p>
-          <p className="mt-2 text-sm text-ui-muted-foreground">
+          <p className="text-ui-lead">No enrollments match these filters.</p>
+          <p className="mt-2 text-ui-body text-ui-muted-foreground">
             Clear the filters, or choose a different offering.
           </p>
         </Card>
       ) : (
         /* spec/04: "table horizontal scrolling is acceptable on mobile". */
         <div className="mt-8 overflow-x-auto">
-          <table className="w-full min-w-[56rem] border-collapse text-sm">
+          <table className="w-full min-w-[56rem] border-collapse text-ui-body">
             <caption className="sr-only">
               Enrollments for {organization?.name}, matching the selected filters
             </caption>
@@ -313,7 +313,7 @@ function Row({ row }: { row: ReportRow }) {
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th scope="col" className="py-2 pr-4 text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+    <th scope="col" className="py-2 pr-4 text-ui-eyebrow uppercase text-ui-muted-foreground">
       {children}
     </th>
   );
@@ -330,7 +330,7 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={htmlFor} className="text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+      <label htmlFor={htmlFor} className="text-ui-eyebrow uppercase text-ui-muted-foreground">
         {label}
       </label>
       <div className="mt-1">{children}</div>
@@ -341,8 +341,8 @@ function Field({
 function Metric({ label, value }: { label: string; value: number | string }) {
   return (
     <Card className="p-4">
-      <p className="text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">{label}</p>
-      <p className="tabular mt-1 font-heading text-lg font-semibold text-ui-foreground">{value}</p>
+      <p className="text-ui-eyebrow uppercase text-ui-muted-foreground">{label}</p>
+      <p className="tabular mt-1 font-heading text-ui-heading text-ui-foreground">{value}</p>
     </Card>
   );
 }
@@ -350,11 +350,11 @@ function Metric({ label, value }: { label: string; value: number | string }) {
 function NoAccess() {
   return (
     <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
-      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This organization is not available</h1>
+      <h1 className="font-heading text-ui-title text-ui-foreground">This organization is not available</h1>
       <Alert variant="info" className="mt-6">
         You are not a manager of it, or it may no longer be active.
       </Alert>
-      <p className="mt-8 text-sm">
+      <p className="mt-8 text-ui-body">
         <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>

@@ -57,22 +57,22 @@ export default async function ProgramPage({
   return (
     <AppShell active="admin">
       <main className={`${pageContainer} py-12 [&>*]:max-w-4xl`}>
-        <p className="text-sm">
+        <p className="text-ui-body">
           <Link href="/admin/programs" className="pglearn-link">
             Programs
           </Link>
         </p>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">{program.title}</h1>
+          <h1 className="font-heading text-ui-title text-ui-foreground">{program.title}</h1>
           {program.archived && <Badge variant="outline">Archived</Badge>}
         </div>
-        {program.summary && <p className="mt-2 text-sm text-ui-muted-foreground">{program.summary}</p>}
+        {program.summary && <p className="mt-2 text-ui-body text-ui-muted-foreground">{program.summary}</p>}
 
         <section className="mt-10">
-          <h2 className="text-xs font-medium uppercase tracking-wider text-ui-foreground">Draft</h2>
+          <h2 className="text-ui-eyebrow uppercase text-ui-foreground">Draft</h2>
           <Card className="mt-3 p-5">
-            <p className="text-sm">
+            <p className="text-ui-body">
               Authoring happens in a draft. Publishing freezes it, and everybody already learning
               stays on the version they started.
             </p>
@@ -83,15 +83,15 @@ export default async function ProgramPage({
         </section>
 
         <section className="mt-10">
-          <h2 className="text-xs font-medium uppercase tracking-wider text-ui-foreground">Published</h2>
+          <h2 className="text-ui-eyebrow uppercase text-ui-foreground">Published</h2>
           {published ? (
             <Card className="mt-3 p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h3 className="font-heading text-base font-semibold text-ui-foreground">
+                  <h3 className="font-heading font-heading text-ui-heading text-ui-foreground">
                     Version {published.version.version_number}
                   </h3>
-                  <p className="mt-1 text-sm text-ui-muted-foreground">
+                  <p className="mt-1 text-ui-body text-ui-muted-foreground">
                     {published.modules.length} module
                     {published.modules.length === 1 ? "" : "s"}, {published.classes.length} class
                     {published.classes.length === 1 ? "" : "es"}
@@ -110,7 +110,7 @@ export default async function ProgramPage({
             </Card>
           ) : (
             <Card className="mt-3 p-5">
-              <p className="text-sm">
+              <p className="text-ui-body">
                 Nothing has been published yet. Learners cannot be assigned this program until a
                 version is.
               </p>
@@ -125,11 +125,11 @@ export default async function ProgramPage({
 function NoAccess() {
   return (
     <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
-      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This program is not available</h1>
+      <h1 className="font-heading text-ui-title text-ui-foreground">This program is not available</h1>
       <Alert variant="info" className="mt-6">
         It may not exist, or program authoring may not be yours to do.
       </Alert>
-      <p className="mt-8 text-sm">
+      <p className="mt-8 text-ui-body">
         <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>

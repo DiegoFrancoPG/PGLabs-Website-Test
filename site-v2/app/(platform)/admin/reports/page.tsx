@@ -73,14 +73,14 @@ export default async function AdminReportsPage({
   return (
     <AppShell active="admin">
       <main className={`${pageContainer} py-12`}>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Reports</h1>
-        <p className="mt-2 text-sm text-ui-muted-foreground">
+        <h1 className="font-heading text-ui-title text-ui-foreground">Reports</h1>
+        <p className="mt-2 text-ui-body text-ui-muted-foreground">
           Every organization, and the individuals who hold a personal grant.
         </p>
 
         <form method="get" className="mt-8 flex flex-wrap items-end gap-4">
           <div>
-            <label htmlFor="organization_id" className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+            <label htmlFor="organization_id" className="block text-ui-eyebrow uppercase text-ui-muted-foreground">
               Organization
             </label>
             <select
@@ -100,7 +100,7 @@ export default async function AdminReportsPage({
           </div>
 
           <div>
-            <label htmlFor="state" className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+            <label htmlFor="state" className="block text-ui-eyebrow uppercase text-ui-muted-foreground">
               Status
             </label>
             <select
@@ -118,7 +118,7 @@ export default async function AdminReportsPage({
           </div>
 
           <div>
-            <label htmlFor="overdue" className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+            <label htmlFor="overdue" className="block text-ui-eyebrow uppercase text-ui-muted-foreground">
               Overdue
             </label>
             <select
@@ -161,11 +161,11 @@ export default async function AdminReportsPage({
 
         {report.items.length === 0 ? (
           <Card className="mt-8 p-8">
-            <p className="text-base leading-relaxed">No enrollments match these filters.</p>
+            <p className="text-ui-lead">No enrollments match these filters.</p>
           </Card>
         ) : (
           <div className="mt-8 overflow-x-auto">
-            <table className="w-full min-w-[52rem] border-collapse text-sm">
+            <table className="w-full min-w-[52rem] border-collapse text-ui-body">
               <caption className="sr-only">Enrollments across every organization</caption>
               <thead>
                 <tr className="border-b border-ui-border text-left">
@@ -213,7 +213,7 @@ export default async function AdminReportsPage({
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th scope="col" className="py-2 pr-4 text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+    <th scope="col" className="py-2 pr-4 text-ui-eyebrow uppercase text-ui-muted-foreground">
       {children}
     </th>
   );
@@ -222,8 +222,8 @@ function Th({ children }: { children: React.ReactNode }) {
 function Metric({ label, value }: { label: string; value: number | string }) {
   return (
     <Card className="p-4">
-      <p className="text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">{label}</p>
-      <p className="tabular mt-1 font-heading text-lg font-semibold text-ui-foreground">{value}</p>
+      <p className="text-ui-eyebrow uppercase text-ui-muted-foreground">{label}</p>
+      <p className="tabular mt-1 font-heading text-ui-heading text-ui-foreground">{value}</p>
     </Card>
   );
 }
@@ -231,11 +231,11 @@ function Metric({ label, value }: { label: string; value: number | string }) {
 function NoAccess() {
   return (
     <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
-      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This page is not available</h1>
+      <h1 className="font-heading text-ui-title text-ui-foreground">This page is not available</h1>
       <Alert variant="info" className="mt-6">
         Platform-wide reporting is for platform administrators.
       </Alert>
-      <p className="mt-8 text-sm">
+      <p className="mt-8 text-ui-body">
         <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>

@@ -275,7 +275,7 @@ export function ClassPlayer({
       {mediaUrl ? (
         <Tag
           ref={media as never}
-          className="w-full rounded-lg bg-black"
+          className="w-full rounded-ui bg-black"
           src={mediaUrl}
           controls
           preload="metadata"
@@ -291,11 +291,11 @@ export function ClassPlayer({
           )}
         </Tag>
       ) : (
-        <p className="text-sm text-ui-muted-foreground">Preparing playback…</p>
+        <p className="text-ui-body text-ui-muted-foreground">Preparing playback…</p>
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className="text-sm text-ui-muted-foreground" id="rate-label">
+        <span className="text-ui-body text-ui-muted-foreground" id="rate-label">
           Speed
         </span>
         <div role="group" aria-labelledby="rate-label" className="flex flex-wrap gap-1">

@@ -3,7 +3,7 @@
 import * as React from "react";
 import * as SelectPrimitive from "@radix-ui/react-select";
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/components/pglearn/cn";
 import { fieldClassName } from "./input";
 
 /*
@@ -23,7 +23,7 @@ const SelectTrigger = React.forwardRef<
     data-slot="select-trigger"
     className={cn(
       fieldClassName,
-      "flex h-9 items-center justify-between gap-2 py-1 [&>span]:line-clamp-1 data-[placeholder]:text-ui-muted-foreground",
+      "flex h-11 items-center justify-between gap-2 [&>span]:line-clamp-1 data-[placeholder]:text-ui-muted-foreground",
       className
     )}
     {...props}
@@ -86,7 +86,7 @@ const SelectContent = React.forwardRef<
         position={position}
         data-slot="select-content"
         className={cn(
-          "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-lg bg-ui-popover font-ui text-ui-popover-foreground shadow-md ring-1 ring-ui-foreground/10",
+          "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-ui border border-ui-border bg-ui-popover font-ui text-ui-popover-foreground",
           position === "popper" && "data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1",
           className
         )}
@@ -115,7 +115,7 @@ const SelectLabel = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.Label
     ref={ref}
-    className={cn("px-2 py-1.5 text-xs text-ui-muted-foreground", className)}
+    className={cn("px-2 py-1.5 text-ui-eyebrow uppercase text-ui-muted-foreground", className)}
     {...props}
   />
 ));
@@ -128,8 +128,8 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-default select-none items-center rounded-md py-1.5 pl-8 pr-2 text-sm outline-none",
-      "focus:bg-ui-accent focus:text-ui-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex w-full cursor-default select-none items-center rounded-ui-sm py-2 pl-8 pr-2 text-ui-body outline-none",
+      "focus:bg-ui-wash data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className
     )}
     {...props}
@@ -150,7 +150,7 @@ const SelectSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.Separator
     ref={ref}
-    className={cn("-mx-1 my-1 h-px bg-ui-border", className)}
+    className={cn("-mx-1 my-1 h-px bg-ui-divider", className)}
     {...props}
   />
 ));

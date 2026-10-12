@@ -1,36 +1,39 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "@/lib/utils";
+import { cn } from "@/components/pglearn/cn";
 
 /*
- * PGLearn button — SkillSphere / shadcn geometry: 8px radius, medium weight,
- * a 3px focus ring in the primary hue and a one-pixel press.
+ * PG Labs buttons are pills: `radius-pill`, `control-height` (44px), the
+ * `button-label` style and a 1px border. The design system's button is the
+ * outline pill (`ink-warm` on light, `text-light` on dark); `primary` is the
+ * same pill filled with ink, kept for the one main action on a screen. Hover
+ * washes with `ink-4`. Focus is the global 2px `focus-ring` (globals.css).
  *
  * The variant names are the design system's (primary, subtle, …) so every
  * caller written against `@ds/components/ui/button` moves over unchanged.
  */
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-transparent font-ui text-sm font-medium transition-all outline-none select-none focus-visible:border-ui-ring focus-visible:ring-[3px] focus-visible:ring-ui-ring/50 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-full border font-ui text-ui-button transition-colors disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        primary: "bg-ui-primary text-ui-primary-foreground shadow-xs hover:bg-ui-primary/85",
-        secondary: "bg-ui-secondary text-ui-secondary-foreground hover:bg-ui-secondary/70",
-        outline:
-          "border-ui-border bg-ui-background text-ui-foreground shadow-xs hover:bg-ui-muted",
-        subtle: "bg-ui-secondary text-ui-foreground hover:bg-ui-accent hover:text-ui-accent-foreground",
-        ghost: "text-ui-foreground hover:bg-ui-muted",
-        accent: "bg-ui-accent text-ui-accent-foreground hover:bg-ui-accent/80",
+        primary:
+          "border-ui-primary bg-ui-primary text-ui-primary-foreground hover:bg-ui-primary/85",
+        outline: "border-ui-foreground bg-transparent text-ui-foreground hover:bg-ui-wash",
+        secondary: "border-ui-foreground bg-transparent text-ui-foreground hover:bg-ui-wash",
+        subtle: "border-ui-input bg-transparent text-ui-foreground hover:bg-ui-wash",
+        accent: "border-ui-primary bg-ui-primary text-ui-primary-foreground hover:bg-ui-primary/85",
+        ghost: "border-transparent bg-transparent text-ui-foreground hover:bg-ui-wash",
         destructive:
-          "bg-ui-destructive/10 text-ui-destructive hover:bg-ui-destructive/20 focus-visible:ring-ui-destructive/20",
-        link: "h-auto px-0 text-ui-primary underline-offset-4 hover:underline",
+          "border-ui-destructive bg-transparent text-ui-destructive hover:bg-ui-destructive/10",
+        link: "h-auto border-transparent px-0 text-ui-foreground underline decoration-ui-brand decoration-2 underline-offset-4 hover:decoration-ui-foreground",
       },
       size: {
-        sm: "h-8 px-3 text-[0.8125rem]",
-        default: "h-9 px-4",
-        lg: "h-10 px-5",
-        icon: "size-9 px-0",
+        sm: "h-9 px-4",
+        default: "h-11 px-4",
+        lg: "h-11 px-6",
+        icon: "size-11 px-0",
       },
     },
     defaultVariants: {

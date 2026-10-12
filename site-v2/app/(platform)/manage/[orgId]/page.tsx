@@ -53,8 +53,8 @@ export default async function ManagePage({ params }: { params: Promise<{ orgId: 
   return (
     <AppShell active="manage">
     <main className={`${pageContainer} py-12 [&>*]:max-w-4xl`}>
-      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">{organization?.name ?? "Organization"}</h1>
-      <p className="mt-2 text-sm text-ui-muted-foreground">
+      <h1 className="font-heading text-ui-title text-ui-foreground">{organization?.name ?? "Organization"}</h1>
+      <p className="mt-2 text-ui-body text-ui-muted-foreground">
         Learning across this organization. Individual records are on the reports screen.
       </p>
 
@@ -85,12 +85,12 @@ export default async function ManagePage({ params }: { params: Promise<{ orgId: 
 
       <section className="mt-12 border-t border-ui-border pt-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-heading text-lg font-semibold text-ui-foreground">Cohorts</h2>
+          <h2 className="font-heading text-ui-heading text-ui-foreground">Cohorts</h2>
           <NewCohort organizationId={orgId} />
         </div>
 
         {cohorts.items.length === 0 ? (
-          <p className="mt-3 text-sm text-ui-muted-foreground">
+          <p className="mt-3 text-ui-body text-ui-muted-foreground">
             No cohorts yet. A cohort is a group of learners who are assigned the same programme on
             the same dates.
           </p>
@@ -100,12 +100,12 @@ export default async function ManagePage({ params }: { params: Promise<{ orgId: 
               <li key={cohort.id}>
                 <Link
                   href={`/manage/${orgId}/cohorts/${cohort.id}`}
-                  className="text-base leading-relaxed pglearn-link"
+                  className="text-ui-lead pglearn-link"
                 >
                   {cohort.name}
                 </Link>
                 {cohort.archived_at && (
-                  <span className="ml-2 text-sm text-ui-muted-foreground">archived</span>
+                  <span className="ml-2 text-ui-body text-ui-muted-foreground">archived</span>
                 )}
               </li>
             ))}
@@ -120,8 +120,8 @@ export default async function ManagePage({ params }: { params: Promise<{ orgId: 
 function Total({ label, value }: { label: string; value: number | string }) {
   return (
     <Card className="p-5">
-      <p className="text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">{label}</p>
-      <p className="tabular mt-2 font-heading text-xl font-semibold text-ui-foreground">{value}</p>
+      <p className="text-ui-eyebrow uppercase text-ui-muted-foreground">{label}</p>
+      <p className="tabular mt-2 font-heading font-heading text-ui-heading text-ui-foreground">{value}</p>
     </Card>
   );
 }
@@ -129,11 +129,11 @@ function Total({ label, value }: { label: string; value: number | string }) {
 function NoAccess() {
   return (
     <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
-      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This organization is not available</h1>
+      <h1 className="font-heading text-ui-title text-ui-foreground">This organization is not available</h1>
       <Alert variant="info" className="mt-6">
         You are not a manager of it, or it may no longer be active.
       </Alert>
-      <p className="mt-8 text-sm">
+      <p className="mt-8 text-ui-body">
         <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>

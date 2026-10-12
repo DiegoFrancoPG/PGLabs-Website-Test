@@ -133,7 +133,7 @@ export function InviteIndividual({
   return (
     <Card className="p-5">
       <form onSubmit={enrol}>
-        <h2 className="font-heading text-base font-semibold text-ui-foreground">Invite an individual</h2>
+        <h2 className="font-heading font-heading text-ui-heading text-ui-foreground">Invite an individual</h2>
 
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Name" id="individual-name">
@@ -244,7 +244,7 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+      <label htmlFor={id} className="block text-ui-eyebrow uppercase text-ui-muted-foreground">
         {label}
       </label>
       <div className="mt-1">{children}</div>

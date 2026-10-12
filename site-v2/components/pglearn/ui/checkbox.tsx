@@ -3,7 +3,7 @@
 import * as React from "react";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 import { Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/components/pglearn/cn";
 
 const Checkbox = React.forwardRef<
   React.ElementRef<typeof CheckboxPrimitive.Root>,
@@ -13,8 +13,7 @@ const Checkbox = React.forwardRef<
     ref={ref}
     data-slot="checkbox"
     className={cn(
-      "peer size-4 shrink-0 rounded-[4px] border border-ui-input bg-ui-background shadow-xs outline-none transition-colors",
-      "focus-visible:border-ui-ring focus-visible:ring-[3px] focus-visible:ring-ui-ring/50",
+      "peer size-5 shrink-0 rounded-[4px] border border-ui-input bg-ui-card transition-colors",
       "disabled:cursor-not-allowed disabled:opacity-50",
       "data-[state=checked]:border-ui-primary data-[state=checked]:bg-ui-primary data-[state=checked]:text-ui-primary-foreground",
       className

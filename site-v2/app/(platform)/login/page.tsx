@@ -13,13 +13,13 @@ export default async function LoginPage() {
 
   return (
     <AuthCard>
-      <h1 className="text-center font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Sign in to PGLearn</h1>
-      <p className="mt-2 text-center text-sm text-ui-muted-foreground">
+      <h1 className="text-center font-heading text-ui-title text-ui-foreground">Sign in to PGLearn</h1>
+      <p className="mt-2 text-center text-ui-body text-ui-muted-foreground">
         PGLearn accounts are created by invitation. If you have not been invited yet, ask your
         organization&rsquo;s manager.
       </p>
       <LoginForm />
-      <p className="mt-6 text-center text-sm">
+      <p className="mt-6 text-center text-ui-body">
         <Link href="/learning" className="pglearn-link">
           What is PGLearn?
         </Link>

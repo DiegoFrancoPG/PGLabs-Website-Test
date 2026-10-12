@@ -41,13 +41,13 @@ export function ExerciseForm({
   if (saved) {
     return (
       <section className="mt-10 border-t border-ui-border pt-8">
-        <h2 className="font-heading text-lg font-semibold text-ui-foreground">Practical exercise</h2>
-        <p className="mt-3 whitespace-pre-wrap text-sm">{instructions}</p>
-        <h3 className="mt-6 text-xs font-medium uppercase tracking-wider text-ui-foreground">Your response</h3>
-        <p className="mt-2 whitespace-pre-wrap rounded-lg bg-ui-muted p-4 text-sm">
+        <h2 className="font-heading text-ui-heading text-ui-foreground">Practical exercise</h2>
+        <p className="mt-3 whitespace-pre-wrap text-ui-body">{instructions}</p>
+        <h3 className="mt-6 text-ui-eyebrow uppercase text-ui-foreground">Your response</h3>
+        <p className="mt-2 whitespace-pre-wrap rounded-ui bg-ui-muted p-4 text-ui-body">
           {saved.response}
         </p>
-        <p className="mt-2 text-sm text-ui-muted-foreground">
+        <p className="mt-2 text-ui-body text-ui-muted-foreground">
           Saved on {new Date(saved.confirmed_at).toLocaleDateString("en-CA")}. A response cannot be
           changed once it is saved.
         </p>
@@ -80,11 +80,11 @@ export function ExerciseForm({
 
   return (
     <section className="mt-10 border-t border-ui-border pt-8">
-      <h2 className="font-heading text-lg font-semibold text-ui-foreground">Practical exercise</h2>
-      <p className="mt-3 whitespace-pre-wrap text-sm">{instructions}</p>
+      <h2 className="font-heading text-ui-heading text-ui-foreground">Practical exercise</h2>
+      <p className="mt-3 whitespace-pre-wrap text-ui-body">{instructions}</p>
 
       <form onSubmit={save} className="mt-6">
-        <label htmlFor="exercise-response" className="text-xs font-medium uppercase tracking-wider text-ui-foreground">
+        <label htmlFor="exercise-response" className="text-ui-eyebrow uppercase text-ui-foreground">
           Your response
         </label>
         <textarea
@@ -96,16 +96,16 @@ export function ExerciseForm({
           onChange={(event) => setResponse(event.target.value)}
           aria-describedby="exercise-count"
           aria-invalid={tooLong}
-          className="mt-2 w-full rounded-lg border border-ui-border p-3 text-sm"
+          className="pglearn-field mt-2 w-full p-3"
         />
         <p
           id="exercise-count"
-          className={`mt-1 text-sm ${tooLong ? "text-ui-destructive" : "text-ui-muted-foreground"}`}
+          className={`mt-1 text-ui-body ${tooLong ? "text-ui-destructive" : "text-ui-muted-foreground"}`}
         >
           {used} of {MAX_CODE_POINTS} characters
         </p>
 
-        <label className="mt-4 flex items-start gap-2 text-sm">
+        <label className="mt-4 flex items-start gap-2 text-ui-body">
           <input
             type="checkbox"
             checked={confirmed}

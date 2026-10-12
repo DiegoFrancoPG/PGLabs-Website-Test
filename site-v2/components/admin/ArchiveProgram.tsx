@@ -44,7 +44,7 @@ export function ArchiveProgram({
       <Button type="button" variant="outline" size="sm" onClick={toggle} disabled={pending}>
         {pending ? "Saving…" : archived ? "Restore" : "Archive"}
       </Button>
-      {error && <span className="ml-2 text-sm text-ui-destructive">{error}</span>}
+      {error && <span className="ml-2 text-ui-body text-ui-destructive">{error}</span>}
     </>
   );
 }

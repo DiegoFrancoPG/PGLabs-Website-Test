@@ -133,10 +133,10 @@ export function ClassEditor({
   const failed = assets.filter((asset) => asset.state === "failed");
 
   return (
-    <div className="rounded-lg border border-ui-border p-4">
+    <div className="rounded-ui border border-ui-border p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-ui-foreground">{cls.title}</span>
+          <span className="text-ui-body text-ui-foreground">{cls.title}</span>
           <Badge variant="outline">{cls.kind}</Badge>
           {cls.required ? <Badge variant="default">Required</Badge> : null}
           {/* What publication will complain about, said before it does. */}
@@ -159,7 +159,7 @@ export function ClassEditor({
 
       {open && (
         <div className="mt-4">
-          <label htmlFor={`title-${cls.id}`} className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+          <label htmlFor={`title-${cls.id}`} className="block text-ui-eyebrow uppercase text-ui-muted-foreground">
             Title
           </label>
           <input
@@ -173,7 +173,7 @@ export function ClassEditor({
 
           <div className="mt-4 flex flex-wrap gap-6">
             <div>
-              <label htmlFor={`kind-${cls.id}`} className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+              <label htmlFor={`kind-${cls.id}`} className="block text-ui-eyebrow uppercase text-ui-muted-foreground">
                 Format
               </label>
               <select
@@ -189,7 +189,7 @@ export function ClassEditor({
               </select>
             </div>
 
-            <label className="mt-6 flex items-center gap-2 text-sm">
+            <label className="mt-6 flex items-center gap-2 text-ui-body">
               <input
                 type="checkbox"
                 checked={required}
@@ -204,7 +204,7 @@ export function ClassEditor({
             <>
               <label
                 htmlFor={`body-${cls.id}`}
-                className="mt-4 block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground"
+                className="mt-4 block text-ui-eyebrow uppercase text-ui-muted-foreground"
               >
                 Body
               </label>
@@ -220,8 +220,8 @@ export function ClassEditor({
             </>
           ) : (
             <div className="mt-4">
-              <p className="text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">Media</p>
-              <p className="mt-1 text-sm">
+              <p className="text-ui-eyebrow uppercase text-ui-muted-foreground">Media</p>
+              <p className="mt-1 text-ui-body">
                 {primary ? (
                   <>
                     {primary.original_name}{" "}
@@ -242,7 +242,7 @@ export function ClassEditor({
                 </div>
               )}
               {cls.duration_ms && (
-                <p className="mt-2 text-sm text-ui-muted-foreground">
+                <p className="mt-2 text-ui-body text-ui-muted-foreground">
                   Duration {Math.round(Number(cls.duration_ms) / 1000)}s, read from the file.
                 </p>
               )}
@@ -266,7 +266,7 @@ export function ClassEditor({
 
           <label
             htmlFor={`exercise-${cls.id}`}
-            className="mt-4 block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground"
+            className="mt-4 block text-ui-eyebrow uppercase text-ui-muted-foreground"
           >
             Practical exercise (optional)
           </label>
@@ -289,7 +289,7 @@ export function ClassEditor({
               <Button type="button" variant="outline" size="sm" disabled={busy} onClick={remove}>
                 Remove class
               </Button>
-              <span role="status" aria-live="polite" className="text-sm text-ui-muted-foreground">
+              <span role="status" aria-live="polite" className="text-ui-body text-ui-muted-foreground">
                 {saved ? "Saved." : ""}
               </span>
             </div>

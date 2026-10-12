@@ -1,12 +1,14 @@
 import * as React from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/components/pglearn/cn";
 
 /*
- * Shared by Input and by the raw <textarea>/<select> controls the platform
- * renders, so every field in PGLearn has one geometry and one focus ring.
+ * Shared by Input, the Select trigger and (through `.pglearn-field` in
+ * globals.css) the raw <textarea>/<select> controls the platform renders, so
+ * every field has one geometry: `control-height` (44px), `radius-m`, and an
+ * `ink-45` border — the design system's 3:1 step for control boundaries.
  */
 export const fieldClassName =
-  "w-full min-w-0 rounded-lg border border-ui-input bg-ui-background px-3 py-2 font-ui text-sm text-ui-foreground shadow-xs outline-none transition-[color,box-shadow] placeholder:text-ui-muted-foreground focus-visible:border-ui-ring focus-visible:ring-[3px] focus-visible:ring-ui-ring/50 disabled:cursor-not-allowed disabled:bg-ui-muted disabled:opacity-60 aria-[invalid=true]:border-ui-destructive aria-[invalid=true]:ring-ui-destructive/20";
+  "w-full min-w-0 rounded-ui border border-ui-input bg-ui-card px-3 font-ui text-ui-body text-ui-foreground transition-colors placeholder:text-ui-muted-foreground hover:border-ui-foreground disabled:cursor-not-allowed disabled:bg-ui-muted disabled:opacity-60 aria-[invalid=true]:border-ui-destructive";
 
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
 
@@ -14,7 +16,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(({ className, type,
   <input
     type={type}
     data-slot="input"
-    className={cn(fieldClassName, "h-9 py-1", className)}
+    className={cn(fieldClassName, "h-11", className)}
     ref={ref}
     {...props}
   />

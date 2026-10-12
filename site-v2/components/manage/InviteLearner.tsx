@@ -88,7 +88,7 @@ export function InviteLearner({
     <form onSubmit={invite}>
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label htmlFor="invite-name" className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+          <label htmlFor="invite-name" className="block text-ui-eyebrow uppercase text-ui-muted-foreground">
             Name
           </label>
           <input
@@ -101,7 +101,7 @@ export function InviteLearner({
           />
         </div>
         <div>
-          <label htmlFor="invite-email" className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+          <label htmlFor="invite-email" className="block text-ui-eyebrow uppercase text-ui-muted-foreground">
             Email
           </label>
           <input

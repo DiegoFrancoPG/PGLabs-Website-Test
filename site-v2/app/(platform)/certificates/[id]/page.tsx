@@ -55,14 +55,14 @@ export default async function CertificatePage({
   return (
     <AppShell active="learn">
     <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
-      <p className="text-sm">
+      <p className="text-ui-body">
         <Link href="/learn" className="pglearn-link">
           Your learning
         </Link>
       </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Certificate of completion</h1>
+        <h1 className="font-heading text-ui-title text-ui-foreground">Certificate of completion</h1>
         {revoked ? <Badge variant="coral">Revoked</Badge> : <Badge variant="azure">Valid</Badge>}
       </div>
 
@@ -93,7 +93,7 @@ export default async function CertificatePage({
             <Button variant="outline" disabled>
               Download PDF
             </Button>
-            <p className="mt-2 text-sm text-ui-muted-foreground">
+            <p className="mt-2 text-ui-body text-ui-muted-foreground">
               A revoked certificate cannot be downloaded.
             </p>
           </>
@@ -111,8 +111,8 @@ export default async function CertificatePage({
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">{label}</dt>
-      <dd className="mt-1 text-base leading-relaxed text-ui-foreground">{value}</dd>
+      <dt className="text-ui-eyebrow uppercase text-ui-muted-foreground">{label}</dt>
+      <dd className="mt-1 text-ui-lead text-ui-foreground">{value}</dd>
     </div>
   );
 }
@@ -120,11 +120,11 @@ function Field({ label, value }: { label: string; value: string }) {
 function Unavailable() {
   return (
     <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
-      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This certificate is not available</h1>
+      <h1 className="font-heading text-ui-title text-ui-foreground">This certificate is not available</h1>
       <Alert variant="info" className="mt-6">
         It may belong to a different account.
       </Alert>
-      <p className="mt-8 text-sm">
+      <p className="mt-8 text-ui-body">
         <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>

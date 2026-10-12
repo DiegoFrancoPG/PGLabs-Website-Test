@@ -43,7 +43,7 @@ export function LoginForm() {
 
       <SubmitButton />
 
-      <Link href="/forgot-password" className="text-sm pglearn-link">
+      <Link href="/forgot-password" className="text-ui-body pglearn-link">
         Forgot your password?
       </Link>
     </form>

@@ -51,9 +51,9 @@ export function NewProgram() {
   return (
     <Card className="p-5">
       <form onSubmit={create}>
-        <h2 className="font-heading text-base font-semibold text-ui-foreground">New program</h2>
+        <h2 className="font-heading font-heading text-ui-heading text-ui-foreground">New program</h2>
 
-        <label htmlFor="program-title" className="mt-4 block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+        <label htmlFor="program-title" className="mt-4 block text-ui-eyebrow uppercase text-ui-muted-foreground">
           Title
         </label>
         <input
@@ -66,7 +66,7 @@ export function NewProgram() {
           className="mt-1 w-full pglearn-field"
         />
 
-        <label htmlFor="program-summary" className="mt-4 block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+        <label htmlFor="program-summary" className="mt-4 block text-ui-eyebrow uppercase text-ui-muted-foreground">
           Summary
         </label>
         <textarea

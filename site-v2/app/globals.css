@@ -102,86 +102,105 @@
 }
 
 /*
- * PGLearn — SkillSphere theme (shadcn).
+ * PGLearn — tokens from the PG Labs design system, on SkillSphere layouts.
  *
  * Everything below is scoped to `.pglearn`, the wrapper the (platform) layout
  * renders, so the marketing site never sees these variables or overrides.
- * Values are the SkillSphere template's own tokens, written as bare OKLCH
+ * Each `--ui-*` variable is a named PG Labs token (comment), written as RGB
  * channels so Tailwind's `ui-*` colours (tailwind.config.ts) can apply alpha.
+ * The few that carry their own alpha (wash, hairlines) are complete values.
+ *
+ * The design system has one hue, `accent` (#59c4ed). It is 2:1 on white, so on
+ * light grounds it is only ever a rule, a dot or a progress fill — never text.
+ * It defines no status colours; error and warning reuse design-system-v2's
+ * coral and gold, which the marketing site already ships.
  */
 @layer base {
   .pglearn {
-    --ui-background: 1 0 0;
-    --ui-foreground: 0.32 0 0;
-    --ui-card: 1 0 0;
-    --ui-card-foreground: 0.32 0 0;
-    --ui-popover: 1 0 0;
-    --ui-popover-foreground: 0.32 0 0;
-    --ui-primary: 0.62 0.19 259.76;
-    --ui-primary-foreground: 1 0 0;
-    --ui-secondary: 0.97 0 0;
-    --ui-secondary-foreground: 0.45 0.03 257.68;
-    --ui-muted: 0.98 0 0;
-    --ui-muted-foreground: 0.55 0.02 264.41;
-    --ui-accent: 0.95 0.03 233.56;
-    --ui-accent-foreground: 0.38 0.14 265.59;
-    --ui-destructive: 0.64 0.21 25.39;
-    --ui-success: 0.6 0.15 155;
-    --ui-warning: 0.72 0.15 70;
-    --ui-border: 0.93 0.01 261.82;
-    --ui-input: 0.93 0.01 261.82;
-    --ui-ring: 0.62 0.19 259.76;
+    --ui-background: 244 246 248; /* surface-subtle — the app canvas */
+    --ui-foreground: 26 34 48; /* heading */
+    --ui-card: 255 255 255; /* surface */
+    --ui-card-foreground: 26 34 48; /* heading */
+    --ui-popover: 255 255 255; /* surface */
+    --ui-popover-foreground: 26 34 48; /* heading */
+    --ui-primary: 16 22 31; /* ink-900 — the one filled action */
+    --ui-primary-foreground: 255 255 255; /* text-light */
+    --ui-secondary: 244 246 248; /* surface-subtle */
+    --ui-secondary-foreground: 26 34 48; /* heading */
+    --ui-muted: 244 246 248; /* surface-subtle */
+    --ui-muted-foreground: 102 112 131; /* text-body — 5.0:1 on surface */
+    --ui-accent: 244 246 248; /* surface-subtle — quiet selected ground */
+    --ui-accent-foreground: 16 22 31; /* ink-900 */
+    --ui-brand: 89 196 237; /* accent — rules, dots, progress only */
+    --ui-destructive: 161 61 41; /* design-system-v2 coral, text-safe step */
+    --ui-success: 89 196 237; /* accent — as a dot, never text */
+    --ui-warning: 232 163 61; /* design-system-v2 gold — as a dot */
+    --ui-border: 229 231 235; /* border-tab — card and row hairlines */
+    --ui-divider: 201 212 226; /* divider — decorative rules and tracks */
+    --ui-input: 147 150 154; /* ink-45 on surface — control borders, 3:1 */
+    --ui-ring: 16 22 31; /* focus-ring (ink-900) */
+    --ui-wash: 16 22 31 / 0.04; /* ink-4 — hover wash */
 
     color-scheme: light;
-    background-color: oklch(var(--ui-background));
-    color: oklch(var(--ui-foreground));
-    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-    font-size: 16px;
-    line-height: 1.5;
+    background-color: rgb(var(--ui-background));
+    color: rgb(var(--ui-foreground));
+    font-family: "Nunito Sans", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 23.25px;
   }
 
+  /*
+   * The design system is one light theme with dark sections. Dark mode is
+   * those dark-section tokens applied to the whole app.
+   */
   .pglearn.dark {
-    --ui-background: 0.2 0 0;
-    --ui-foreground: 0.92 0 0;
-    --ui-card: 0.27 0 0;
-    --ui-card-foreground: 0.92 0 0;
-    --ui-popover: 0.27 0 0;
-    --ui-popover-foreground: 0.92 0 0;
-    --ui-primary: 0.62 0.19 259.76;
-    --ui-primary-foreground: 1 0 0;
-    --ui-secondary: 0.27 0 0;
-    --ui-secondary-foreground: 0.92 0 0;
-    --ui-muted: 0.24 0 0;
-    --ui-muted-foreground: 0.72 0 0;
-    --ui-accent: 0.38 0.14 265.59;
-    --ui-accent-foreground: 0.88 0.06 254.63;
-    --ui-destructive: 0.7 0.19 25.39;
-    --ui-success: 0.72 0.15 155;
-    --ui-warning: 0.8 0.14 75;
-    --ui-border: 0.37 0 0;
-    --ui-input: 0.37 0 0;
-    --ui-ring: 0.62 0.19 259.76;
+    --ui-background: 16 22 31; /* surface-dark */
+    --ui-foreground: 255 255 255; /* text-light */
+    --ui-card: 26 34 48; /* heading navy, a step up from surface-dark */
+    --ui-card-foreground: 255 255 255;
+    --ui-popover: 26 34 48;
+    --ui-popover-foreground: 255 255 255;
+    --ui-primary: 255 255 255; /* text-light */
+    --ui-primary-foreground: 16 22 31; /* ink-900 */
+    --ui-secondary: 40 45 53; /* white-10 over surface-dark */
+    --ui-secondary-foreground: 255 255 255;
+    --ui-muted: 40 45 53; /* white-10 over surface-dark */
+    --ui-muted-foreground: 183 185 188; /* white-70 over surface-dark */
+    --ui-accent: 40 45 53; /* white-10 — active tab */
+    --ui-accent-foreground: 255 255 255;
+    --ui-brand: 89 196 237; /* accent — readable as text here (9.1:1) */
+    --ui-destructive: 226 98 74; /* design-system-v2 coral */
+    --ui-success: 89 196 237;
+    --ui-warning: 232 163 61;
+    --ui-border: 255 255 255 / 0.1; /* white-10 */
+    --ui-divider: 255 255 255 / 0.35; /* white-35 */
+    --ui-input: 112 115 121; /* white-40 over surface-dark */
+    --ui-ring: 89 196 237; /* focus-ring-on-dark (accent) */
+    --ui-wash: 255 255 255 / 0.1; /* white-10 */
 
     color-scheme: dark;
   }
 
   /*
-   * The site's base layer sets every heading in Lora and ink. `.pglearn :where()`
-   * outranks that bare element rule but ties with a utility class, which is
-   * emitted later and so still wins when a heading sets its own colour.
+   * The site's base layer sets headings in Lora and ink already; inside the
+   * app they inherit the theme colour instead, so dark mode works. `.pglearn
+   * :where()` outranks that bare element rule but ties with a utility class,
+   * which is emitted later and so still wins.
    */
   .pglearn :where(h1, h2, h3, h4, h5, h6) {
-    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    font-family: Lora, Georgia, serif;
+    font-weight: 600;
     color: inherit;
-    letter-spacing: -0.015em;
-  }
-
-  .pglearn :where(code, pre, kbd, samp) {
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
   }
 
   .pglearn :where(*, ::before, ::after) {
-    border-color: oklch(var(--ui-border));
+    border-color: rgb(var(--ui-border));
+  }
+
+  /* focus-ring: 2px solid, 2px offset, on every interactive element. */
+  .pglearn :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid rgb(var(--ui-ring));
+    outline-offset: 2px;
   }
 }
 
@@ -191,12 +210,12 @@
  */
 @layer components {
   .pglearn-field {
-    @apply rounded-lg border border-ui-input bg-ui-background px-3 py-2 font-ui text-sm text-ui-foreground shadow-xs outline-none transition-[color,box-shadow] placeholder:text-ui-muted-foreground focus-visible:border-ui-ring focus-visible:ring-[3px] focus-visible:ring-ui-ring/50 disabled:cursor-not-allowed disabled:bg-ui-muted disabled:opacity-60;
+    @apply min-h-11 rounded-ui border border-ui-input bg-ui-card px-3 py-2 font-ui text-ui-body text-ui-foreground transition-colors placeholder:text-ui-muted-foreground hover:border-ui-foreground disabled:cursor-not-allowed disabled:bg-ui-muted disabled:opacity-60;
   }
 }
 
 @layer components {
   .pglearn-link {
-    @apply text-ui-primary underline decoration-ui-primary/30 underline-offset-4 transition-colors hover:decoration-ui-primary;
+    @apply font-semibold text-ui-foreground underline decoration-ui-brand decoration-2 underline-offset-4 transition-colors hover:decoration-ui-foreground;
   }
 }

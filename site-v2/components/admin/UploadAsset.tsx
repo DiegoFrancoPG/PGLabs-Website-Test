@@ -119,7 +119,7 @@ export function UploadAsset({
         {progress !== null ? `Uploading ${progress}%` : label}
       </Button>
 
-      <span role="status" aria-live="polite" className="ml-2 text-sm text-ui-muted-foreground">
+      <span role="status" aria-live="polite" className="ml-2 text-ui-body text-ui-muted-foreground">
         {status ?? ""}
       </span>
 
