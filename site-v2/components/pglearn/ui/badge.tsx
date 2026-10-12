@@ -1,25 +1,29 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "@/lib/utils";
+import { cn } from "@/components/pglearn/cn";
 
 /*
- * SkillSphere badges are small rounded pills in sentence case. The design
- * system's variant names are kept so callers move over unchanged: `azure`
- * reads as a positive state, `coral` as a problem, `gold` as a caution.
+ * PG Labs status chips: `radius-6`, a 1px hairline, `caption` type in the
+ * text colour, and a 6px `bullet` that carries the state's colour. The design
+ * system has one hue, so colour is never the only signal — the label always
+ * says the state, and the dot only reinforces it.
+ *
+ * Variant names are design-system-v2's so callers move over unchanged: `azure`
+ * is a positive state, `coral` a problem, `gold` a caution.
  */
 const badgeVariants = cva(
-  "inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-full border border-transparent px-2 py-0.5 font-ui text-xs font-medium",
+  "inline-flex h-6 w-fit shrink-0 items-center gap-1.5 whitespace-nowrap rounded-ui-sm border px-2 font-ui text-ui-caption font-semibold",
   {
     variants: {
       variant: {
-        default: "bg-ui-primary text-ui-primary-foreground",
-        secondary: "bg-ui-secondary text-ui-secondary-foreground",
-        azure: "bg-ui-success/10 text-ui-success",
-        gold: "bg-ui-warning/15 text-ui-foreground",
-        coral: "bg-ui-destructive/10 text-ui-destructive",
-        ink: "bg-ui-foreground text-ui-background",
-        outline: "border-ui-border text-ui-foreground",
-        dark: "bg-ui-secondary text-ui-secondary-foreground",
+        default: "border-ui-primary bg-ui-primary text-ui-primary-foreground",
+        secondary: "border-ui-border bg-ui-muted text-ui-foreground",
+        azure: "border-ui-border bg-ui-card text-ui-foreground before:size-1.5 before:rounded-full before:bg-ui-brand",
+        gold: "border-ui-border bg-ui-card text-ui-foreground before:size-1.5 before:rounded-full before:bg-ui-warning",
+        coral: "border-ui-destructive/40 bg-ui-card text-ui-destructive before:size-1.5 before:rounded-full before:bg-ui-destructive",
+        ink: "border-ui-primary bg-ui-primary text-ui-primary-foreground",
+        outline: "border-ui-border bg-ui-card text-ui-muted-foreground",
+        dark: "border-ui-border bg-ui-muted text-ui-foreground",
       },
     },
     defaultVariants: { variant: "default" },

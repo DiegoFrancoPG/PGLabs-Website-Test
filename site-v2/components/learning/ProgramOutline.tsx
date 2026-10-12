@@ -76,7 +76,7 @@ export function ProgramOutline({
 
   return (
     <main className={`${pageContainer} py-8 sm:py-10`}>
-      <nav aria-label="Breadcrumb" className="text-sm text-ui-muted-foreground">
+      <nav aria-label="Breadcrumb" className="text-ui-body text-ui-muted-foreground">
         <Link href="/learn" className="inline-flex items-center gap-1 hover:text-ui-foreground">
           <ChevronLeft className="size-4" aria-hidden />
           Back to your learning
@@ -101,7 +101,6 @@ export function ProgramOutline({
             <div className="flex flex-wrap gap-1.5">
               {completed ? (
                 <Badge variant="azure">
-                  <CheckCircle2 className="size-3" aria-hidden />
                   Completed
                 </Badge>
               ) : overdue ? (
@@ -114,10 +113,10 @@ export function ProgramOutline({
                 </Badge>
               )}
             </div>
-            <h1 className="mt-2 font-heading text-2xl font-semibold tracking-tight text-ui-foreground sm:text-3xl">
+            <h1 className="mt-2 font-heading text-ui-title text-ui-foreground">
               {enrollment.program_title}
             </h1>
-            <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-ui-muted-foreground">
+            <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-ui-body text-ui-muted-foreground">
               <span>{enrollment.organization_id ? "Your organization" : "Personal"}</span>
               <span aria-hidden>·</span>
               <span className="inline-flex items-center gap-1">
@@ -133,7 +132,7 @@ export function ProgramOutline({
           </div>
 
           <div className="max-w-xl">
-            <div className="flex items-baseline justify-between gap-4 text-sm">
+            <div className="flex items-baseline justify-between gap-4 text-ui-body">
               <p className="text-ui-muted-foreground">
                 {enrollment.required_completed} of {enrollment.required_total} required classes complete
               </p>
@@ -189,17 +188,17 @@ export function ProgramOutline({
             <section key={module.id} aria-labelledby={`module-${module.id}`}>
               <div className="flex items-baseline justify-between gap-4">
                 <div className="flex items-baseline gap-3">
-                  <span className="tabular text-xs font-medium text-ui-muted-foreground" aria-hidden>
+                  <span className="tabular text-ui-caption font-medium text-ui-muted-foreground" aria-hidden>
                     {String(moduleIndex + 1).padStart(2, "0")}
                   </span>
                   <h2
                     id={`module-${module.id}`}
-                    className="font-heading text-lg font-semibold text-ui-foreground"
+                    className="font-heading text-ui-heading text-ui-foreground"
                   >
                     {module.title}
                   </h2>
                 </div>
-                <p className="tabular shrink-0 text-xs text-ui-muted-foreground">
+                <p className="tabular shrink-0 text-ui-caption text-ui-muted-foreground">
                   {done}/{moduleClasses.length} done
                 </p>
               </div>
@@ -246,7 +245,7 @@ function ClassRow({
       <span
         className={`flex size-9 shrink-0 items-center justify-center rounded-full ${
           entry.completed
-            ? "bg-ui-success/10 text-ui-success"
+            ? "border border-ui-brand bg-ui-card text-ui-foreground"
             : upNext
               ? "bg-ui-primary text-ui-primary-foreground"
               : "bg-ui-muted text-ui-muted-foreground"
@@ -257,14 +256,19 @@ function ClassRow({
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium text-ui-foreground sm:truncate">{entry.title}</span>
-        <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-ui-muted-foreground">
+        <span className="block text-ui-body font-medium text-ui-foreground sm:truncate">{entry.title}</span>
+        <span className="mt-1 flex flex-wrap items-center gap-1.5 text-ui-caption text-ui-muted-foreground">
           <span className="mr-0.5">{kind.label}</span>
           <Badge variant={entry.required ? "secondary" : "outline"}>
             {entry.required ? "Required" : "Optional"}
           </Badge>
           {entry.completed && <Badge variant="azure">Complete</Badge>}
-          {upNext && <span className="font-medium text-ui-primary">Up next</span>}
+          {upNext && (
+            <span className="inline-flex items-center gap-1.5 font-semibold text-ui-foreground">
+              <span aria-hidden className="size-1.5 rounded-full bg-ui-brand" />
+              Up next
+            </span>
+          )}
         </span>
       </span>
 
@@ -273,9 +277,9 @@ function ClassRow({
         fails once you click it.
       */}
       {locked ? (
-        <span className="shrink-0 text-xs text-ui-muted-foreground">Unavailable</span>
+        <span className="shrink-0 text-ui-caption text-ui-muted-foreground">Unavailable</span>
       ) : (
-        <span className="flex shrink-0 items-center gap-0.5 text-sm font-medium text-ui-primary">
+        <span className="flex shrink-0 items-center gap-0.5 text-ui-body font-medium text-ui-foreground">
           {entry.completed ? "Review" : "Open"}
           <ChevronRight className="size-4" aria-hidden />
         </span>
@@ -283,7 +287,7 @@ function ClassRow({
     </>
   );
 
-  const rowClass = `flex items-center gap-3 px-4 py-3.5 sm:px-5 ${upNext ? "bg-ui-accent/40" : ""}`;
+  const rowClass = `flex items-center gap-3 px-4 py-3.5 sm:px-5 ${upNext ? "bg-ui-wash" : ""}`;
 
   if (locked) {
     return (
@@ -294,7 +298,7 @@ function ClassRow({
   return (
     <Link
       href={`/learn/${enrollmentId}/classes/${entry.id}`}
-      className={`${rowClass} outline-none transition-colors hover:bg-ui-muted focus-visible:bg-ui-muted focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-ui-ring/50`}
+      className={`${rowClass} transition-colors hover:bg-ui-wash focus-visible:outline-offset-[-2px]`}
     >
       {content}
     </Link>

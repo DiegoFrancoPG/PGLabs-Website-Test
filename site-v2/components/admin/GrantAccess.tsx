@@ -56,7 +56,7 @@ export function GrantAccess({
   }
 
   if (programs.length === 0) {
-    return <span className="text-sm text-ui-muted-foreground">No programs to grant yet.</span>;
+    return <span className="text-ui-body text-ui-muted-foreground">No programs to grant yet.</span>;
   }
 
   if (!open) {
@@ -73,7 +73,7 @@ export function GrantAccess({
         <div>
           <label
             htmlFor={`grant-program-${organizationId}`}
-            className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground"
+            className="block text-ui-eyebrow uppercase text-ui-muted-foreground"
           >
             Program
           </label>
@@ -94,7 +94,7 @@ export function GrantAccess({
         <div>
           <label
             htmlFor={`grant-from-${organizationId}`}
-            className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground"
+            className="block text-ui-eyebrow uppercase text-ui-muted-foreground"
           >
             From
           </label>
@@ -111,7 +111,7 @@ export function GrantAccess({
         <div>
           <label
             htmlFor={`grant-until-${organizationId}`}
-            className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground"
+            className="block text-ui-eyebrow uppercase text-ui-muted-foreground"
           >
             Until (optional)
           </label>

@@ -106,9 +106,9 @@ export function VersionEditor({
       </div>
 
       <section>
-        <h2 className="text-xs font-medium uppercase tracking-wider text-ui-foreground">This version</h2>
+        <h2 className="text-ui-eyebrow uppercase text-ui-foreground">This version</h2>
         <Card className="mt-3 p-5">
-          <label htmlFor="version-title" className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+          <label htmlFor="version-title" className="block text-ui-eyebrow uppercase text-ui-muted-foreground">
             Title
           </label>
           <input
@@ -122,7 +122,7 @@ export function VersionEditor({
 
           <label
             htmlFor="version-description"
-            className="mt-4 block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground"
+            className="mt-4 block text-ui-eyebrow uppercase text-ui-muted-foreground"
           >
             Description
           </label>
@@ -163,7 +163,7 @@ export function VersionEditor({
 
       <section className="mt-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xs font-medium uppercase tracking-wider text-ui-foreground">Modules and classes</h2>
+          <h2 className="text-ui-eyebrow uppercase text-ui-foreground">Modules and classes</h2>
           {!readOnly && (
             <Button
               type="button"
@@ -189,7 +189,7 @@ export function VersionEditor({
 
         {modules.length === 0 ? (
           <Card className="mt-3 p-6">
-            <p className="text-sm">
+            <p className="text-ui-body">
               This version has no modules yet. A version needs at least one module with one
               required class before it can be published.
             </p>
@@ -199,7 +199,7 @@ export function VersionEditor({
             {modules.map((module, index) => (
               <Card key={module.id} className="p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h3 className="font-heading text-base font-semibold text-ui-foreground">{module.title}</h3>
+                  <h3 className="font-heading font-heading text-ui-heading text-ui-foreground">{module.title}</h3>
                   {!readOnly && (
                     <div className="flex gap-2">
                       {/* spec/04 asks for up/down reorder rather than drag, which
@@ -265,7 +265,7 @@ export function VersionEditor({
                     />
                   ))}
                   {classesFor(module.id).length === 0 && (
-                    <p className="text-sm text-ui-muted-foreground">No classes in this module yet.</p>
+                    <p className="text-ui-body text-ui-muted-foreground">No classes in this module yet.</p>
                   )}
                 </div>
 
@@ -303,8 +303,8 @@ export function VersionEditor({
 
       {!readOnly && (
         <section className="mt-12 border-t border-ui-border pt-8">
-          <h2 className="font-heading text-lg font-semibold text-ui-foreground">Publish</h2>
-          <p className="mt-2 text-sm text-ui-muted-foreground">
+          <h2 className="font-heading text-ui-heading text-ui-foreground">Publish</h2>
+          <p className="mt-2 text-ui-body text-ui-muted-foreground">
             Publishing makes this version read-only and available to assign. Learners already on an
             earlier version stay on it. This cannot be undone.
           </p>

@@ -41,9 +41,9 @@ export async function AppShell({
   );
 
   return (
-    <div className="min-h-screen bg-ui-muted/60">
-      <header className="sticky top-0 z-40 border-b border-ui-border bg-ui-background/85 backdrop-blur supports-[backdrop-filter]:bg-ui-background/70">
-        <div className={`${pageContainer} flex flex-wrap items-center gap-x-6 gap-y-2 py-3 lg:flex-nowrap`}>
+    <div className="min-h-screen bg-ui-background">
+      <header className="sticky top-0 z-40 border-b border-ui-border bg-ui-card">
+        <div className={`${pageContainer} flex min-h-[72px] flex-wrap items-center gap-x-8 gap-y-2 py-3 lg:flex-nowrap`}>
           <Link href="/learn">
             <Logo />
           </Link>
@@ -98,9 +98,11 @@ export async function AppShell({
             <ThemeToggle initial={theme} />
             {/* Signing out is an action, not a destination. */}
             <form action={signOut}>
-              <Button type="submit" variant="outline" size="sm">
+              {/* Icon-only on a phone so the bar stays one line; the label stays
+                  in the accessible name either way. */}
+              <Button type="submit" variant="outline" size="sm" className="h-11 px-3 sm:px-4">
                 <LogOut aria-hidden />
-                Sign out
+                <span className="sr-only sm:not-sr-only">Sign out</span>
               </Button>
             </form>
           </div>
@@ -129,7 +131,9 @@ function NavLink({
       // aria-current is what tells a screen reader which page this is, and it
       // is also what the visible highlight is keyed to — one source, not two.
       aria-current={current ? "page" : undefined}
-      className={`shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors hover:bg-ui-muted hover:text-ui-foreground ${
+      // PG Labs tabs: a pill that washes with `ink-4` on hover; the current
+      // page is set in the heading colour on the `surface-subtle` ground.
+      className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 font-ui text-ui-button transition-colors hover:bg-ui-wash hover:text-ui-foreground ${
         current ? "bg-ui-accent text-ui-accent-foreground" : "text-ui-muted-foreground"
       } ${className}`}
     >

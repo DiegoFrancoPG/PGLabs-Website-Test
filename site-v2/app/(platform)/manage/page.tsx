@@ -35,7 +35,7 @@ export default async function ManageIndexPage() {
   return (
     <AppShell active="manage">
       <main className={`${pageContainer} py-12 [&>*]:max-w-3xl`}>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Choose an organization</h1>
+        <h1 className="font-heading text-ui-title text-ui-foreground">Choose an organization</h1>
 
         {managed.length === 0 ? (
           <Alert variant="info" className="mt-6">
@@ -44,7 +44,7 @@ export default async function ManageIndexPage() {
           </Alert>
         ) : (
           <>
-            <p className="mt-2 text-sm text-ui-muted-foreground">
+            <p className="mt-2 text-ui-body text-ui-muted-foreground">
               Everything you see afterwards — including any export — belongs to the organization you
               pick here.
             </p>
@@ -53,7 +53,7 @@ export default async function ManageIndexPage() {
                 <Card key={context.organization_id} className="p-5">
                   <Link
                     href={`/manage/${context.organization_id}`}
-                    className="font-heading text-base font-semibold pglearn-link"
+                    className="font-heading font-heading text-ui-heading pglearn-link"
                   >
                     {context.organization_name}
                   </Link>

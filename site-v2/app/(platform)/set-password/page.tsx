@@ -20,8 +20,8 @@ export default async function SetPasswordPage({
 
   return (
     <AuthCard>
-      <h1 className="text-center font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Choose a password</h1>
-      <p className="mt-2 text-center text-sm text-ui-muted-foreground">
+      <h1 className="text-center font-heading text-ui-title text-ui-foreground">Choose a password</h1>
+      <p className="mt-2 text-center text-ui-body text-ui-muted-foreground">
         Use at least 12 characters. A short phrase you will remember works better than a short word.
       </p>
       <SetPasswordForm next={next ?? ""} />

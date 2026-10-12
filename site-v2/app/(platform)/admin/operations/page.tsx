@@ -69,13 +69,13 @@ export default async function OperationsPage() {
 
   return (
     <main className={`${pageContainer} py-16 [&>*]:max-w-5xl`}>
-      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Operations</h1>
-      <p className="mt-2 text-sm text-ui-muted-foreground">
+      <h1 className="font-heading text-ui-title text-ui-foreground">Operations</h1>
+      <p className="mt-2 text-ui-body text-ui-muted-foreground">
         Delivery status and scheduled runs. Message contents are never shown here.
       </p>
 
       <section className="mt-10">
-        <h2 className="text-xs font-medium uppercase tracking-wider text-ui-foreground">Configuration</h2>
+        <h2 className="text-ui-eyebrow uppercase text-ui-foreground">Configuration</h2>
         <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Configured label="Email" state={config.email} />
           <Configured label="Tutor model" state={config.tutor} />
@@ -92,14 +92,14 @@ export default async function OperationsPage() {
       )}
 
       <section className="mt-10">
-        <h2 className="font-heading text-lg font-semibold text-ui-foreground">Notifications</h2>
+        <h2 className="font-heading text-ui-heading text-ui-foreground">Notifications</h2>
         {notifications.items.length === 0 ? (
           <Card className="mt-4 p-6">
-            <p className="text-sm">Nothing has been queued yet.</p>
+            <p className="text-ui-body">Nothing has been queued yet.</p>
           </Card>
         ) : (
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[44rem] border-collapse text-sm">
+            <table className="w-full min-w-[44rem] border-collapse text-ui-body">
               <caption className="sr-only">Queued and sent notifications</caption>
               <thead>
                 <tr className="border-b border-ui-border text-left">
@@ -123,15 +123,15 @@ export default async function OperationsPage() {
       </section>
 
       <section className="mt-12">
-        <h2 className="font-heading text-lg font-semibold text-ui-foreground">Scheduled runs</h2>
+        <h2 className="font-heading text-ui-heading text-ui-foreground">Scheduled runs</h2>
         {jobs.items.length === 0 ? (
           <Card className="mt-4 p-6">
-            <p className="text-sm">The scheduler has not recorded a run yet.</p>
+            <p className="text-ui-body">The scheduler has not recorded a run yet.</p>
           </Card>
         ) : (
           <ul className="mt-4 flex flex-col gap-2">
             {jobs.items.map((job) => (
-              <li key={job.id} className="flex flex-wrap items-center gap-3 text-sm">
+              <li key={job.id} className="flex flex-wrap items-center gap-3 text-ui-body">
                 <Badge variant={STATUS_VARIANT[job.status] ?? "outline"}>{job.status}</Badge>
                 <span>{job.kind}</span>
                 <span className="text-ui-muted-foreground">{formatWhen(job.created_at)}</span>
@@ -142,7 +142,7 @@ export default async function OperationsPage() {
         )}
       </section>
 
-      <p className="mt-12 text-sm">
+      <p className="mt-12 text-ui-body">
         <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>
@@ -177,7 +177,7 @@ function Row({ item }: { item: OperationStatus }) {
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th scope="col" className="py-2 pr-4 text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+    <th scope="col" className="py-2 pr-4 text-ui-eyebrow uppercase text-ui-muted-foreground">
       {children}
     </th>
   );
@@ -187,8 +187,8 @@ function Configured({ label, state }: { label: string; state: string }) {
   const ok = state === "configured";
   return (
     <Card className="p-4">
-      <p className="text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">{label}</p>
-      <p className={`mt-1 text-sm ${ok ? "text-ui-foreground" : "text-ui-destructive"}`}>
+      <p className="text-ui-eyebrow uppercase text-ui-muted-foreground">{label}</p>
+      <p className={`mt-1 text-ui-body ${ok ? "text-ui-foreground" : "text-ui-destructive"}`}>
         {ok ? "Configured" : "Not configured"}
       </p>
     </Card>
@@ -198,11 +198,11 @@ function Configured({ label, state }: { label: string; state: string }) {
 function NoAccess() {
   return (
     <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
-      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This page is not available</h1>
+      <h1 className="font-heading text-ui-title text-ui-foreground">This page is not available</h1>
       <Alert variant="info" className="mt-6">
         Operations is for platform administrators.
       </Alert>
-      <p className="mt-8 text-sm">
+      <p className="mt-8 text-ui-body">
         <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>

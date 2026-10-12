@@ -43,7 +43,7 @@ export function NewCohort({ organizationId }: { organizationId: string }) {
   return (
     <form onSubmit={create} className="flex flex-wrap items-end gap-3">
       <div>
-        <label htmlFor="cohort-name" className="block text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+        <label htmlFor="cohort-name" className="block text-ui-eyebrow uppercase text-ui-muted-foreground">
           Name
         </label>
         <input

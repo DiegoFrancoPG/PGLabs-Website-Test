@@ -37,11 +37,11 @@ export default async function InvitationPage({ params }: { params: Promise<{ id:
   if (invitation.status !== "pending") {
     return (
       <AuthCard>
-        <h1 className="text-center font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This invitation has expired</h1>
-        <p className="mt-4 text-base leading-relaxed">
+        <h1 className="text-center font-heading text-ui-title text-ui-foreground">This invitation has expired</h1>
+        <p className="mt-4 text-ui-lead">
           Invitations are valid for 24 hours. Ask whoever invited you to send a new one.
         </p>
-        <p className="mt-8 text-sm">
+        <p className="mt-8 text-ui-body">
           <Link href="/login" className="pglearn-link">
             Back to sign in
           </Link>
@@ -57,20 +57,20 @@ export default async function InvitationPage({ params }: { params: Promise<{ id:
 
   return (
     <AuthCard>
-      <h1 className="text-center font-heading text-2xl font-semibold tracking-tight text-ui-foreground">You have been invited</h1>
+      <h1 className="text-center font-heading text-ui-title text-ui-foreground">You have been invited</h1>
 
       <dl className="mt-8 flex flex-col gap-4 border-y border-ui-border py-6">
         <div>
-          <dt className="text-xs font-medium uppercase tracking-wider text-ui-foreground">Account</dt>
-          <dd className="mt-1 text-sm">{me.profile.email}</dd>
+          <dt className="text-ui-eyebrow uppercase text-ui-foreground">Account</dt>
+          <dd className="mt-1 text-ui-body">{me.profile.email}</dd>
         </div>
         <div>
-          <dt className="text-xs font-medium uppercase tracking-wider text-ui-foreground">Organization</dt>
-          <dd className="mt-1 text-sm">{organization ?? "Personal — no organization"}</dd>
+          <dt className="text-ui-eyebrow uppercase text-ui-foreground">Organization</dt>
+          <dd className="mt-1 text-ui-body">{organization ?? "Personal — no organization"}</dd>
         </div>
         <div>
-          <dt className="text-xs font-medium uppercase tracking-wider text-ui-foreground">Role</dt>
-          <dd className="mt-1 text-sm capitalize">{invitation.role}</dd>
+          <dt className="text-ui-eyebrow uppercase text-ui-foreground">Role</dt>
+          <dd className="mt-1 text-ui-body capitalize">{invitation.role}</dd>
         </div>
       </dl>
 
@@ -86,12 +86,12 @@ export default async function InvitationPage({ params }: { params: Promise<{ id:
 function Unavailable() {
   return (
     <AuthCard>
-      <h1 className="text-center font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This invitation is not available</h1>
+      <h1 className="text-center font-heading text-ui-title text-ui-foreground">This invitation is not available</h1>
       <Alert variant="info" className="mt-6">
         It may have been withdrawn, or it may be for a different account. If you have more than one
         email address, check that you are signed in with the right one.
       </Alert>
-      <p className="mt-8 text-sm">
+      <p className="mt-8 text-ui-body">
         <Link href="/login" className="pglearn-link">
           Back to sign in
         </Link>

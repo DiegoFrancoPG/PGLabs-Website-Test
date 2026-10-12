@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Award, CalendarDays, CheckCircle2, Lock } from "lucide-react";
+import { ArrowRight, Award, CalendarDays, Lock } from "lucide-react";
 import { redirect } from "next/navigation";
 import { verifiedUser } from "@/lib/auth";
 import { getMe } from "@/features/identity/me";
@@ -79,7 +79,7 @@ function ProgramCard({
         };
 
   return (
-    <Card className="group overflow-hidden transition-shadow hover:shadow-md">
+    <Card className="group overflow-hidden transition-colors hover:border-ui-input">
       <div className="relative aspect-[16/9] overflow-hidden bg-ui-muted">
         <Image
           src={programCover(enrollment.program_id)}
@@ -93,17 +93,16 @@ function ProgramCard({
         {/* The state reads first, on the picture, so a row of cards scans. */}
         <div className="absolute left-3 top-3 flex gap-1.5">
           {completed ? (
-            <Badge variant="azure" className="bg-ui-card/95 shadow-sm">
-              <CheckCircle2 className="size-3" aria-hidden />
+            <Badge variant="azure">
               Completed
             </Badge>
           ) : overdue ? (
-            <Badge variant="coral" className="bg-ui-card/95 shadow-sm">
+            <Badge variant="coral">
               Overdue
             </Badge>
           ) : null}
           {locked && !completed && (
-            <Badge variant="outline" className="border-transparent bg-ui-card/95 shadow-sm">
+            <Badge variant="outline">
               <Lock className="size-3" aria-hidden />
               Locked
             </Badge>
@@ -111,12 +110,12 @@ function ProgramCard({
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col gap-4 p-5">
+      <div className="flex flex-1 flex-col gap-4 p-6">
         <div>
-          <h2 className="line-clamp-2 font-heading text-base font-semibold leading-snug text-ui-foreground">
+          <h2 className="line-clamp-2 font-heading text-ui-heading text-ui-foreground">
             {enrollment.program_title}
           </h2>
-          <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-ui-muted-foreground">
+          <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-ui-caption text-ui-muted-foreground">
             <span>{enrollment.organization_id ? "Your organization" : "Personal"}</span>
             <span aria-hidden>·</span>
             <span className="inline-flex items-center gap-1">
@@ -127,7 +126,7 @@ function ProgramCard({
         </div>
 
         <div>
-          <div className="flex items-baseline justify-between gap-4 text-xs">
+          <div className="flex items-baseline justify-between gap-4 text-ui-caption">
             <p className="text-ui-muted-foreground">
               {enrollment.required_completed} of {enrollment.required_total} required classes
             </p>
@@ -144,7 +143,7 @@ function ProgramCard({
         </div>
 
         {/* A locked card explains itself; the reason is the whole message. */}
-        {locked && <p className="text-xs leading-relaxed text-ui-muted-foreground">{reason}</p>}
+        {locked && <p className="text-ui-caption leading-relaxed text-ui-muted-foreground">{reason}</p>}
 
         <div className="mt-auto flex items-center gap-2 pt-1">
           <Button variant={action.variant} size="sm" className="flex-1" asChild>
@@ -189,11 +188,11 @@ export default async function LearnPage() {
   return (
     <AppShell active="learn">
     <main className={`${pageContainer} py-10`}>
-      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Your learning</h1>
-      <p className="mt-1 text-sm text-ui-muted-foreground">{me.profile.email}</p>
+      <h1 className="font-heading text-ui-title text-ui-foreground">Your learning</h1>
+      <p className="mt-1 text-ui-body text-ui-muted-foreground">{me.profile.email}</p>
 
       {enrollments.length === 0 ? (
-        <p className="mt-12 text-base leading-relaxed">You haven&rsquo;t been assigned a program yet.</p>
+        <p className="mt-12 text-ui-lead">You haven&rsquo;t been assigned a program yet.</p>
       ) : (
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {enrollments.map((enrollment) => (
@@ -219,7 +218,7 @@ export default async function LearnPage() {
 function FinishSetUp({ email }: { email: string }) {
   return (
     <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
-      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Finish setting up your account</h1>
+      <h1 className="font-heading text-ui-title text-ui-foreground">Finish setting up your account</h1>
       <Alert variant="info" className="mt-6">
         You are signed in as {email}, but your invitation has not been accepted yet. Open the
         invitation link that was emailed to you to finish.

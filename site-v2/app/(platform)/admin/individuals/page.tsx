@@ -58,8 +58,8 @@ export default async function IndividualsPage() {
   return (
     <AppShell active="admin">
       <main className={`${pageContainer} py-12 [&>*]:max-w-4xl`}>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">Individuals</h1>
-        <p className="mt-2 text-sm text-ui-muted-foreground">
+        <h1 className="font-heading text-ui-title text-ui-foreground">Individuals</h1>
+        <p className="mt-2 text-ui-body text-ui-muted-foreground">
           Learners who hold a programme in their own right rather than through an organization. No
           organization is created for them, and no manager can see their record.
         </p>
@@ -82,27 +82,27 @@ export default async function IndividualsPage() {
         </div>
 
         <section className="mt-10">
-          <h2 className="font-heading text-lg font-semibold text-ui-foreground">Enrolled individuals</h2>
+          <h2 className="font-heading text-ui-heading text-ui-foreground">Enrolled individuals</h2>
           {individuals.length === 0 ? (
             <Card className="mt-4 p-6">
-              <p className="text-sm">Nobody holds a personal grant yet.</p>
+              <p className="text-ui-body">Nobody holds a personal grant yet.</p>
             </Card>
           ) : (
             <div className="mt-4 overflow-x-auto">
-              <table className="w-full min-w-[40rem] border-collapse text-sm">
+              <table className="w-full min-w-[40rem] border-collapse text-ui-body">
                 <caption className="sr-only">Individual learners and their programmes</caption>
                 <thead>
                   <tr className="border-b border-ui-border text-left">
-                    <th scope="col" className="py-2 pr-4 text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+                    <th scope="col" className="py-2 pr-4 text-ui-eyebrow uppercase text-ui-muted-foreground">
                       Learner
                     </th>
-                    <th scope="col" className="py-2 pr-4 text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+                    <th scope="col" className="py-2 pr-4 text-ui-eyebrow uppercase text-ui-muted-foreground">
                       Account
                     </th>
-                    <th scope="col" className="py-2 pr-4 text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+                    <th scope="col" className="py-2 pr-4 text-ui-eyebrow uppercase text-ui-muted-foreground">
                       Program
                     </th>
-                    <th scope="col" className="py-2 text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+                    <th scope="col" className="py-2 text-ui-eyebrow uppercase text-ui-muted-foreground">
                       Progress
                     </th>
                   </tr>
@@ -145,11 +145,11 @@ export default async function IndividualsPage() {
 function NoAccess() {
   return (
     <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
-      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This page is not available</h1>
+      <h1 className="font-heading text-ui-title text-ui-foreground">This page is not available</h1>
       <Alert variant="info" className="mt-6">
         Individual enrolment is for platform administrators.
       </Alert>
-      <p className="mt-8 text-sm">
+      <p className="mt-8 text-ui-body">
         <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>

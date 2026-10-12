@@ -61,7 +61,7 @@ export default async function VersionPage({
   return (
     <AppShell active="admin">
       <main className={`${pageContainer} py-12 [&>*]:max-w-4xl`}>
-        <p className="text-sm">
+        <p className="text-ui-body">
           <Link
             href={`/admin/programs/${programId}`}
             className="pglearn-link"
@@ -71,7 +71,7 @@ export default async function VersionPage({
         </p>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">
+          <h1 className="font-heading text-ui-title text-ui-foreground">
             Version {detail.version.version_number}
           </h1>
           {published ? (
@@ -100,11 +100,11 @@ export default async function VersionPage({
 function NoAccess() {
   return (
     <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
-      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This version is not available</h1>
+      <h1 className="font-heading text-ui-title text-ui-foreground">This version is not available</h1>
       <Alert variant="info" className="mt-6">
         It may not exist, or program authoring may not be yours to do.
       </Alert>
-      <p className="mt-8 text-sm">
+      <p className="mt-8 text-ui-body">
         <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>

@@ -1,10 +1,11 @@
 import * as React from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/components/pglearn/cn";
 
 /*
- * SkillSphere card: 10px radius, a hairline ring rather than a border, and a
- * soft shadow. Callers set their own padding, as they did with the design
- * system's card.
+ * PG Labs cards: `surface` on the `surface-subtle` canvas, `radius-m` (8px), a
+ * 1px hairline and no shadow — the design system separates things with ground
+ * changes and lines, never elevation. Callers set their own padding
+ * (`space-24`–`space-36`).
  */
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
@@ -12,7 +13,7 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
       ref={ref}
       data-slot="card"
       className={cn(
-        "flex flex-col rounded-xl bg-ui-card text-sm text-ui-card-foreground shadow-sm ring-1 ring-ui-foreground/10",
+        "flex flex-col rounded-ui border border-ui-border bg-ui-card text-ui-body text-ui-card-foreground",
         className
       )}
       {...props}
@@ -23,18 +24,14 @@ Card.displayName = "Card";
 
 const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("flex flex-col gap-1.5 mb-4", className)} {...props} />
+    <div ref={ref} className={cn("mb-4 flex flex-col gap-1.5", className)} {...props} />
   )
 );
 CardHeader.displayName = "CardHeader";
 
 const CardTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
-    <h3
-      ref={ref}
-      className={cn("font-heading text-base font-medium leading-snug", className)}
-      {...props}
-    />
+    <h3 ref={ref} className={cn("font-heading text-ui-heading", className)} {...props} />
   )
 );
 CardTitle.displayName = "CardTitle";
@@ -43,7 +40,7 @@ const CardDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => (
-  <p ref={ref} className={cn("text-sm text-ui-muted-foreground", className)} {...props} />
+  <p ref={ref} className={cn("text-ui-body text-ui-muted-foreground", className)} {...props} />
 ));
 CardDescription.displayName = "CardDescription";
 
@@ -54,7 +51,7 @@ CardContent.displayName = "CardContent";
 
 const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("flex items-center mt-6", className)} {...props} />
+    <div ref={ref} className={cn("mt-6 flex items-center", className)} {...props} />
   )
 );
 CardFooter.displayName = "CardFooter";

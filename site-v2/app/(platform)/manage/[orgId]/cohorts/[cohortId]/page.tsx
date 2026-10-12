@@ -79,20 +79,20 @@ export default async function CohortPage({
   return (
     <AppShell active="manage">
       <main className={`${pageContainer} py-12 [&>*]:max-w-4xl`}>
-        <p className="text-sm">
+        <p className="text-ui-body">
           <Link href={`/manage/${orgId}`} className="pglearn-link">
             {organization?.name ?? "Organization"}
           </Link>
         </p>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">{cohort.name}</h1>
+          <h1 className="font-heading text-ui-title text-ui-foreground">{cohort.name}</h1>
           {cohort.archived_at && <Badge variant="outline">Archived</Badge>}
         </div>
 
         <section className="mt-10">
-          <h2 className="font-heading text-lg font-semibold text-ui-foreground">Roster</h2>
-          <p className="mt-2 text-sm text-ui-muted-foreground">
+          <h2 className="font-heading text-ui-heading text-ui-foreground">Roster</h2>
+          <p className="mt-2 text-ui-body text-ui-muted-foreground">
             Adding somebody here does not assign them anything. Assignment is the separate step
             below, because it carries dates.
           </p>
@@ -105,21 +105,21 @@ export default async function CohortPage({
 
           {members.items.length === 0 ? (
             <Card className="mt-5 p-6">
-              <p className="text-sm">Nobody is in this cohort yet.</p>
+              <p className="text-ui-body">Nobody is in this cohort yet.</p>
             </Card>
           ) : (
             <div className="mt-5 overflow-x-auto">
-              <table className="w-full min-w-[36rem] border-collapse text-sm">
+              <table className="w-full min-w-[36rem] border-collapse text-ui-body">
                 <caption className="sr-only">Members of {cohort.name}</caption>
                 <thead>
                   <tr className="border-b border-ui-border text-left">
-                    <th scope="col" className="py-2 pr-4 text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+                    <th scope="col" className="py-2 pr-4 text-ui-eyebrow uppercase text-ui-muted-foreground">
                       Learner
                     </th>
-                    <th scope="col" className="py-2 pr-4 text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+                    <th scope="col" className="py-2 pr-4 text-ui-eyebrow uppercase text-ui-muted-foreground">
                       Account
                     </th>
-                    <th scope="col" className="py-2 text-xs font-medium uppercase tracking-wider text-ui-muted-foreground">
+                    <th scope="col" className="py-2 text-ui-eyebrow uppercase text-ui-muted-foreground">
                       In cohort
                     </th>
                   </tr>
@@ -153,16 +153,16 @@ export default async function CohortPage({
         </section>
 
         <section className="mt-12 border-t border-ui-border pt-8">
-          <h2 className="font-heading text-lg font-semibold text-ui-foreground">Assigned learning</h2>
+          <h2 className="font-heading text-ui-heading text-ui-foreground">Assigned learning</h2>
 
           {cohortOfferings.length === 0 ? (
-            <p className="mt-2 text-sm text-ui-muted-foreground">
+            <p className="mt-2 text-ui-body text-ui-muted-foreground">
               Nothing has been assigned to this cohort yet.
             </p>
           ) : (
             <ul className="mt-3 flex flex-col gap-2">
               {cohortOfferings.map((offering) => (
-                <li key={offering.id} className="text-sm">
+                <li key={offering.id} className="text-ui-body">
                   Starts {formatDate(offering.starts_at)}, due {formatDate(offering.due_at)}
                   {offering.access_ends_at
                     ? `, access ends ${formatDate(offering.access_ends_at)}`
@@ -213,11 +213,11 @@ export default async function CohortPage({
 function NoAccess() {
   return (
     <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
-      <h1 className="font-heading text-2xl font-semibold tracking-tight text-ui-foreground">This cohort is not available</h1>
+      <h1 className="font-heading text-ui-title text-ui-foreground">This cohort is not available</h1>
       <Alert variant="info" className="mt-6">
         It may not exist, or it may belong to an organization you do not manage.
       </Alert>
-      <p className="mt-8 text-sm">
+      <p className="mt-8 text-ui-body">
         <Link href="/learn" className="pglearn-link">
           Back to your learning
         </Link>

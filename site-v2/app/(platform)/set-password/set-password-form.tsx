@@ -38,7 +38,7 @@ export function SetPasswordForm({ next }: { next: string }) {
           aria-describedby={state.fieldErrors?.password ? "password-error" : undefined}
         />
         {state.fieldErrors?.password && (
-          <p id="password-error" className="text-sm text-ui-destructive">
+          <p id="password-error" className="text-ui-body text-ui-destructive">
             {state.fieldErrors.password}
           </p>
         )}
@@ -55,7 +55,7 @@ export function SetPasswordForm({ next }: { next: string }) {
           aria-describedby={state.fieldErrors?.confirm ? "confirm-error" : undefined}
         />
         {state.fieldErrors?.confirm && (
-          <p id="confirm-error" className="text-sm text-ui-destructive">
+          <p id="confirm-error" className="text-ui-body text-ui-destructive">
             {state.fieldErrors.confirm}
           </p>
         )}

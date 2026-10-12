@@ -56,7 +56,7 @@ export function SettingsForm({ profile, timezones }: Props) {
           aria-describedby={state.fieldErrors?.display_name ? "display_name-error" : undefined}
         />
         {state.fieldErrors?.display_name && (
-          <p id="display_name-error" className="text-sm text-ui-destructive">
+          <p id="display_name-error" className="text-ui-body text-ui-destructive">
             {state.fieldErrors.display_name}
           </p>
         )}
@@ -77,16 +77,16 @@ export function SettingsForm({ profile, timezones }: Props) {
           </SelectContent>
         </Select>
         {state.fieldErrors?.timezone && (
-          <p className="text-sm text-ui-destructive">{state.fieldErrors.timezone}</p>
+          <p className="text-ui-body text-ui-destructive">{state.fieldErrors.timezone}</p>
         )}
-        <p className="text-sm text-ui-muted-foreground">
+        <p className="text-ui-body text-ui-muted-foreground">
           Due dates and reminders are shown in this timezone.
         </p>
       </div>
 
       <div className="flex items-start gap-3">
         <Checkbox id="reminders_enabled" name="reminders_enabled" defaultChecked={profile.reminders_enabled} />
-        <Label htmlFor="reminders_enabled" className="normal-case tracking-normal text-sm">
+        <Label htmlFor="reminders_enabled" className="normal-case tracking-normal text-ui-body">
           Email me learning reminders
         </Label>
       </div>
@@ -96,9 +96,9 @@ export function SettingsForm({ profile, timezones }: Props) {
         user knows which account they are in, and is not a form control.
       */}
       <div className="border-t border-ui-border pt-6">
-        <p className="text-xs font-medium uppercase tracking-wider text-ui-foreground">Email address</p>
-        <p className="mt-1 text-sm text-ui-muted-foreground">{profile.email}</p>
-        <p className="mt-2 text-sm text-ui-muted-foreground">
+        <p className="text-ui-eyebrow uppercase text-ui-foreground">Email address</p>
+        <p className="mt-1 text-ui-body text-ui-muted-foreground">{profile.email}</p>
+        <p className="mt-2 text-ui-body text-ui-muted-foreground">
           Your email address comes from your account and cannot be changed here.
         </p>
       </div>
