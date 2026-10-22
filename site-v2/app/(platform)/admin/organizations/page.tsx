@@ -12,6 +12,7 @@ import { NewOrganization } from "@/components/admin/NewOrganization";
 import { GrantAccess } from "@/components/admin/GrantAccess";
 import { EditOrganization } from "@/components/admin/EditOrganization";
 import { EditMember } from "@/components/admin/EditMember";
+import { GrantStatus } from "@/components/admin/GrantStatus";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Badge } from "@/components/pglearn/ui/badge";
 import { Button } from "@/components/pglearn/ui/button";
@@ -166,19 +167,25 @@ export default async function OrganizationsPage() {
                       </p>
                     ) : (
                       <ul className="mt-2 flex flex-col gap-1">
-                        {held.map((grant) => (
-                          <li key={grant.id} className="text-ui-body">
-                            {programs.items.find((p) => p.id === grant.program_id)?.title ??
-                              "A program"}{" "}
-                            <span className="text-ui-muted-foreground">
-                              from {formatDate(grant.starts_at)}
-                              {grant.ends_at ? ` until ${formatDate(grant.ends_at)}` : ""}
-                            </span>{" "}
-                            <Badge variant={grant.status === "active" ? "azure" : "coral"}>
-                              {grant.status}
-                            </Badge>
-                          </li>
-                        ))}
+                        {held.map((grant) => {
+                          const title =
+                            programs.items.find((p) => p.id === grant.program_id)?.title ?? "A program";
+                          return (
+                            <li key={grant.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-ui-body">
+                              <span>
+                                {title}{" "}
+                                <span className="text-ui-muted-foreground">
+                                  from {formatDate(grant.starts_at)}
+                                  {grant.ends_at ? ` until ${formatDate(grant.ends_at)}` : ""}
+                                </span>
+                              </span>
+                              <Badge variant={grant.status === "active" ? "azure" : "coral"}>
+                                {grant.status === "active" ? "active" : "removed"}
+                              </Badge>
+                              <GrantStatus grantId={grant.id} programTitle={title} status={grant.status} />
+                            </li>
+                          );
+                        })}
                       </ul>
                     )}
                   </div>

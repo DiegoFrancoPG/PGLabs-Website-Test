@@ -16,6 +16,7 @@
 - **D-06 (22 October 2026): PG Learn launch scope** — described below. UI only: no migration, contract or RPC changed.
 - **D-07 (23 October 2026): admins edit organizations and their managers** — migration M30, described below. Applied to production on 23 October 2026.
 - **D-08 (23 October 2026): module release dates** — migration M31, described below. Production needs M31 applied before the code that reads it is deployed.
+- **D-09 (23 October 2026): admins remove a program from an organization's catalog** — UI only, on the existing `update_grant`. Each program in a card's catalog list has "Remove" (status `revoked`, after a confirmation that names the consequences) and, once removed, "Restore" (`components/admin/GrantStatus.tsx`). Nothing is deleted: spec/03 checks the current grant on every request, so access stops at once while enrollments, progress and certificates stay, and a restore resumes them. Checked against the fixture seed: revoking makes Amber's enrollment `revoked`, restoring makes it `available` again.
 - Inputs outstanding: the nine videos with transcripts and captions, OpenAI and Resend credentials with a verified sender, `CRON_SECRET` for the deployment, and the certificate issuer string if it should differ from the default "PGLearn". A development database is configured.
 
 ## Host application
