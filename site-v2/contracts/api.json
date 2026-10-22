@@ -6757,6 +6757,18 @@
                 "type": "null"
               }
             ]
+          },
+          "youtube_video_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{11}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "D-05: the YouTube video id a video class plays from instead of an uploaded primary asset; null for uploaded media."
           }
         },
         "required": [
@@ -6812,6 +6824,18 @@
                 "type": "null"
               }
             ]
+          },
+          "youtube_video_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{11}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "D-05: the YouTube video id a video class plays from instead of an uploaded primary asset; null for uploaded media."
           }
         },
         "required": [],
@@ -6883,6 +6907,18 @@
                 "type": "null"
               }
             ]
+          },
+          "youtube_video_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{11}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "D-05: the YouTube video id a video class plays from instead of an uploaded primary asset; null for uploaded media."
           }
         },
         "required": [
@@ -6896,7 +6932,8 @@
           "body_md",
           "source_text",
           "duration_ms",
-          "primary_asset_id"
+          "primary_asset_id",
+          "youtube_video_id"
         ],
         "additionalProperties": false
       },

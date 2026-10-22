@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { UploadAsset } from "@/components/admin/UploadAsset";
+import { YouTubeFrame, type MediaHandle } from "@/components/learning/YouTubeFrame";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Badge } from "@/components/pglearn/ui/badge";
 import { Button } from "@/components/pglearn/ui/button";
+import { parseYouTubeVideoId, youtubeWatchUrl } from "@/lib/youtube";
 
 /*
  * One class: what it is, what it holds, and what it still needs.
@@ -14,6 +16,10 @@ import { Button } from "@/components/pglearn/ui/button";
  * exercise instructions". The fields shown depend on the format, because a
  * text class has no duration and a video class has no body — and the database
  * enforces exactly that, so showing both would only invite a refusal.
+ *
+ * A video comes from one of two sources (D-05): an uploaded file, or a YouTube
+ * link. For YouTube the duration is read from the player, since there is no
+ * file to read it from, and can be corrected by hand.
  */
 
 interface ClassRow {
@@ -26,6 +32,25 @@ interface ClassRow {
   source_text: string;
   duration_ms: number | string | null;
   primary_asset_id: string | null;
+  youtube_video_id: string | null;
+}
+
+/* "9:58" or "1:02:03" to milliseconds; null for anything else. */
+function parseClock(text: string): number | null {
+  const parts = text.trim().split(":");
+  if (parts.length < 2 || parts.length > 3 || parts.some((part) => !/^\d+$/.test(part))) return null;
+  const [h, m, sec] = parts.length === 3 ? parts.map(Number) : [0, ...parts.map(Number)];
+  if (m >= 60 && parts.length === 3) return null;
+  if (sec >= 60) return null;
+  return ((h * 60 + m) * 60 + sec) * 1000;
+}
+
+function formatClock(ms: number): string {
+  const total = Math.round(ms / 1000);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const sec = String(total % 60).padStart(2, "0");
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
 }
 
 interface AssetRow {
@@ -53,16 +78,47 @@ export function ClassEditor({
   const [kind, setKind] = useState(cls.kind);
   const [required, setRequired] = useState(cls.required);
   const [body, setBody] = useState(cls.body_md);
+  const [source, setSource] = useState<"upload" | "youtube">(cls.youtube_video_id ? "youtube" : "upload");
+  const [youtubeLink, setYoutubeLink] = useState(cls.youtube_video_id ?? "");
+  const [clock, setClock] = useState(cls.duration_ms ? formatClock(Number(cls.duration_ms)) : "");
   const [instructions, setInstructions] = useState(exercise?.instructions_md ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  const youtubeId = parseYouTubeVideoId(youtubeLink);
+  const usesYouTube = kind === "video" && source === "youtube";
+
+  /*
+   * The player knows the length once it has loaded. It fills an empty field,
+   * or replaces the length of a different video; a correction the author made
+   * to this same video stands.
+   */
+  const readDuration = (handle: MediaHandle) => {
+    const seconds = handle.duration;
+    if (seconds > 0 && (clock.trim() === "" || youtubeId !== cls.youtube_video_id)) {
+      setClock(formatClock(seconds * 1000));
+    }
+  };
 
   async function save() {
     setBusy(true);
     setError(null);
     setSaved(false);
     try {
+      let youtubeFields = {};
+      if (usesYouTube) {
+        if (!youtubeId) throw new Error("Paste a YouTube link, such as https://youtu.be/…");
+        const durationMs = parseClock(clock);
+        if (durationMs === null || durationMs < 1000) {
+          throw new Error("Enter the video's length as minutes:seconds, such as 9:58.");
+        }
+        youtubeFields = { youtube_video_id: youtubeId, duration_ms: durationMs };
+      } else if (kind === "video" && cls.youtube_video_id) {
+        // Back to an uploaded file: the YouTube link no longer applies.
+        youtubeFields = { youtube_video_id: null };
+      }
+
       const response = await fetch(`/api/v1/classes/${cls.id}`, {
         method: "PATCH",
         // Every mutation carries one (lib/route.ts requires it), so a double
@@ -83,6 +139,7 @@ export function ClassEditor({
            * same words twice and leaving publication blocked when they don't.
            */
           ...(kind === "text" ? { body_md: body, source_text: body } : {}),
+          ...youtubeFields,
         }),
       });
       const json = await response.json();
@@ -140,10 +197,14 @@ export function ClassEditor({
           <Badge variant="outline">{cls.kind}</Badge>
           {cls.required ? <Badge variant="default">Required</Badge> : null}
           {/* What publication will complain about, said before it does. */}
-          {cls.kind !== "text" && !cls.primary_asset_id && (
+          {cls.youtube_video_id && <Badge variant="outline">YouTube</Badge>}
+          {cls.kind !== "text" && !cls.primary_asset_id && !cls.youtube_video_id && (
             <Badge variant="coral">Needs media</Badge>
           )}
-          {cls.kind === "video" && !caption && <Badge variant="coral">Needs captions</Badge>}
+          {/* A YouTube video's captions are YouTube's own (D-05). */}
+          {cls.kind === "video" && !caption && !cls.youtube_video_id && (
+            <Badge variant="coral">Needs captions</Badge>
+          )}
           {cls.source_text.trim().length === 0 && <Badge variant="coral">Needs source text</Badge>}
         </div>
         <Button
@@ -220,31 +281,141 @@ export function ClassEditor({
             </>
           ) : (
             <div className="mt-4">
-              <p className="text-ui-eyebrow uppercase text-ui-muted-foreground">Media</p>
-              <p className="mt-1 text-ui-body">
-                {primary ? (
-                  <>
-                    {primary.original_name}{" "}
-                    <Badge variant={primary.state === "ready" ? "azure" : "outline"}>
-                      {primary.state}
-                    </Badge>
-                  </>
-                ) : (
-                  <span className="text-ui-muted-foreground">Nothing uploaded yet.</span>
-                )}
-              </p>
-              {!readOnly && (
-                <div className="mt-3 flex flex-wrap gap-3">
-                  <UploadAsset classId={cls.id} role="primary" label="Upload media" />
-                  <UploadAsset classId={cls.id} role="caption" label="Upload captions" />
-                  <UploadAsset classId={cls.id} role="transcript" label="Upload transcript" />
-                  <UploadAsset classId={cls.id} role="handout" label="Upload handout" />
-                </div>
+              {kind === "video" && (
+                <fieldset className="mb-4">
+                  <legend className="text-ui-eyebrow uppercase text-ui-muted-foreground">Video source</legend>
+                  <div className="mt-1 flex flex-wrap gap-6 text-ui-body">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name={`source-${cls.id}`}
+                        checked={source === "upload"}
+                        disabled={readOnly}
+                        onChange={() => setSource("upload")}
+                      />
+                      Uploaded file
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name={`source-${cls.id}`}
+                        checked={source === "youtube"}
+                        disabled={readOnly}
+                        onChange={() => setSource("youtube")}
+                      />
+                      YouTube
+                    </label>
+                  </div>
+                </fieldset>
               )}
-              {cls.duration_ms && (
-                <p className="mt-2 text-ui-body text-ui-muted-foreground">
-                  Duration {Math.round(Number(cls.duration_ms) / 1000)}s, read from the file.
-                </p>
+
+              {usesYouTube ? (
+                <>
+                  <label
+                    htmlFor={`youtube-${cls.id}`}
+                    className="block text-ui-eyebrow uppercase text-ui-muted-foreground"
+                  >
+                    YouTube link
+                  </label>
+                  <input
+                    id={`youtube-${cls.id}`}
+                    value={youtubeLink}
+                    disabled={readOnly}
+                    placeholder="https://youtu.be/…"
+                    aria-describedby={`youtube-help-${cls.id}`}
+                    aria-invalid={youtubeLink.trim() !== "" && !youtubeId}
+                    onChange={(event) => setYoutubeLink(event.target.value)}
+                    className="mt-1 w-full pglearn-field"
+                  />
+                  <p id={`youtube-help-${cls.id}`} className="mt-1 text-ui-body text-ui-muted-foreground">
+                    {youtubeLink.trim() !== "" && !youtubeId
+                      ? "That is not a link to a YouTube video."
+                      : "Set the video to Unlisted on YouTube and allow embedding. Anyone with the link can watch it, including people who are not enrolled."}
+                  </p>
+
+                  {youtubeId && (
+                    <div className="mt-3 max-w-xl">
+                      <YouTubeFrame
+                        key={youtubeId}
+                        videoId={youtubeId}
+                        title={`Preview: ${title}`}
+                        startSeconds={0}
+                        onReady={readDuration}
+                        onPlay={() => undefined}
+                        onPause={() => undefined}
+                        onTimeUpdate={() => undefined}
+                        onEnded={() => undefined}
+                        onRateChange={() => undefined}
+                        onError={(message) => setError(message)}
+                      />
+                      <a
+                        href={youtubeWatchUrl(youtubeId)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-1 inline-block pglearn-link text-ui-body"
+                      >
+                        Open on YouTube
+                      </a>
+                    </div>
+                  )}
+
+                  <label
+                    htmlFor={`duration-${cls.id}`}
+                    className="mt-4 block text-ui-eyebrow uppercase text-ui-muted-foreground"
+                  >
+                    Length (minutes:seconds)
+                  </label>
+                  <input
+                    id={`duration-${cls.id}`}
+                    value={clock}
+                    disabled={readOnly}
+                    inputMode="numeric"
+                    placeholder="9:58"
+                    aria-describedby={`duration-help-${cls.id}`}
+                    onChange={(event) => setClock(event.target.value)}
+                    className="mt-1 w-32 pglearn-field"
+                  />
+                  <p id={`duration-help-${cls.id}`} className="mt-1 text-ui-body text-ui-muted-foreground">
+                    Filled in from the player when it loads. Learners complete the class by watching 90% of it,
+                    so it must match the video.
+                  </p>
+
+                  {!readOnly && (
+                    <div className="mt-3 flex flex-wrap gap-3">
+                      <UploadAsset classId={cls.id} role="transcript" label="Upload transcript" />
+                      <UploadAsset classId={cls.id} role="handout" label="Upload handout" />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className="text-ui-eyebrow uppercase text-ui-muted-foreground">Media</p>
+                  <p className="mt-1 text-ui-body">
+                    {primary ? (
+                      <>
+                        {primary.original_name}{" "}
+                        <Badge variant={primary.state === "ready" ? "azure" : "outline"}>
+                          {primary.state}
+                        </Badge>
+                      </>
+                    ) : (
+                      <span className="text-ui-muted-foreground">Nothing uploaded yet.</span>
+                    )}
+                  </p>
+                  {!readOnly && (
+                    <div className="mt-3 flex flex-wrap gap-3">
+                      <UploadAsset classId={cls.id} role="primary" label="Upload media" />
+                      <UploadAsset classId={cls.id} role="caption" label="Upload captions" />
+                      <UploadAsset classId={cls.id} role="transcript" label="Upload transcript" />
+                      <UploadAsset classId={cls.id} role="handout" label="Upload handout" />
+                    </div>
+                  )}
+                  {cls.duration_ms && !cls.youtube_video_id && (
+                    <p className="mt-2 text-ui-body text-ui-muted-foreground">
+                      Duration {Math.round(Number(cls.duration_ms) / 1000)}s, read from the file.
+                    </p>
+                  )}
+                </>
               )}
             </div>
           )}
