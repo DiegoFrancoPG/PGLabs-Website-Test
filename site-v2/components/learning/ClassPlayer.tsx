@@ -38,6 +38,8 @@ interface Props {
   youtubeVideoId: string | null;
   captionAssetId: string | null;
   onProgress?: (progress: Progress) => void;
+  /** Spacing from what sits above the player. */
+  className?: string;
 }
 
 interface Session {
@@ -71,6 +73,7 @@ export function ClassPlayer({
   youtubeVideoId,
   captionAssetId,
   onProgress,
+  className = "mt-8",
 }: Props) {
   const media = useRef<MediaHandle | null>(null);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
@@ -282,7 +285,7 @@ export function ClassPlayer({
 
   if (error) {
     return (
-      <Alert variant="warning" className="mt-8">
+      <Alert variant="warning" className={className}>
         This class could not be opened: {error}
       </Alert>
     );
@@ -291,7 +294,7 @@ export function ClassPlayer({
   const Tag = kind === "video" ? "video" : "audio";
 
   return (
-    <div className="mt-8">
+    <div className={className}>
       {superseded && (
         <Alert variant="warning" className="mb-4">
           This program is playing in another tab.{" "}
