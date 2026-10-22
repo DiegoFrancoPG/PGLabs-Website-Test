@@ -3,11 +3,18 @@ import { test, expect } from "@playwright/test";
 /*
  * The marketing site is the index PGLearn was added to. These guard the
  * boundary established at T00: the public pages stay public and indexable,
- * and the Figma capture script never ships to production.
+ * and the Figma capture script never ships to production. Since D-06 the root
+ * opens PG Learn's sign-in, so the shell is checked on /about.
  */
 test.describe("marketing shell", () => {
-  test("home renders the masthead, footer and organisation schema", async ({ page }) => {
+  test("the root opens PG Learn's sign-in page (D-06)", async ({ page }) => {
     await page.goto("/");
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByRole("heading", { name: "Sign in to PG Learn" })).toBeVisible();
+  });
+
+  test("a page renders the masthead, footer and organisation schema", async ({ page }) => {
+    await page.goto("/about");
     await expect(page.getByRole("link", { name: "PG Labs" }).first()).toBeVisible();
     await expect(page.getByRole("contentinfo")).toBeVisible();
 
@@ -16,13 +23,13 @@ test.describe("marketing shell", () => {
   });
 
   test("stays indexable", async ({ page }) => {
-    const res = await page.goto("/");
+    const res = await page.goto("/about");
     expect(res?.headers()["x-robots-tag"]).toBeUndefined();
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /index/);
   });
 
   test("does not load the Figma capture script in a production build", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/about");
     await expect(page.locator('script[src*="mcp.figma.com"]')).toHaveCount(0);
   });
 
@@ -41,7 +48,7 @@ test.describe("marketing shell", () => {
  */
 test.describe("PGLearn entry point", () => {
   test("is reachable from the masthead at both widths", async ({ page }, testInfo) => {
-    await page.goto("/");
+    await page.goto("/about");
     const isNarrow = (testInfo.project.use.viewport?.width ?? 1440) < 768;
 
     // Below md the links live behind the disclosure button.
@@ -87,7 +94,7 @@ test.describe("mobile menu", () => {
   test.skip(({ viewport }) => (viewport?.width ?? 1440) >= 768, "below md only");
 
   test("is closed to begin with, and its control says so", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/about");
     const toggle = page.getByRole("button", { name: "Open menu" });
     await expect(toggle).toBeVisible();
     await expect(toggle).toHaveAttribute("aria-expanded", "false");
@@ -97,7 +104,7 @@ test.describe("mobile menu", () => {
   });
 
   test("opens, exposes every section, and reports its state", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/about");
     await page.getByRole("button", { name: "Open menu" }).click();
     await expect(page.getByRole("button", { name: "Close menu" })).toHaveAttribute(
       "aria-expanded",
@@ -109,7 +116,7 @@ test.describe("mobile menu", () => {
   });
 
   test("carries the call to action, which does not fit beside the logo", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/about");
     // Scoped to the masthead: the page body carries its own CTA with the same label.
     const headerCta = page.getByRole("banner").getByRole("link", { name: /talk to an ai expert/i });
     await expect(headerCta).toBeHidden();
@@ -118,7 +125,7 @@ test.describe("mobile menu", () => {
   });
 
   test("closes on Escape and gives focus back to its button", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/about");
     const toggle = page.getByRole("button", { name: "Open menu" });
     await toggle.click();
     await page.keyboard.press("Escape");
@@ -130,14 +137,14 @@ test.describe("mobile menu", () => {
   });
 
   test("is operable by keyboard alone", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/about");
     await page.getByRole("button", { name: "Open menu" }).focus();
     await page.keyboard.press("Enter");
     await expect(page.getByRole("button", { name: "Close menu" })).toBeVisible();
   });
 
   test("closes itself after navigating", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/services");
     await page.getByRole("button", { name: "Open menu" }).click();
     await page.getByRole("navigation").getByRole("link", { name: "About", exact: true }).click();
     await page.waitForURL("**/about");
@@ -148,7 +155,7 @@ test.describe("mobile menu", () => {
   });
 
   test("does not overflow the viewport at 390px", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/about");
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth
     );

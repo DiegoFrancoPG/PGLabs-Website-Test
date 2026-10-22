@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { VersionDetail } from "@/features/content/content";
 import { ClassEditor } from "@/components/admin/ClassEditor";
+import { ModuleRelease } from "@/components/admin/ModuleRelease";
+import { RemoveModule } from "@/components/admin/RemoveModule";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Button } from "@/components/pglearn/ui/button";
 import { Card } from "@/components/pglearn/ui/card";
@@ -197,9 +199,16 @@ export function VersionEditor({
         ) : (
           <div className="mt-3 flex flex-col gap-5">
             {modules.map((module, index) => (
-              <Card key={module.id} className="p-5">
+              <Card key={module.id} className={`p-5 ${module.hidden ? "opacity-70" : ""}`}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h3 className="font-heading font-heading text-ui-heading text-ui-foreground">{module.title}</h3>
+                  <h3 className="flex flex-wrap items-center gap-2 font-heading text-ui-heading text-ui-foreground">
+                    {module.title}
+                    {module.hidden && (
+                      <span className="rounded-ui-sm border border-ui-border px-2 py-0.5 font-ui text-ui-caption text-ui-muted-foreground">
+                        Hidden from learners
+                      </span>
+                    )}
+                  </h3>
                   {!readOnly && (
                     <div className="flex gap-2">
                       {/* spec/04 asks for up/down reorder rather than drag, which
@@ -252,6 +261,19 @@ export function VersionEditor({
                       </Button>
                     </div>
                   )}
+                </div>
+
+                {/* Editable on a published version too (D-08). */}
+                <ModuleRelease moduleId={module.id} releaseAt={module.release_at} />
+
+                {/* Delete in a draft, hide in a published version (D-11). */}
+                <div className="mt-3">
+                  <RemoveModule
+                    moduleId={module.id}
+                    title={module.title}
+                    published={readOnly}
+                    hidden={module.hidden}
+                  />
                 </div>
 
                 <div className="mt-4 flex flex-col gap-3">

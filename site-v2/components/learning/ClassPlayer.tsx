@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Play } from "lucide-react";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Button } from "@/components/pglearn/ui/button";
 import type { Progress } from "@/features/learning/playback";
@@ -25,7 +26,6 @@ import { YouTubeFrame, type MediaHandle } from "@/components/learning/YouTubeFra
  */
 
 const HEARTBEAT_MS = 15_000;
-const RATES = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
 
 interface Props {
   enrollmentId: string;
@@ -38,6 +38,8 @@ interface Props {
   youtubeVideoId: string | null;
   captionAssetId: string | null;
   onProgress?: (progress: Progress) => void;
+  /** Spacing from what sits above the player. */
+  className?: string;
 }
 
 interface Session {
@@ -71,6 +73,7 @@ export function ClassPlayer({
   youtubeVideoId,
   captionAssetId,
   onProgress,
+  className = "mt-8",
 }: Props) {
   const media = useRef<MediaHandle | null>(null);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
@@ -78,7 +81,8 @@ export function ClassPlayer({
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [superseded, setSuperseded] = useState(false);
-  const [rate, setRate] = useState(1);
+  // False until the media can be shown; the stage holds its size meanwhile.
+  const [ready, setReady] = useState(false);
 
   /*
    * Heartbeat state lives in refs, not state: it is written by media events
@@ -229,6 +233,7 @@ export function ClassPlayer({
     // Resume where the last session left off (AC-024).
     if (session.positionMs > 0) element.currentTime = session.positionMs / 1000;
     lastTime.current = element.currentTime;
+    setReady(true);
   };
 
   const onPlay = () => {
@@ -272,26 +277,26 @@ export function ClassPlayer({
   const onYouTubeReady = (handle: MediaHandle) => {
     media.current = handle;
     lastTime.current = handle.currentTime;
-    if (rate !== 1) handle.playbackRate = rate;
+    setReady(true);
   };
 
-  const changeRate = (next: number) => {
-    setRate(next);
-    if (media.current) media.current.playbackRate = next;
-  };
-
-  if (error) {
-    return (
-      <Alert variant="warning" className="mt-8">
-        This class could not be opened: {error}
-      </Alert>
-    );
-  }
-
+  /*
+   * The stage: a box with the media's final size from the first render, so
+   * nothing below it moves while the session opens and the player loads. A
+   * placeholder fills it until the media is ready, then the media fades in
+   * over it. Speed is the player's own control (YouTube's settings menu, or
+   * the browser's on an uploaded file); the heartbeat reads the rate from the
+   * player either way.
+   */
+  const stage =
+    kind === "video"
+      ? "relative aspect-video w-full overflow-hidden rounded-ui border border-ui-border bg-ui-card"
+      : "relative h-16 w-full overflow-hidden rounded-ui border border-ui-border bg-ui-card";
+  const fade = `absolute inset-0 h-full w-full transition-opacity duration-500 ${ready ? "opacity-100" : "opacity-0"}`;
   const Tag = kind === "video" ? "video" : "audio";
 
   return (
-    <div className="mt-8">
+    <div className={className}>
       {superseded && (
         <Alert variant="warning" className="mb-4">
           This program is playing in another tab.{" "}
@@ -301,63 +306,61 @@ export function ClassPlayer({
         </Alert>
       )}
 
-      {youtubeVideoId ? (
-        session ? (
-          <YouTubeFrame
-            videoId={youtubeVideoId}
-            title={title}
-            startSeconds={session.positionMs / 1000}
-            onReady={onYouTubeReady}
-            onPlay={onPlay}
-            onPause={onPause}
-            onTimeUpdate={onTimeUpdate}
-            onEnded={onEnded}
-            onRateChange={setRate}
-            onError={setError}
-          />
+      <div className={stage} aria-busy={!ready && !error}>
+        {error ? (
+          <div className="absolute inset-0 flex items-center justify-center p-6">
+            <Alert variant="warning">This lesson could not be opened: {error}</Alert>
+          </div>
         ) : (
-          <p className="text-ui-body text-ui-muted-foreground">Preparing playback…</p>
-        )
-      ) : mediaUrl ? (
-        <Tag
-          ref={media as never}
-          className="w-full rounded-ui bg-black"
-          src={mediaUrl}
-          controls
-          preload="metadata"
-          crossOrigin="anonymous"
-          onLoadedMetadata={onLoaded}
-          onPlay={onPlay}
-          onPause={onPause}
-          onTimeUpdate={onTimeUpdate}
-          onEnded={onEnded}
-        >
-          {captionUrl && (
-            <track kind="captions" srcLang="en" label="English" src={captionUrl} default />
-          )}
-        </Tag>
-      ) : (
-        <p className="text-ui-body text-ui-muted-foreground">Preparing playback…</p>
-      )}
+          <>
+            {!ready && (
+              <div className="absolute inset-0 flex animate-pulse items-center justify-center gap-3 text-ui-muted-foreground">
+                <span className="flex size-12 items-center justify-center rounded-full border border-ui-divider">
+                  <Play aria-hidden className="size-5" />
+                </span>
+                <span className="text-ui-body">Loading {kind}…</span>
+              </div>
+            )}
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className="text-ui-body text-ui-muted-foreground" id="rate-label">
-          Speed
-        </span>
-        <div role="group" aria-labelledby="rate-label" className="flex flex-wrap gap-1">
-          {RATES.map((option) => (
-            <Button
-              key={option}
-              type="button"
-              size="sm"
-              variant={option === rate ? "primary" : "outline"}
-              aria-pressed={option === rate}
-              onClick={() => changeRate(option)}
-            >
-              {option}&times;
-            </Button>
-          ))}
-        </div>
+            {youtubeVideoId ? (
+              session && (
+                <YouTubeFrame
+                  className={fade}
+                  videoId={youtubeVideoId}
+                  title={title}
+                  startSeconds={session.positionMs / 1000}
+                  onReady={onYouTubeReady}
+                  onPlay={onPlay}
+                  onPause={onPause}
+                  onTimeUpdate={onTimeUpdate}
+                  onEnded={onEnded}
+                  onRateChange={() => {}}
+                  onError={setError}
+                />
+              )
+            ) : (
+              mediaUrl && (
+                <Tag
+                  ref={media as never}
+                  className={`${fade} ${kind === "video" ? "bg-black object-contain" : ""}`}
+                  src={mediaUrl}
+                  controls
+                  preload="metadata"
+                  crossOrigin="anonymous"
+                  onLoadedMetadata={onLoaded}
+                  onPlay={onPlay}
+                  onPause={onPause}
+                  onTimeUpdate={onTimeUpdate}
+                  onEnded={onEnded}
+                >
+                  {captionUrl && (
+                    <track kind="captions" srcLang="en" label="English" src={captionUrl} default />
+                  )}
+                </Tag>
+              )
+            )}
+          </>
+        )}
       </div>
     </div>
   );

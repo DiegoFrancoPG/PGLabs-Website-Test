@@ -64,6 +64,13 @@ export function Hero() {
             <Button variant="outline" className="rounded-full" asChild>
               <Link href="/services">Explore AI Governance</Link>
             </Button>
+            {/* Direct entry to PG Learn, which launches ahead of the rest of the site. */}
+            <Button variant="outline" className="rounded-full" asChild>
+              <Link href="/learn">
+                <span>Go to PG Learn</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </Button>
           </div>
         </div>
 
