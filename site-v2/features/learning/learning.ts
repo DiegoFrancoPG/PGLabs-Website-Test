@@ -78,7 +78,9 @@ export const classDetailSchema = z.object({
     source_text: z.string(),
     duration_ms: z.union([z.number(), z.string()]).nullable(),
     primary_asset_id: z.string().uuid().nullable(),
-    youtube_video_id: z.string().nullable(),
+    // Defaults to null when absent, so a database that has not yet run M29
+    // serves every page as before instead of failing the whole read.
+    youtube_video_id: z.string().nullable().default(null),
   }),
   assets: z.array(
     z.object({
