@@ -63,3 +63,20 @@ describe("youtubeEmbedUrl", () => {
     expect(isYouTubeVideoId(`${ID}?autoplay=1`)).toBe(false);
   });
 });
+
+describe("reading classes from a database without M29", () => {
+  it("treats a missing youtube_video_id as null instead of failing the read", async () => {
+    const { classSchema } = await import("@/features/content/content");
+    const { classDetailSchema } = await import("@/features/learning/learning");
+    const row = {
+      id: "11111111-1111-4111-8111-111111111111",
+      module_id: "22222222-2222-4222-8222-222222222222",
+      version_id: "33333333-3333-4333-8333-333333333333",
+      title: "Video", kind: "video", required: true, position: 0,
+      body_md: "", source_text: "", duration_ms: 600000, primary_asset_id: null,
+    };
+    expect(classSchema.parse(row).youtube_video_id).toBeNull();
+    expect(classSchema.parse({ ...row, youtube_video_id: ID }).youtube_video_id).toBe(ID);
+    expect(classDetailSchema.shape.class.parse(row).youtube_video_id).toBeNull();
+  });
+});
