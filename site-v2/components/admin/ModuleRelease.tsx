@@ -50,6 +50,13 @@ export function ModuleRelease({ moduleId, releaseAt }: { moduleId: string; relea
         body: JSON.stringify({ release_at: next }),
       });
       const json = await response.json();
+      if (response.status === 403) {
+        // Only admins reach this form, so a refusal here means the database
+        // does not know set_module_release yet: M31 has not been applied.
+        throw new Error(
+          "Release dates need the database update M31. Run aplicar-m31.sql in Supabase, then try again."
+        );
+      }
       if (!response.ok) throw new Error(json?.error?.message ?? "The release date could not be saved.");
       setDraft(null);
       router.refresh();
