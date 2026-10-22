@@ -1493,6 +1493,41 @@
       ],
       "notes": "At the product owner's request an admin can hold a module back until a date, including on a published version, since the date is a schedule rather than frozen content. The learner sees the module and its lessons tagged with the date but cannot open, play, complete or download them: the check runs in the dispatcher before the handler, and only speaks to the enrollment's owner about a lesson on their version, so it is not a probe.",
       "evidence": "M31 applied after M01–M30 on PostgreSQL 16 with stubbed auth/storage and the fixture seed. As admin: a future date is set and returned in the Module DTO; a past date and a cleared date release the module; a body without release_at is 22023. As the learner (Amber): get_learning_class and start_playback on a held-back lesson are PGL22 module_locked with the date as HINT; the outline carries release_at. Another user is still P0002; the learner setting a date is 42501. Not exercised: the integration suite and the pages with real data."
+    },
+    {
+      "id": "T33",
+      "title": "Removing a module (D-11)",
+      "status": "done",
+      "release": "pilot",
+      "depends_on": [
+        "T32"
+      ],
+      "requirements": [
+        "FR-07",
+        "FR-08"
+      ],
+      "read": [
+        "spec/02-data-and-security.md",
+        "spec/03-behavior.md",
+        "HANDOFF.md"
+      ],
+      "implementation_targets": [
+        "M32 delete_module for drafts, set_module_hidden for any version",
+        "required-lesson counts and completion exclude hidden modules",
+        "version editor delete/hide controls"
+      ],
+      "acceptance_ids": [],
+      "operation_ids": [
+        "delete_module",
+        "set_module_hidden"
+      ],
+      "checks": [
+        "npm run typecheck",
+        "npm run test:unit",
+        "psql: M32 applied after M01–M31 with the fixture seed and exercised as admin and learner"
+      ],
+      "notes": "At the product owner's request a module can be removed. In a draft it is deleted with its lessons. A published version is frozen, so there it is hidden: it leaves the outline, its lessons are not found, and its required lessons stop counting in totals, reports and completion. Hiding settles completion for active, started, incomplete enrollments on the version, which can issue certificates; unhiding never takes a completion back. The six functions that count required lessons were recreated from their latest definitions with one listed-module filter each.",
+      "evidence": "M32 applied after M01–M31 on PostgreSQL 16 with stubbed auth/storage and the fixture seed, plus an extra required module on Amber's published version. Hiding it: required_total 4 → 3, the module leaves the outline, get_learning_class and complete_text on its lesson are P0002, report_rows agrees, and Amber, who had done every other required lesson, is completed with exactly one certificate and one certificate outbox row; hiding again changes nothing. Unhiding restores the total and keeps the completion. delete_module on a published module is 23514, on a draft deletes the module and its lessons and closes the position gap; unknown is P0002. A learner setting hidden is 42501; a non-boolean is 22023. Not exercised: the integration suite and the pages against the real database."
     }
   ]
 }
