@@ -45,6 +45,11 @@ Six of these are outside this repository and nobody can proceed without them.
      assumed: `npm run provision:storage` against the development project fails with
      `The object exceeded the maximum allowed size`, which is the plan refusing the bucket write.
      A nine-video series will not fit under 50 MiB per file.
+
+     **With YouTube-hosted video (D-05 in HANDOFF.md) the upload-size reason falls away** for the
+     pilot: only transcripts and handouts are uploaded, and they fit well under 50 MiB. Part 2 then
+     reports the 1 GiB limit as refused while still leaving the bucket private, which is enough.
+     The backup reason does not fall away — the paid plan is still needed before real learners.
 2. **A Vercel account on a paid team plan** with the repository connected. This is not a
    preference. Vercel's Hobby plan restricts cron jobs to *once per day* and *"expressions that run
    more frequently will fail deployment"* — and `vercel.json` declares the reminder job at
@@ -105,7 +110,9 @@ supabase link --project-ref ojekiwjlgyxwcqmgtltv
 supabase db push
 ```
 
-`supabase db push` applies M01–M28 in order and is additive; it never drops. Confirm afterwards that
+`supabase db push` applies M01–M29 in order and is additive; it never drops. A project already
+migrated to M28 receives only M29 (the YouTube video column, D-05); apply it **before** deploying
+code that reads `youtube_video_id`, or every class read fails validation. Confirm afterwards that
 schema `app` holds 32 tables and that it is **not** in the Data API's exposed schemas — that second
 property is what AC-003 protects, and a new project may need it checked rather than assumed
 (Dashboard → Settings → API → Exposed schemas must list `public` only).
@@ -228,6 +235,13 @@ reachable over the Data API even with the service key — that is the boundary w
 5. Upload one real video with its captions, publish it, and play it to completion as a learner.
    This is the check that closes AC-017, AC-052 and part of AC-054 — all three are blocked today
    only because no real media has ever been through the system.
+
+   **For YouTube classes (D-05)**, also: set the video to Unlisted with embedding allowed, paste its
+   link into the class, publish, and play it to completion as a learner on a phone and a desktop.
+   Confirm the player loads (an embed refused for want of a Referer shows YouTube's error 153),
+   that captions show, that reloading resumes where it stopped, and that the class completes at
+   90%. YouTube is not reachable from the environment the feature was built in, so this is the
+   first time a real YouTube video plays inside PGLearn.
 
 ## Rollback
 

@@ -108,13 +108,15 @@ export default async function ClassPage({
             complete={detail.progress.content_complete}
           />
         </>
-      ) : detail.class.primary_asset_id && detail.class.duration_ms ? (
+      ) : (detail.class.primary_asset_id || detail.class.youtube_video_id) && detail.class.duration_ms ? (
         <ClassPlayer
           enrollmentId={enrollmentId}
           classId={classId}
           kind={detail.class.kind}
           durationMs={Number(detail.class.duration_ms)}
+          title={detail.class.title}
           primaryAssetId={detail.class.primary_asset_id}
+          youtubeVideoId={detail.class.youtube_video_id}
           captionAssetId={captionAsset?.id ?? null}
         />
       ) : (

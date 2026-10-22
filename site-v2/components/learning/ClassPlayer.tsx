@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Button } from "@/components/pglearn/ui/button";
 import type { Progress } from "@/features/learning/playback";
+import { YouTubeFrame, type MediaHandle } from "@/components/learning/YouTubeFrame";
 
 /*
  * The media player (spec/04 §class page, spec/03 §4).
@@ -17,6 +18,10 @@ import type { Progress } from "@/features/learning/playback";
  * alone, because a position is where the playhead is and an interval is what
  * was played (AC-026). A seek closes the current interval and opens a new one
  * at the new place, so the skipped span is never claimed.
+ *
+ * A video class may instead play from YouTube (D-05). YouTubeFrame stands in
+ * for the media element — same current time, rate and events — so everything
+ * below measures a YouTube video exactly as it measures an uploaded file.
  */
 
 const HEARTBEAT_MS = 15_000;
@@ -27,7 +32,10 @@ interface Props {
   classId: string;
   kind: "video" | "audio";
   durationMs: number;
-  primaryAssetId: string;
+  title: string;
+  /** Exactly one of these is set: an uploaded file, or a YouTube video. */
+  primaryAssetId: string | null;
+  youtubeVideoId: string | null;
   captionAssetId: string | null;
   onProgress?: (progress: Progress) => void;
 }
@@ -58,11 +66,13 @@ export function ClassPlayer({
   classId,
   kind,
   durationMs,
+  title,
   primaryAssetId,
+  youtubeVideoId,
   captionAssetId,
   onProgress,
 }: Props) {
-  const media = useRef<HTMLMediaElement | null>(null);
+  const media = useRef<MediaHandle | null>(null);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [captionUrl, setCaptionUrl] = useState<string | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -83,7 +93,7 @@ export function ClassPlayer({
 
   const toMs = (seconds: number) => Math.max(0, Math.min(durationMs, Math.round(seconds * 1000)));
 
-  /* Opens the session and signs the media. Runs once per class. */
+  /* Opens the session and signs the media, if it is ours to sign. Runs once per class. */
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -99,6 +109,9 @@ export function ClassPlayer({
           positionMs: started.position_ms,
           nextSequence: started.next_sequence,
         });
+
+        // A YouTube video has no file of ours to sign.
+        if (!primaryAssetId) return;
 
         const signed = await post(`/api/v1/assets/${primaryAssetId}/download`, {
           enrollment_id: enrollmentId,
@@ -134,12 +147,17 @@ export function ClassPlayer({
     };
   }, [captionUrl]);
 
+  /*
+   * `endMs` closes the interval somewhere other than the playhead: after a
+   * seek the playhead is already at the new place, and the interval being
+   * closed ended where the seek began.
+   */
   const sendHeartbeat = useCallback(
-    async (closing: boolean) => {
+    async (closing: boolean, endMs?: number) => {
       const element = media.current;
       if (!element || !session || superseded || sending.current) return;
 
-      const now = toMs(element.currentTime);
+      const now = endMs ?? toMs(element.currentTime);
       const start = intervalStart.current;
       const interval = start !== null && now > start ? { start_ms: start, end_ms: now } : null;
       // Nothing played and nothing to correct: stay quiet.
@@ -228,7 +246,8 @@ export function ClassPlayer({
   const onTimeUpdate = () => {
     const element = media.current;
     if (!element) return;
-    const delta = element.currentTime - lastTime.current;
+    const before = lastTime.current;
+    const delta = element.currentTime - before;
     lastTime.current = element.currentTime;
     /*
      * A jump is a seek, not playback. Anything bigger than a second of media
@@ -236,7 +255,7 @@ export function ClassPlayer({
      * it at the new place; the server applies the same rule independently.
      */
     if (delta < 0 || delta > 1.5) {
-      void sendHeartbeat(true);
+      void sendHeartbeat(true, toMs(before));
       intervalStart.current = toMs(element.currentTime);
       return;
     }
@@ -245,6 +264,16 @@ export function ClassPlayer({
   };
 
   const onEnded = () => void sendHeartbeat(true);
+
+  /*
+   * The YouTube player resumes through its embed's start parameter rather than
+   * a seek, so there is nothing to move here — only the handle to take.
+   */
+  const onYouTubeReady = (handle: MediaHandle) => {
+    media.current = handle;
+    lastTime.current = handle.currentTime;
+    if (rate !== 1) handle.playbackRate = rate;
+  };
 
   const changeRate = (next: number) => {
     setRate(next);
@@ -272,7 +301,24 @@ export function ClassPlayer({
         </Alert>
       )}
 
-      {mediaUrl ? (
+      {youtubeVideoId ? (
+        session ? (
+          <YouTubeFrame
+            videoId={youtubeVideoId}
+            title={title}
+            startSeconds={session.positionMs / 1000}
+            onReady={onYouTubeReady}
+            onPlay={onPlay}
+            onPause={onPause}
+            onTimeUpdate={onTimeUpdate}
+            onEnded={onEnded}
+            onRateChange={setRate}
+            onError={setError}
+          />
+        ) : (
+          <p className="text-ui-body text-ui-muted-foreground">Preparing playback…</p>
+        )
+      ) : mediaUrl ? (
         <Tag
           ref={media as never}
           className="w-full rounded-ui bg-black"

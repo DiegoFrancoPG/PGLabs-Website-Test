@@ -42,6 +42,7 @@ export const classSchema = z.object({
   source_text: z.string().max(200000),
   duration_ms: z.union([z.number(), z.string()]).nullable(),
   primary_asset_id: z.string().uuid().nullable(),
+  youtube_video_id: z.string().nullable(),
 });
 
 export const programCreateSchema = z
@@ -84,6 +85,8 @@ export const classCreateSchema = z
     body_md: z.string().max(100000).optional(),
     source_text: z.string().max(200000).optional(),
     duration_ms: durationMs.nullable().optional(),
+    // D-05: a video class may play from YouTube. The id only, never a URL.
+    youtube_video_id: z.string().regex(/^[A-Za-z0-9_-]{11}$/).nullable().optional(),
   })
   .strict();
 

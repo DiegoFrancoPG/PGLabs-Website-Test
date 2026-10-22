@@ -78,6 +78,7 @@ export const classDetailSchema = z.object({
     source_text: z.string(),
     duration_ms: z.union([z.number(), z.string()]).nullable(),
     primary_asset_id: z.string().uuid().nullable(),
+    youtube_video_id: z.string().nullable(),
   }),
   assets: z.array(
     z.object({
