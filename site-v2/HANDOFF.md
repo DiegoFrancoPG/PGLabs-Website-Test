@@ -68,7 +68,7 @@ At the product owner's request, the first cohort's nine videos are hosted on You
 **D-06 — PG Learn launch scope (narrows spec/04 for the first release, 22 October 2026).**
 At the product owner's request PG Learn launches on its own, ahead of the rest of the site, with a reduced surface. UI only; every rule in spec/02, spec/03 and `contracts/` still applies, and the removed screens' routes and APIs remain.
 
-- **Entry.** The marketing hero has a "Go to PG Learn" button to `/learn`. `/login` is the product's home page: a `surface-dark` panel with the PG Learn promise beside the sign-in form, from the PG Labs design system.
+- **Entry.** The site root `/` redirects (307, `next.config.mjs`) to `/login`, which is the product's home page; the other marketing pages stay reachable, and the marketing home returns by removing that redirect. The marketing hero also has a "Go to PG Learn" button to `/learn` for when it does. `/login` is a `surface-dark` panel with the PG Learn promise beside the sign-in form, from the PG Labs design system.
 - **Top bar.** The wordmark and an account menu (Settings, light/dark mode, Sign out; platform-admin destinations for admins). Only managers get shortcuts in the bar: "Learning" and their organization (or "Organizations" when they manage several). `ThemeToggle` is replaced by `components/pglearn/ProfileMenu.tsx`.
 - **Program page.** A sticky program card on the left (cover, facts, progress, Continue) and one card per module on the right, which scroll past it.
 - **Lesson page.** The player sticky on the left; the lesson's details, handouts, previous/next and the module's other lessons on the right. **No practical exercise and no tutor** are rendered; `ExerciseForm`, `TutorDrawer` and their APIs stay for a later release.

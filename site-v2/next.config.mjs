@@ -46,6 +46,17 @@ const nextConfig = {
     root: path.join(here, ".."),
   },
 
+  /*
+   * D-06: PG Learn launches on its own, so the site's root opens the sign-in
+   * page, which is PG Learn's home (a signed-in visitor is sent on to /learn).
+   * Temporary (307), not permanent, so browsers do not cache it and the
+   * marketing home can return by removing this entry. The other marketing
+   * pages are unaffected.
+   */
+  async redirects() {
+    return [{ source: "/", destination: "/login", permanent: false }];
+  },
+
   async headers() {
     return [
       // spec/05: never cache an authenticated response across users.
