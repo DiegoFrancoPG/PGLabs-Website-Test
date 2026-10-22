@@ -12,20 +12,28 @@ import { Alert } from "@/components/pglearn/ui/alert";
 import { Badge } from "@/components/pglearn/ui/badge";
 import { Button } from "@/components/pglearn/ui/button";
 import { Card } from "@/components/pglearn/ui/card";
-import { CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, FileText } from "lucide-react";
+import { lessonSummary } from "@/lib/summary";
 import { pageContainer } from "@/components/pglearn/layout";
 
 /*
  * spec/04 /learn/[enrollmentId]/classes/[classId].
  *
- * Two columns from lg up: the video on the left, sticky so it stays in view,
- * and on the right everything about this lesson — where it sits in the
- * program, its description, handouts, the other lessons in its module and
- * previous/next. A reading lesson puts its text where the video would be.
+ * Two columns from lg up: on the left the video, sticky so it stays in view,
+ * with previous/next under it; on the right everything about this lesson —
+ * where it sits in the program, a three-line summary (lib/summary), links to
+ * its source files and the other lessons in its module. A reading lesson puts
+ * its text where the video would be.
  *
  * The PG Learn launch has no practical exercises and no tutor, so neither is
  * rendered here. Their routes and components remain for a later release.
  */
+
+/* "PDF", "DOCX", "VTT" — from the file name, falling back to the media type. */
+function fileType(name: string, mime: string): string {
+  const extension = name.includes(".") ? name.split(".").pop() : null;
+  return (extension || mime.split("/").pop() || "file").toUpperCase();
+}
 
 function formatDuration(ms: number | string | null): string | null {
   if (ms === null) return null;
@@ -67,12 +75,17 @@ export default async function ClassPage({
   const previous = index > 0 ? ordered[index - 1] : null;
   const next = index >= 0 && index < ordered.length - 1 ? ordered[index + 1] : null;
 
-  const handouts = detail.assets.filter((a) => a.role === "handout");
+  // The files behind the lesson: its transcript first, then its handouts.
+  const sources = [
+    ...detail.assets.filter((a) => a.role === "transcript" && a.state === "ready"),
+    ...detail.assets.filter((a) => a.role === "handout" && a.state === "ready"),
+  ];
   const captionAsset = detail.assets.find((a) => a.role === "caption" && a.state === "ready");
 
   const lessonModule = outline.modules.find((m) => m.id === detail.class.module_id) ?? null;
   const moduleIndex = lessonModule ? outline.modules.indexOf(lessonModule) : -1;
   const moduleLessons = ordered.filter((c) => c.module_id === detail.class.module_id);
+  const summary = detail.class.kind === "text" ? "" : lessonSummary(detail.class.body_md, detail.class.source_text);
   const kindLabel = { video: "Video", audio: "Audio", text: "Reading" }[detail.class.kind];
   const duration = detail.class.kind === "text" ? null : formatDuration(detail.class.duration_ms);
   const hasMedia = Boolean(
@@ -115,6 +128,29 @@ export default async function ClassPage({
               // Published content always has both, so this is a draft preview.
               <Alert variant="info">This lesson has no media yet.</Alert>
             )}
+
+            <nav aria-label="Lesson navigation" className="mt-4 flex justify-between gap-3">
+              {previous ? (
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/learn/${enrollmentId}/classes/${previous.id}`}>
+                    <ChevronLeft aria-hidden />
+                    Previous
+                  </Link>
+                </Button>
+              ) : (
+                <span />
+              )}
+              {next ? (
+                <Button variant="primary" size="sm" asChild>
+                  <Link href={`/learn/${enrollmentId}/classes/${next.id}`}>
+                    Next
+                    <ChevronRight aria-hidden />
+                  </Link>
+                </Button>
+              ) : (
+                <span />
+              )}
+            </nav>
           </div>
 
           <aside aria-labelledby="lesson-title" className="flex flex-col gap-4">
@@ -144,8 +180,10 @@ export default async function ClassPage({
                 {detail.progress.class_complete && <Badge variant="azure">Complete</Badge>}
               </div>
 
-              {detail.class.kind !== "text" && detail.class.body_md.trim() && (
-                <p className="whitespace-pre-wrap text-ui-body text-ui-foreground">{detail.class.body_md}</p>
+              {summary && (
+                <p className="line-clamp-3 text-ui-body text-ui-foreground" title={summary}>
+                  {summary}
+                </p>
               )}
 
               {detail.class.kind === "text" && (
@@ -157,19 +195,24 @@ export default async function ClassPage({
                 />
               )}
 
-              {handouts.length > 0 && (
-                <section aria-labelledby="handouts-title" className="border-t border-ui-border pt-5">
-                  <h2 id="handouts-title" className="text-ui-eyebrow uppercase text-ui-muted-foreground">
-                    Handouts
+              {sources.length > 0 && (
+                <section aria-labelledby="sources-title" className="border-t border-ui-border pt-5">
+                  <h2 id="sources-title" className="text-ui-eyebrow uppercase text-ui-muted-foreground">
+                    Sources
                   </h2>
-                  <ul className="mt-3 flex flex-col gap-2">
-                    {handouts.map((asset) => (
-                      <li key={asset.id} className="text-ui-body">
-                        {/* spec/04 shows name, type and size. The URL is minted on the
-                            click, because authorization is re-evaluated every time. */}
-                        <HandoutLink assetId={asset.id} enrollmentId={enrollmentId} name={asset.original_name} />{" "}
-                        <span className="text-ui-muted-foreground">
-                          ({asset.mime_type}, {Math.ceil(Number(asset.bytes) / 1024)} KB)
+                  <ul className="mt-3 flex flex-col gap-2.5">
+                    {sources.map((asset) => (
+                      <li key={asset.id} className="flex items-start gap-2 text-ui-body">
+                        <FileText aria-hidden className="mt-1 size-4 shrink-0 text-ui-muted-foreground" />
+                        <span className="min-w-0">
+                          {/* spec/04 shows name, type and size. The URL is minted on the
+                              click, because authorization is re-evaluated every time. */}
+                          <HandoutLink assetId={asset.id} enrollmentId={enrollmentId} name={asset.original_name} />
+                          <span className="block text-ui-caption text-ui-muted-foreground">
+                            {asset.role === "transcript" ? "Transcript" : "Handout"} ·{" "}
+                            {fileType(asset.original_name, asset.mime_type)} ·{" "}
+                            {Math.ceil(Number(asset.bytes) / 1024)} KB
+                          </span>
                         </span>
                       </li>
                     ))}
@@ -177,28 +220,6 @@ export default async function ClassPage({
                 </section>
               )}
 
-              <nav aria-label="Lesson navigation" className="flex justify-between gap-3 border-t border-ui-border pt-5">
-                {previous ? (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/learn/${enrollmentId}/classes/${previous.id}`}>
-                      <ChevronLeft aria-hidden />
-                      Previous
-                    </Link>
-                  </Button>
-                ) : (
-                  <span />
-                )}
-                {next ? (
-                  <Button variant="primary" size="sm" asChild>
-                    <Link href={`/learn/${enrollmentId}/classes/${next.id}`}>
-                      Next
-                      <ChevronRight aria-hidden />
-                    </Link>
-                  </Button>
-                ) : (
-                  <span />
-                )}
-              </nav>
             </Card>
 
             {moduleLessons.length > 1 && (
