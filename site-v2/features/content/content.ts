@@ -30,6 +30,8 @@ export const moduleSchema = z.object({
   position: z.number().int().min(0),
   // M31 (D-08). Defaults to null so a database without M31 still reads.
   release_at: z.string().nullable().default(null),
+  // M32 (D-11). Defaults to false so a database without M32 still reads.
+  hidden: z.boolean().default(false),
 });
 
 export const classSchema = z.object({
@@ -329,3 +331,11 @@ export const moduleReleaseSchema = z
 
 export const setModuleRelease = (moduleId: string, input: z.infer<typeof moduleReleaseSchema>) =>
   callRpc("set_module_release", { module_id: moduleId, ...input });
+
+/* M32 (D-11): a draft's module is deleted; any version's module can be hidden. */
+export const moduleHiddenSchema = z.object({ hidden: z.boolean() }).strict();
+
+export const deleteModule = (moduleId: string) => callRpc("delete_module", { module_id: moduleId });
+
+export const setModuleHidden = (moduleId: string, input: z.infer<typeof moduleHiddenSchema>) =>
+  callRpc("set_module_hidden", { module_id: moduleId, ...input });

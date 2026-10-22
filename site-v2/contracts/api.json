@@ -2441,6 +2441,101 @@
             }
           }
         }
+      },
+      "delete": {
+        "operationId": "delete_module",
+        "summary": "delete a draft module",
+        "description": "",
+        "x-access": "admin",
+        "parameters": [
+          {
+            "name": "module_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "module_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "deleted": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "module_id",
+                        "deleted"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "request_id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
       }
     },
     "/modules/{module_id}/release": {
@@ -2530,6 +2625,99 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ModuleRelease"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/modules/{module_id}/hidden": {
+      "put": {
+        "operationId": "set_module_hidden",
+        "summary": "hide or show a module",
+        "description": "",
+        "x-access": "admin",
+        "parameters": [
+          {
+            "name": "module_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Module"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "request_id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModuleHidden"
               }
             }
           }
@@ -6968,6 +7156,10 @@
               }
             ],
             "description": "M31 (D-08): when the module's lessons open to learners; null means with the version."
+          },
+          "hidden": {
+            "type": "boolean",
+            "description": "M32 (D-11): hidden from learners and not counted towards the program."
           }
         },
         "required": [
@@ -9242,6 +9434,19 @@
         },
         "required": [
           "release_at"
+        ],
+        "additionalProperties": false
+      },
+      "ModuleHidden": {
+        "type": "object",
+        "description": "M32 (D-11): hide or show a module of any version.",
+        "properties": {
+          "hidden": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hidden"
         ],
         "additionalProperties": false
       }
