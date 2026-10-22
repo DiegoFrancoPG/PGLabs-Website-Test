@@ -4,12 +4,14 @@ import { redirect } from "next/navigation";
 import { verifiedUser } from "@/lib/auth";
 import { getMe } from "@/features/identity/me";
 import { RpcError } from "@/lib/rpc";
-import { listOrganizations } from "@/features/organizations/organizations";
+import { listOrganizationMembers, listOrganizations } from "@/features/organizations/organizations";
 import { listPrograms } from "@/features/content/content";
 import { listGrants } from "@/features/organizations/grants";
 import { AppShell } from "@/components/layout/AppShell";
 import { NewOrganization } from "@/components/admin/NewOrganization";
 import { GrantAccess } from "@/components/admin/GrantAccess";
+import { EditOrganization } from "@/components/admin/EditOrganization";
+import { EditMember } from "@/components/admin/EditMember";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Badge } from "@/components/pglearn/ui/badge";
 import { Button } from "@/components/pglearn/ui/button";
@@ -21,6 +23,10 @@ import { pageContainer } from "@/components/pglearn/layout";
  * email/name; edit organization status; manager management; catalog grant
  * dates/status. Cannot remove last accepted manager; creation provisioning
  * status/error is explicit; no secret email links."
+ *
+ * D-07 adds editing an organization's name and timezone, and correcting its
+ * managers' names and sign-in emails (M30's list_organization_members and
+ * update_member_profile).
  *
  * The last clause is why nothing here shows an invitation link. Creating an
  * organization provisions its first manager, and the link that reaches them
@@ -54,13 +60,33 @@ export default async function OrganizationsPage() {
     throw err;
   }
 
-  // One grant list per organization, so each card shows what it may actually run.
-  const grants = await Promise.all(
-    organizations.items.map(async (organization) => ({
-      organizationId: organization.id,
-      items: (await listGrants(organization.id)).items,
-    }))
-  );
+  // One grant list and one member list per organization, so each card shows
+  // what it may run and who manages it.
+  const [grants, members] = await Promise.all([
+    Promise.all(
+      organizations.items.map(async (organization) => ({
+        organizationId: organization.id,
+        items: (await listGrants(organization.id)).items,
+      }))
+    ),
+    Promise.all(
+      organizations.items.map(async (organization) => ({
+        organizationId: organization.id,
+        /*
+         * Null when the database has not run M30 yet: the dispatcher refuses
+         * an action it does not know, and the rest of the page should still
+         * work while the migration is pending.
+         */
+        items: await listOrganizationMembers(organization.id)
+          .then((list) => list.items)
+          .catch((err) => {
+            if (err instanceof RpcError && err.code === "FORBIDDEN") return null;
+            throw err;
+          }),
+      }))
+    ),
+  ]);
+  const timezones = Intl.supportedValuesOf("timeZone");
 
   return (
     <AppShell active="admin">
@@ -85,6 +111,10 @@ export default async function OrganizationsPage() {
           <div className="mt-10 flex flex-col gap-5">
             {organizations.items.map((organization) => {
               const held = grants.find((g) => g.organizationId === organization.id)?.items ?? [];
+              const memberList = members.find((m) => m.organizationId === organization.id)?.items ?? null;
+              const managers = (memberList ?? []).filter(
+                (member) => member.role === "manager" && member.status !== "removed"
+              );
               return (
                 <Card key={organization.id} className="p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
@@ -95,6 +125,37 @@ export default async function OrganizationsPage() {
                     <Badge variant={organization.status === "active" ? "azure" : "coral"}>
                       {organization.status}
                     </Badge>
+                  </div>
+
+                  <div className="mt-4">
+                    <h3 className="text-ui-eyebrow uppercase text-ui-muted-foreground">
+                      {managers.length === 1 ? "Manager" : "Managers"}
+                    </h3>
+                    {memberList === null ? (
+                      <p className="mt-2 text-ui-body text-ui-muted-foreground">
+                        Managers can be shown once the database update M30 is applied.
+                      </p>
+                    ) : managers.length === 0 ? (
+                      <p className="mt-2 text-ui-body text-ui-muted-foreground">No active manager.</p>
+                    ) : (
+                      <ul className="mt-2 flex flex-col divide-y divide-ui-border">
+                        {managers.map((manager) => (
+                          <li key={manager.user_id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+                            <span className="min-w-0 flex-1">
+                              <span className="font-semibold text-ui-foreground">{manager.display_name}</span>{" "}
+                              {!manager.onboarded && <Badge variant="outline">Not set up yet</Badge>}
+                              <br />
+                              <span className="text-ui-body text-ui-muted-foreground">{manager.email}</span>
+                            </span>
+                            <EditMember
+                              userId={manager.user_id}
+                              name={manager.display_name}
+                              email={manager.email}
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
 
                   <div className="mt-4">
@@ -126,6 +187,12 @@ export default async function OrganizationsPage() {
                     <Button variant="outline" size="sm" asChild>
                       <Link href={`/manage/${organization.id}`}>Open</Link>
                     </Button>
+                    <EditOrganization
+                      organizationId={organization.id}
+                      name={organization.name}
+                      timezone={organization.timezone}
+                      timezones={timezones}
+                    />
                     <GrantAccess
                       organizationId={organization.id}
                       programs={programs.items
