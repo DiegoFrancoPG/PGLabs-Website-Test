@@ -26,7 +26,7 @@ export function MarkTextComplete({
 
   if (complete) {
     return (
-      <p className="mt-8 text-ui-body text-ui-muted-foreground">You marked this class as complete.</p>
+      <p className="text-ui-body text-ui-muted-foreground">You marked this class as complete.</p>
     );
   }
 
@@ -56,7 +56,7 @@ export function MarkTextComplete({
   }
 
   return (
-    <div className="mt-8">
+    <div>
       <Button type="button" variant="primary" onClick={markComplete} disabled={pending}>
         {pending ? "Saving…" : "Mark as complete"}
       </Button>

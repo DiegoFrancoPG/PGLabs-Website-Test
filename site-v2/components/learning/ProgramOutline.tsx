@@ -27,9 +27,10 @@ import { programCover } from "@/components/pglearn/programCover";
  * required/optional labels, completion and Continue. Outline visible to owner
  * after expiry, with learning actions disabled."
  *
- * A header says what the program is, how far along the learner is and the one
- * thing to do next; the outline below lists every class with its state. Data
- * comes from the page, so this renders the same with or without a session.
+ * A sticky card on the left says what the program is, how far along the
+ * learner is and the one thing to do next; on the right, one card per module
+ * lists its lessons with their state. Data comes from the page, so this
+ * renders the same with or without a session.
  */
 
 type OutlineClass = EnrollmentDetail["classes"][number];
@@ -83,143 +84,174 @@ export function ProgramOutline({
         </Link>
       </nav>
 
-      {/* Header: what this is, how far along, and the one thing to do next. */}
-      <Card className="mt-4 overflow-hidden md:flex-row">
-        <div className="relative aspect-[16/9] bg-ui-muted md:aspect-auto md:w-80 md:shrink-0 lg:w-96">
-          <Image
-            src={programCover(enrollment.program_id)}
-            alt=""
-            fill
-            priority
-            sizes="(min-width: 1024px) 384px, (min-width: 768px) 320px, 100vw"
-            className={`object-cover ${locked ? "grayscale" : ""}`}
-          />
-        </div>
-
-        <div className="flex flex-1 flex-col gap-5 p-6 sm:p-8">
-          <div>
-            <div className="flex flex-wrap gap-1.5">
-              {completed ? (
-                <Badge variant="azure">
-                  Completed
-                </Badge>
-              ) : overdue ? (
-                <Badge variant="coral">Overdue</Badge>
-              ) : null}
-              {locked && !completed && (
-                <Badge variant="outline">
-                  <Lock className="size-3" aria-hidden />
-                  Locked
-                </Badge>
-              )}
+      {/*
+        Two columns from lg up. The program card on the left is sticky, so it
+        stays in view while the module cards on the right scroll past it; it
+        scrolls on its own only if it is taller than the window. On a phone
+        the card comes first and the modules follow.
+      */}
+      <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] lg:items-start xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
+        <aside
+          aria-labelledby="program-title"
+          className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-7.5rem)] lg:overflow-y-auto"
+        >
+          <Card className="overflow-hidden">
+            <div className="relative aspect-[16/9] bg-ui-muted">
+              <Image
+                src={programCover(enrollment.program_id)}
+                alt=""
+                fill
+                priority
+                sizes="(min-width: 1280px) 420px, (min-width: 1024px) 380px, 100vw"
+                className={`object-cover ${locked ? "grayscale" : ""}`}
+              />
             </div>
-            <h1 className="mt-2 font-heading text-ui-title text-ui-foreground">
-              {enrollment.program_title}
-            </h1>
-            <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-ui-body text-ui-muted-foreground">
-              <span>{enrollment.organization_id ? "Your organization" : "Personal"}</span>
-              <span aria-hidden>·</span>
-              <span className="inline-flex items-center gap-1">
-                <CalendarDays className="size-3.5" aria-hidden />
-                Due {formatDate(enrollment.due_at, timezone)}
-              </span>
-              <span aria-hidden>·</span>
-              <span>
-                {modules.length} {modules.length === 1 ? "module" : "modules"}, {classes.length}{" "}
-                {classes.length === 1 ? "class" : "classes"}
-              </span>
-            </p>
-          </div>
 
-          <div className="max-w-xl">
-            <div className="flex items-baseline justify-between gap-4 text-ui-body">
-              <p className="text-ui-muted-foreground">
-                {enrollment.required_completed} of {enrollment.required_total} required classes complete
-              </p>
-              <p className="tabular font-semibold text-ui-foreground">{enrollment.progress_percent}%</p>
-            </div>
-            <Progress value={enrollment.progress_percent} className="mt-2" aria-label="Program progress" />
-          </div>
-
-          {locked && (
-            <Alert variant="info">
-              {/* Some reasons already say the record stays; don't say it twice. */}
-              {reason}
-              {reason?.includes("record") ? null : " You can still see your record below."}
-            </Alert>
-          )}
-
-          {completed && (
-            <Alert variant="success">
-              {/* spec/04: explicit course completion wording, no claim of mastery. */}
-              You have completed every required class in this course.
-            </Alert>
-          )}
-
-          {(nextClassId || enrollment.certificate_id) && (
-            <div className="mt-auto flex flex-wrap gap-2">
-              {nextClassId && (
-                <Button variant="primary" asChild>
-                  <Link href={`/learn/${enrollment.id}/classes/${nextClassId}`}>
-                    {enrollment.started_at ? "Continue" : "Start"}
-                    <ArrowRight aria-hidden />
-                  </Link>
-                </Button>
-              )}
-              {enrollment.certificate_id && (
-                <Button variant="outline" asChild>
-                  <Link href={`/certificates/${enrollment.certificate_id}`}>
-                    <Award aria-hidden />
-                    Certificate
-                  </Link>
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
-      </Card>
-
-      {/* Outline, grouped by module. */}
-      <div className="mt-10 flex flex-col gap-6">
-        {modules.map((module, moduleIndex) => {
-          const moduleClasses = classes.filter((c) => c.module_id === module.id);
-          const done = moduleClasses.filter((c) => c.completed).length;
-          return (
-            <section key={module.id} aria-labelledby={`module-${module.id}`}>
-              <div className="flex items-baseline justify-between gap-4">
-                <div className="flex items-baseline gap-3">
-                  <span className="tabular text-ui-caption font-medium text-ui-muted-foreground" aria-hidden>
-                    {String(moduleIndex + 1).padStart(2, "0")}
-                  </span>
-                  <h2
-                    id={`module-${module.id}`}
-                    className="font-heading text-ui-heading text-ui-foreground"
-                  >
-                    {module.title}
-                  </h2>
+            <div className="flex flex-col gap-5 p-6">
+              <div>
+                <div className="flex flex-wrap gap-1.5">
+                  {completed ? (
+                    <Badge variant="azure">Completed</Badge>
+                  ) : overdue ? (
+                    <Badge variant="coral">Overdue</Badge>
+                  ) : null}
+                  {locked && !completed && (
+                    <Badge variant="outline">
+                      <Lock className="size-3" aria-hidden />
+                      Locked
+                    </Badge>
+                  )}
                 </div>
-                <p className="tabular shrink-0 text-ui-caption text-ui-muted-foreground">
-                  {done}/{moduleClasses.length} done
-                </p>
+                <h1 id="program-title" className="mt-2 font-heading text-ui-title text-ui-foreground">
+                  {enrollment.program_title}
+                </h1>
               </div>
 
-              <Card className="mt-3 overflow-hidden">
-                <ul className="divide-y divide-ui-border">
-                  {moduleClasses.map((entry) => (
-                    <li key={entry.id}>
-                      <ClassRow
-                        enrollmentId={enrollment.id}
-                        entry={entry}
-                        locked={locked}
-                        upNext={entry.id === nextClassId}
-                      />
-                    </li>
-                  ))}
-                </ul>
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-ui-body">
+                <div>
+                  <dt className="text-ui-eyebrow uppercase text-ui-muted-foreground">Provided by</dt>
+                  <dd className="mt-1 text-ui-foreground">
+                    {enrollment.organization_id ? "Your organization" : "Personal"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-ui-eyebrow uppercase text-ui-muted-foreground">Due</dt>
+                  <dd className="mt-1 inline-flex items-center gap-1 text-ui-foreground">
+                    <CalendarDays className="size-3.5" aria-hidden />
+                    {formatDate(enrollment.due_at, timezone)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-ui-eyebrow uppercase text-ui-muted-foreground">Modules</dt>
+                  <dd className="tabular mt-1 text-ui-foreground">{modules.length}</dd>
+                </div>
+                <div>
+                  <dt className="text-ui-eyebrow uppercase text-ui-muted-foreground">Lessons</dt>
+                  <dd className="tabular mt-1 text-ui-foreground">{classes.length}</dd>
+                </div>
+              </dl>
+
+              <div>
+                <div className="flex items-baseline justify-between gap-4 text-ui-body">
+                  <p className="text-ui-muted-foreground">
+                    {enrollment.required_completed} of {enrollment.required_total} required lessons complete
+                  </p>
+                  <p className="tabular font-semibold text-ui-foreground">{enrollment.progress_percent}%</p>
+                </div>
+                <Progress value={enrollment.progress_percent} className="mt-2" aria-label="Program progress" />
+              </div>
+
+              {locked && (
+                <Alert variant="info">
+                  {/* Some reasons already say the record stays; don't say it twice. */}
+                  {reason}
+                  {reason?.includes("record") ? null : " You can still see your record."}
+                </Alert>
+              )}
+
+              {completed && (
+                <Alert variant="success">
+                  {/* spec/04: explicit course completion wording, no claim of mastery. */}
+                  You have completed every required lesson in this course.
+                </Alert>
+              )}
+
+              {(nextClassId || enrollment.certificate_id) && (
+                <div className="flex flex-wrap gap-2">
+                  {nextClassId && (
+                    <Button variant="primary" asChild>
+                      <Link href={`/learn/${enrollment.id}/classes/${nextClassId}`}>
+                        {enrollment.started_at ? "Continue" : "Start"}
+                        <ArrowRight aria-hidden />
+                      </Link>
+                    </Button>
+                  )}
+                  {enrollment.certificate_id && (
+                    <Button variant="outline" asChild>
+                      <Link href={`/certificates/${enrollment.certificate_id}`}>
+                        <Award aria-hidden />
+                        Certificate
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </Card>
+        </aside>
+
+        {/* One card per module, as many as the program has. */}
+        <div className="flex flex-col gap-4">
+          {modules.map((module, moduleIndex) => {
+            const moduleClasses = classes.filter((c) => c.module_id === module.id);
+            const done = moduleClasses.filter((c) => c.completed).length;
+            const percent = moduleClasses.length === 0 ? 0 : Math.round((done / moduleClasses.length) * 100);
+            return (
+              <Card key={module.id} className="overflow-hidden">
+                <section aria-labelledby={`module-${module.id}`}>
+                  <div className="flex flex-col gap-3 border-b border-ui-border p-5 sm:p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="flex items-center gap-3 text-ui-eyebrow uppercase text-ui-muted-foreground">
+                          <span aria-hidden className="h-px w-8 bg-ui-brand" />
+                          Module {String(moduleIndex + 1).padStart(2, "0")}
+                        </p>
+                        <h2
+                          id={`module-${module.id}`}
+                          className="mt-2 font-heading text-ui-heading text-ui-foreground"
+                        >
+                          {module.title}
+                        </h2>
+                      </div>
+                      <p className="tabular shrink-0 text-ui-caption text-ui-muted-foreground">
+                        {done}/{moduleClasses.length} done
+                      </p>
+                    </div>
+                    <p className="text-ui-caption text-ui-muted-foreground">
+                      {moduleClasses.length} {moduleClasses.length === 1 ? "lesson" : "lessons"}
+                      {" · "}
+                      {moduleClasses.filter((c) => c.required).length} required
+                    </p>
+                    <Progress value={percent} aria-label={`${module.title} progress`} />
+                  </div>
+
+                  <ul className="divide-y divide-ui-border">
+                    {moduleClasses.map((entry) => (
+                      <li key={entry.id}>
+                        <ClassRow
+                          enrollmentId={enrollment.id}
+                          entry={entry}
+                          locked={locked}
+                          upNext={entry.id === nextClassId}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
               </Card>
-            </section>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </main>
   );
