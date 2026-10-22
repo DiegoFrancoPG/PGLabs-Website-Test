@@ -38,6 +38,8 @@ interface Props extends Handlers {
   title: string;
   /** Where to resume. Passed as the embed's start, so resuming does not autoplay. */
   startSeconds: number;
+  /** The frame's own box; by default a 16:9 block. */
+  className?: string;
 }
 
 /* The subset of the IFrame Player API used here. */
@@ -108,7 +110,7 @@ function describeError(code: number): string {
   return "The video could not be played.";
 }
 
-export function YouTubeFrame({ videoId, title, startSeconds, ...handlers }: Props) {
+export function YouTubeFrame({ videoId, title, startSeconds, className, ...handlers }: Props) {
   const frame = useRef<HTMLIFrameElement | null>(null);
   // The latest handlers, read at call time, so a new render never rebuilds the player.
   const latest = useRef<Handlers>(handlers);
@@ -200,7 +202,7 @@ export function YouTubeFrame({ videoId, title, startSeconds, ...handlers }: Prop
   }, []);
 
   return (
-    <div className="aspect-video w-full overflow-hidden rounded-ui bg-black">
+    <div className={className ?? "aspect-video w-full overflow-hidden rounded-ui bg-black"}>
       <iframe
         ref={frame}
         src={src}
