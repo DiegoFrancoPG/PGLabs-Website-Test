@@ -1423,6 +1423,41 @@
         "handoff/manager-runbook.md: the manager's procedure end to end, with nothing in it that needs the database",
         "AC-060 recorded blocked pending the runbook walkthrough on pilot data and the seven conditions"
       ]
+    },
+    {
+      "id": "T31",
+      "title": "Organization editing for the launch (D-07)",
+      "status": "done",
+      "release": "pilot",
+      "depends_on": [
+        "T06",
+        "T23"
+      ],
+      "requirements": [
+        "FR-02"
+      ],
+      "read": [
+        "spec/02-data-and-security.md",
+        "spec/04-ui.md",
+        "HANDOFF.md"
+      ],
+      "implementation_targets": [
+        "M30 list_organization_members and update_member_profile",
+        "admin organization edit form",
+        "admin manager name and email edit"
+      ],
+      "acceptance_ids": [],
+      "operation_ids": [
+        "list_organization_members",
+        "update_member_profile"
+      ],
+      "checks": [
+        "npm run typecheck",
+        "npm run test:unit",
+        "psql: M30 applied after M01–M29 and exercised as admin and manager"
+      ],
+      "notes": "At the product owner's request a platform admin can edit an organization's name and timezone (update_organization, unchanged) and its managers' names and sign-in emails. Nothing listed an organization's members before, so M30 adds an admin-only read, and an admin-only name change. The email is Auth's: the route changes it with the Auth admin API and re-syncs the profile through pglearn_provision, which reads the address from auth.users.",
+      "evidence": "M30 applied after all earlier migrations on PostgreSQL 16 with stubbed auth/storage schemas. As admin: the list returns managers first with onboarding state; a name is trimmed and saved; a blank name is 22023; an unknown organization is P0002. As a manager: both operations are 42501. pglearn_provision re-syncs a changed Auth email into the profile, lower-cased. Not exercised: the Auth admin email change against real Supabase, and the integration suite, which needs the development database."
     }
   ]
 }

@@ -14,6 +14,7 @@
 - Specification validation: `python3 verify_spec.py` PASS — 66 operations, 70 schemas, 32 acyclic tasks. This validates the package, not the application.
 - **D-05 (22 October 2026): a video class may play from YouTube** for the first cohort — migration M29, described below. Production needs `supabase db push` to apply M29 before the code that reads `youtube_video_id` is deployed.
 - **D-06 (22 October 2026): PG Learn launch scope** — described below. UI only: no migration, contract or RPC changed.
+- **D-07 (23 October 2026): admins edit organizations and their managers** — migration M30, described below. Production needs `supabase db push` to apply M30 before the code that calls it is deployed.
 - Inputs outstanding: the nine videos with transcripts and captions, OpenAI and Resend credentials with a verified sender, `CRON_SECRET` for the deployment, and the certificate issuer string if it should differ from the default "PGLearn". A development database is configured.
 
 ## Host application
@@ -75,3 +76,15 @@ At the product owner's request PG Learn launches on its own, ahead of the rest o
 - **Manager organization page.** No cohorts on screen. Totals, then the staff list: every person once per assigned program (or "Not assigned"), with search, status, overdue and program filters and sortable columns in the URL, plus "Add people", "Assign a program" and CSV export. The data model still assigns to a cohort, so the list is backed by one cohort named "Staff", created on the first addition (`components/manage/AddStaff.tsx`); an organization that already has cohorts keeps adding to its first. The join and filters are `lib/staff.ts`, tested in `tests/unit/staff.test.ts`. The cohort and reports routes remain reachable by URL.
 
 **Evidence.** `npm run typecheck`, `npm run lint`, `npm run test:unit` (281 tests) and `npm run build` pass. Sign-in, the program page and the account menu were checked in Chromium at 1440px and 390px against stand-in data. `tests/e2e/admin.spec.ts` and `tests/e2e/reports.spec.ts` are updated for the new shell and manager page; **not yet run**, since e2e needs Supabase Auth. `tests/e2e/tutor.spec.ts`, the exercise steps of `demo-journey.spec.ts` and the cohort steps of `demo-journey.spec.ts` exercise screens this launch hides and need revising or retiring with the product owner.
+
+**D-07 — editing an organization and its managers (adds to spec/04's /admin/organizations, 23 October 2026).**
+At the product owner's request a platform admin can, on each organization's card in `/admin/organizations`:
+
+- **Edit the name and timezone** (`components/admin/EditOrganization.tsx`), through the existing `update_organization`. The timezone is picked from the runtime's IANA list.
+- **See the managers and correct their name and sign-in email** (`components/admin/EditMember.tsx`). Nothing listed an organization's members before, and only a person could rename themselves, so migration M30 (`supabase/migrations/20261023000001_m30_organization_members.sql`) adds two admin-only operations, declared in `contracts/api.json` and task T31:
+  - `list_organization_members` (`GET /organizations/{id}/members`): name, email, role, membership status and whether the account is set up; managers first.
+  - `update_member_profile` (`PATCH /users/{id}/profile`): the display name. The email belongs to Auth, so the route changes it with the Auth admin API (confirmed, since an admin is correcting it) and then re-syncs the profile through `pglearn_provision`, which reads the address from `auth.users`. The RPC runs first and is the admin check, so a non-admin never reaches the Auth admin API.
+- A manager cannot use either operation; their staff list is unchanged.
+- Until M30 is applied, the dispatcher refuses the new read and the card says managers will show once the update is applied; the rest of the page keeps working.
+
+**Evidence.** M30 applied on top of M01–M29 on PostgreSQL 16 with stubbed `auth`/`storage` schemas. As admin, the list returns managers first with their set-up state, a name is trimmed and saved, a blank name is 22023 and an unknown organization is P0002. As a manager, both operations are 42501. `pglearn_provision` re-syncs a changed Auth email into the profile, lower-cased. `tests/unit/member-profile-patch.test.ts` covers the request schema. `python3 verify_spec.py` passes (68 operations). **Not yet exercised:** the email change against real Supabase Auth, and the integration suite (`dispatcher.test.ts` checks the new allowlist), which needs the development database.
