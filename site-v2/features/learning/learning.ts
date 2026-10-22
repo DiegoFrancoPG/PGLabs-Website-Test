@@ -58,6 +58,8 @@ export const enrollmentDetailSchema = z.object({
       version_id: z.string().uuid(),
       title: z.string(),
       position: z.number(),
+      // M31 (D-08): when the module's lessons open; null means they are open.
+      release_at: z.string().nullable().default(null),
     })
   ),
   classes: z.array(outlineClassSchema),

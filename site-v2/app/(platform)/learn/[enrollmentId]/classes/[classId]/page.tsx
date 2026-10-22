@@ -14,6 +14,8 @@ import { Button } from "@/components/pglearn/ui/button";
 import { Card } from "@/components/pglearn/ui/card";
 import { CheckCircle2, ChevronLeft, ChevronRight, FileText } from "lucide-react";
 import { lessonSummary } from "@/lib/summary";
+import { formatRelease, isHeldBack } from "@/lib/release";
+import { getMe } from "@/features/identity/me";
 import { pageContainer } from "@/components/pglearn/layout";
 
 /*
@@ -64,7 +66,22 @@ export default async function ClassPage({
     if (err instanceof RpcError && err.code === "NOT_FOUND") return <Unavailable />;
     if (err instanceof RpcError && err.code === "ACCESS_UNAVAILABLE") {
       // Ownership is established but access is blocked, so the outline still
-      // reads — the learner is told why rather than shown a dead end.
+      // reads — the learner is told why rather than shown a dead end. A
+      // module held back until a date (D-08) says when it opens.
+      const [blockedOutline, me] = await Promise.all([getEnrollment(enrollmentId), getMe()]);
+      const lesson = blockedOutline.classes.find((c) => c.id === classId);
+      const lessonModule = blockedOutline.modules.find((m) => m.id === lesson?.module_id);
+      if (lessonModule && isHeldBack(lessonModule.release_at, new Date())) {
+        return (
+          <AppShell active="learn">
+            <HeldBack
+              enrollmentId={enrollmentId}
+              moduleTitle={lessonModule.title}
+              opens={formatRelease(lessonModule.release_at as string, me.profile.timezone)}
+            />
+          </AppShell>
+        );
+      }
       return <Blocked enrollmentId={enrollmentId} />;
     }
     throw err;
@@ -74,6 +91,11 @@ export default async function ClassPage({
   const index = ordered.findIndex((c) => c.id === classId);
   const previous = index > 0 ? ordered[index - 1] : null;
   const next = index >= 0 && index < ordered.length - 1 ? ordered[index + 1] : null;
+  // The next lesson may be in a module that is not released yet (D-08).
+  const nextModule = next ? outline.modules.find((m) => m.id === next.module_id) : undefined;
+  const nextOpensAt =
+    nextModule && isHeldBack(nextModule.release_at, new Date()) ? nextModule.release_at : null;
+  const timezone = nextOpensAt ? (await getMe()).profile.timezone : "UTC";
 
   // The files behind the lesson: its transcript first, then its handouts.
   const sources = [
@@ -140,7 +162,11 @@ export default async function ClassPage({
               ) : (
                 <span />
               )}
-              {next ? (
+              {next && nextOpensAt ? (
+                <span className="inline-flex h-9 items-center rounded-full border border-ui-border px-4 text-ui-button text-ui-muted-foreground">
+                  Next module opens {formatRelease(nextOpensAt, timezone)}
+                </span>
+              ) : next ? (
                 <Button variant="primary" size="sm" asChild>
                   <Link href={`/learn/${enrollmentId}/classes/${next.id}`}>
                     Next
@@ -273,6 +299,31 @@ function Unavailable() {
       <p className="mt-8 text-ui-body">
         <Link href="/learn" className="pglearn-link">
           Back to your learning
+        </Link>
+      </p>
+    </main>
+  );
+}
+
+function HeldBack({
+  enrollmentId,
+  moduleTitle,
+  opens,
+}: {
+  enrollmentId: string;
+  moduleTitle: string;
+  opens: string;
+}) {
+  return (
+    <main className={`${pageContainer} py-16 [&>*]:max-w-2xl`}>
+      <h1 className="font-heading text-ui-title text-ui-foreground">This lesson opens on {opens}</h1>
+      <Alert variant="info" className="mt-6">
+        {moduleTitle} is released on {opens}. Until then you can keep going with the lessons that
+        are already open.
+      </Alert>
+      <p className="mt-8 text-ui-body">
+        <Link href={`/learn/${enrollmentId}`} className="pglearn-link">
+          Back to the program
         </Link>
       </p>
     </main>

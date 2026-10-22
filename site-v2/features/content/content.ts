@@ -28,6 +28,8 @@ export const moduleSchema = z.object({
   version_id: z.string().uuid(),
   title: z.string().min(1).max(160),
   position: z.number().int().min(0),
+  // M31 (D-08). Defaults to null so a database without M31 still reads.
+  release_at: z.string().nullable().default(null),
 });
 
 export const classSchema = z.object({
@@ -319,3 +321,11 @@ export const deleteExercise = (classId: string) => callRpc("delete_exercise", { 
 
 export const reorderContent = (input: z.infer<typeof reorderSchema>) =>
   callRpc("reorder_content", input);
+
+/* M31 (D-08): contracts/api.json ModuleRelease. Null clears the date. */
+export const moduleReleaseSchema = z
+  .object({ release_at: z.string().datetime({ offset: true }).nullable() })
+  .strict();
+
+export const setModuleRelease = (moduleId: string, input: z.infer<typeof moduleReleaseSchema>) =>
+  callRpc("set_module_release", { module_id: moduleId, ...input });
