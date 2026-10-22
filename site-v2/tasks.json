@@ -1458,6 +1458,41 @@
       ],
       "notes": "At the product owner's request a platform admin can edit an organization's name and timezone (update_organization, unchanged) and its managers' names and sign-in emails. Nothing listed an organization's members before, so M30 adds an admin-only read, and an admin-only name change. The email is Auth's: the route changes it with the Auth admin API and re-syncs the profile through pglearn_provision, which reads the address from auth.users.",
       "evidence": "M30 applied after all earlier migrations on PostgreSQL 16 with stubbed auth/storage schemas. As admin: the list returns managers first with onboarding state; a name is trimmed and saved; a blank name is 22023; an unknown organization is P0002. As a manager: both operations are 42501. pglearn_provision re-syncs a changed Auth email into the profile, lower-cased. Not exercised: the Auth admin email change against real Supabase, and the integration suite, which needs the development database."
+    },
+    {
+      "id": "T32",
+      "title": "Module release dates (D-08)",
+      "status": "done",
+      "release": "pilot",
+      "depends_on": [
+        "T12",
+        "T31"
+      ],
+      "requirements": [
+        "FR-07",
+        "FR-08"
+      ],
+      "read": [
+        "spec/02-data-and-security.md",
+        "spec/04-ui.md",
+        "HANDOFF.md"
+      ],
+      "implementation_targets": [
+        "M31 module_releases, release check in the dispatcher, set_module_release",
+        "admin release date per module",
+        "program and lesson pages show and respect the date"
+      ],
+      "acceptance_ids": [],
+      "operation_ids": [
+        "set_module_release"
+      ],
+      "checks": [
+        "npm run typecheck",
+        "npm run test:unit",
+        "psql: M31 applied after M01–M30 with the fixture seed, exercised as admin, learner and another user"
+      ],
+      "notes": "At the product owner's request an admin can hold a module back until a date, including on a published version, since the date is a schedule rather than frozen content. The learner sees the module and its lessons tagged with the date but cannot open, play, complete or download them: the check runs in the dispatcher before the handler, and only speaks to the enrollment's owner about a lesson on their version, so it is not a probe.",
+      "evidence": "M31 applied after M01–M30 on PostgreSQL 16 with stubbed auth/storage and the fixture seed. As admin: a future date is set and returned in the Module DTO; a past date and a cleared date release the module; a body without release_at is 22023. As the learner (Amber): get_learning_class and start_playback on a held-back lesson are PGL22 module_locked with the date as HINT; the outline carries release_at. Another user is still P0002; the learner setting a date is 42501. Not exercised: the integration suite and the pages with real data."
     }
   ]
 }

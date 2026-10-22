@@ -2443,6 +2443,99 @@
         }
       }
     },
+    "/modules/{module_id}/release": {
+      "put": {
+        "operationId": "set_module_release",
+        "summary": "set module release date",
+        "description": "",
+        "x-access": "admin",
+        "parameters": [
+          {
+            "name": "module_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Module"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "request_id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModuleRelease"
+              }
+            }
+          }
+        }
+      }
+    },
     "/modules/{module_id}/classes": {
       "post": {
         "operationId": "create_class",
@@ -6863,6 +6956,18 @@
           "position": {
             "type": "integer",
             "minimum": 0
+          },
+          "release_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "M31 (D-08): when the module's lessons open to learners; null means with the version."
           }
         },
         "required": [
@@ -9116,6 +9221,27 @@
           "user_id",
           "display_name",
           "email"
+        ],
+        "additionalProperties": false
+      },
+      "ModuleRelease": {
+        "type": "object",
+        "description": "M31 (D-08): set or clear (null) a module's release date. Allowed on a published version.",
+        "properties": {
+          "release_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "release_at"
         ],
         "additionalProperties": false
       }

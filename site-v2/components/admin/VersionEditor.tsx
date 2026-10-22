@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { VersionDetail } from "@/features/content/content";
 import { ClassEditor } from "@/components/admin/ClassEditor";
+import { ModuleRelease } from "@/components/admin/ModuleRelease";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Button } from "@/components/pglearn/ui/button";
 import { Card } from "@/components/pglearn/ui/card";
@@ -253,6 +254,9 @@ export function VersionEditor({
                     </div>
                   )}
                 </div>
+
+                {/* Editable on a published version too (D-08). */}
+                <ModuleRelease moduleId={module.id} releaseAt={module.release_at} />
 
                 <div className="mt-4 flex flex-col gap-3">
                   {classesFor(module.id).map((cls) => (

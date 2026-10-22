@@ -21,6 +21,7 @@ import { Card } from "@/components/pglearn/ui/card";
 import { Progress } from "@/components/pglearn/ui/progress";
 import { pageContainer } from "@/components/pglearn/layout";
 import { programCover } from "@/components/pglearn/programCover";
+import { formatRelease, isHeldBack } from "@/lib/release";
 
 /*
  * spec/04 /learn/[enrollmentId]: "Program outline grouped by modules,
@@ -73,7 +74,19 @@ export function ProgramOutline({
   );
 
   // The class the learner should open next. Locked programs have none.
-  const nextClassId = locked ? null : enrollment.continue_class_id;
+  /*
+   * Modules held back until a release date (D-08) show their lessons but do
+   * not link to them. If the next lesson is in one, there is nothing to
+   * continue yet, so the card says when there will be.
+   */
+  const heldBack = new Map(
+    modules
+      .filter((m) => isHeldBack(m.release_at, now))
+      .map((m) => [m.id, formatRelease(m.release_at as string, timezone)])
+  );
+  const continueModule = classes.find((c) => c.id === enrollment.continue_class_id)?.module_id;
+  const waitingFor = continueModule ? heldBack.get(continueModule) : undefined;
+  const nextClassId = locked || waitingFor ? null : enrollment.continue_class_id;
 
   return (
     <main className={`${pageContainer} py-8 sm:py-10`}>
@@ -169,6 +182,12 @@ export function ProgramOutline({
                 </Alert>
               )}
 
+              {!locked && waitingFor && (
+                <Alert variant="info">
+                  You are up to date. The next module opens on {waitingFor}.
+                </Alert>
+              )}
+
               {completed && (
                 <Alert variant="success">
                   {/* spec/04: explicit course completion wording, no claim of mastery. */}
@@ -206,6 +225,7 @@ export function ProgramOutline({
             const moduleClasses = classes.filter((c) => c.module_id === module.id);
             const done = moduleClasses.filter((c) => c.completed).length;
             const percent = moduleClasses.length === 0 ? 0 : Math.round((done / moduleClasses.length) * 100);
+            const opens = heldBack.get(module.id);
             return (
               <Card key={module.id} className="overflow-hidden">
                 <section aria-labelledby={`module-${module.id}`}>
@@ -223,9 +243,16 @@ export function ProgramOutline({
                           {module.title}
                         </h2>
                       </div>
-                      <p className="tabular shrink-0 text-ui-caption text-ui-muted-foreground">
-                        {done}/{moduleClasses.length} done
-                      </p>
+                      {opens ? (
+                        <Badge variant="outline" className="shrink-0">
+                          <Lock className="size-3" aria-hidden />
+                          Opens {opens}
+                        </Badge>
+                      ) : (
+                        <p className="tabular shrink-0 text-ui-caption text-ui-muted-foreground">
+                          {done}/{moduleClasses.length} done
+                        </p>
+                      )}
                     </div>
                     <p className="text-ui-caption text-ui-muted-foreground">
                       {moduleClasses.length} {moduleClasses.length === 1 ? "lesson" : "lessons"}
@@ -241,7 +268,8 @@ export function ProgramOutline({
                         <ClassRow
                           enrollmentId={enrollment.id}
                           entry={entry}
-                          locked={locked}
+                          locked={locked || Boolean(opens)}
+                          lockedLabel={opens ? `Opens ${opens}` : "Unavailable"}
                           upNext={entry.id === nextClassId}
                         />
                       </li>
@@ -261,11 +289,13 @@ function ClassRow({
   enrollmentId,
   entry,
   locked,
+  lockedLabel,
   upNext,
 }: {
   enrollmentId: string;
   entry: OutlineClass;
   locked: boolean;
+  lockedLabel: string;
   upNext: boolean;
 }) {
   const kind = KIND[entry.kind];
@@ -309,7 +339,7 @@ function ClassRow({
         fails once you click it.
       */}
       {locked ? (
-        <span className="shrink-0 text-ui-caption text-ui-muted-foreground">Unavailable</span>
+        <span className="shrink-0 text-ui-caption text-ui-muted-foreground">{lockedLabel}</span>
       ) : (
         <span className="flex shrink-0 items-center gap-0.5 text-ui-body font-medium text-ui-foreground">
           {entry.completed ? "Review" : "Open"}
