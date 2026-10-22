@@ -21,7 +21,9 @@ import { YouTubeFrame, type MediaHandle } from "@/components/learning/YouTubeFra
  *
  * A video class may instead play from YouTube (D-05). YouTubeFrame stands in
  * for the media element — same current time, rate and events — so everything
- * below measures a YouTube video exactly as it measures an uploaded file.
+ * below measures a YouTube video exactly as it measures an uploaded file. It
+ * draws its own controls in place of YouTube's, whose "Watch on YouTube" link
+ * leaves the lesson; the speed buttons below serve both players.
  */
 
 const HEARTBEAT_MS = 15_000;
