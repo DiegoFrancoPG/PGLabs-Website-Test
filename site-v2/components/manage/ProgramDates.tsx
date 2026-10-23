@@ -81,11 +81,13 @@ export function ProgramDates({ schedule }: { schedule: ProgramSchedule }) {
         });
         if (!response.ok) {
           const body = await response.json().catch(() => null);
-          const message: string = body?.error?.message ?? "";
+          // The database's reason is not returned (spec/05). Only enrollments
+          // still open are sent, so a conflict is a start moved past the day
+          // somebody began, or dates in the wrong order.
           throw new Error(
-            message.includes("start cannot move")
-              ? "Somebody has already started, so the start cannot move later than the day they began."
-              : message || "The dates could not be changed."
+            body?.error?.code === "CONFLICT"
+              ? "These dates conflict with what has already happened. The start cannot move later than the day somebody began, and access cannot end before the due date."
+              : (body?.error?.message ?? "The dates could not be changed.")
           );
         }
       }

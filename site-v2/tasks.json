@@ -1616,6 +1616,38 @@
       ],
       "notes": "Cloning a version did not copy release dates or hidden flags, so test users moved to a new version saw every module open.",
       "evidence": "M35 applied on PostgreSQL 16 after M01–M34 with the fixture seed: a version cloned from one whose first module opens on 2030-01-01 has the same date on its first module. aplicar-m35.sql applies once and stops cleanly on a second run."
+    },
+    {
+      "id": "T37",
+      "title": "Deleting a program completely (D-18)",
+      "status": "done",
+      "release": "pilot",
+      "depends_on": [
+        "T36"
+      ],
+      "requirements": [
+        "FR-07"
+      ],
+      "read": [
+        "spec/02-data-and-security.md",
+        "HANDOFF.md"
+      ],
+      "implementation_targets": [
+        "M36 delete_program, purge-aware M02 freeze triggers",
+        "DELETE /api/v1/programs/{program_id} and storage cleanup",
+        "programs page Delete control with typed confirmation"
+      ],
+      "acceptance_ids": [],
+      "operation_ids": [
+        "delete_program"
+      ],
+      "checks": [
+        "npm run typecheck",
+        "npm run test:unit",
+        "psql: M36 applied after M01–M35 with the fixture seed"
+      ],
+      "notes": "Archiving stays as it was. Deleting is permanent and admin-only; the M02 freeze triggers let a published row go only inside delete_program for that program (transaction-local app.purging_program). The audit log and app.tutor_usage are kept.",
+      "evidence": "M36 applied on PostgreSQL 16 after M01–M35 with the fixture seed, plus a primary asset on a published class and a tutor session. A learner is refused (42501); a wrong title is 22023; as admin 'AI Foundations' (4 versions, 5 enrollments, 1 certificate, 2 grants) is deleted with its asset and tutor session, its storage key is returned, a program.deleted audit row is written, and the other program is untouched. Afterwards raw UPDATE/DELETE of a published version is still 23514, also with a stale purge setting. Not exercised: the integration suite (it would run against the configured production database in this environment), and storage removal against a real bucket."
     }
   ]
 }

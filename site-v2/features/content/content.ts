@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { callRpc } from "@/lib/rpc";
-import { copyObject, playbackPathFromStorageKey } from "@/lib/storage";
+import { copyObject, playbackPathFromStorageKey, removeObjects } from "@/lib/storage";
 import { serviceClient } from "@/lib/supabase/server";
 import { verifiedUser } from "@/lib/auth";
 
@@ -139,6 +139,33 @@ export async function updateProgram(
   patch: z.infer<typeof programPatchSchema>
 ) {
   return programSchema.parse(await callRpc("update_program", { program_id: programId, ...patch }));
+}
+
+/*
+ * D-18 (M36): deleting a program and everything that hangs off it. The
+ * title is typed back as the confirmation. The database removes the rows
+ * and names the stored files; they are removed here, after the commit. A
+ * file that cannot be removed is left behind rather than failing a delete
+ * that has already happened.
+ */
+export const programDeleteSchema = z.object({ confirm_title: z.string().min(1).max(200) }).strict();
+
+const programDeleteResultSchema = z.object({
+  program_id: z.string().uuid(),
+  title: z.string(),
+  versions: z.number().int(),
+  enrollments: z.number().int(),
+  certificates: z.number().int(),
+  grants: z.number().int(),
+  storage_keys: z.array(z.string()),
+});
+
+export async function deleteProgram(programId: string, input: z.infer<typeof programDeleteSchema>) {
+  const { storage_keys, ...result } = programDeleteResultSchema.parse(
+    await callRpc("delete_program", { program_id: programId, ...input })
+  );
+  const filesRemoved = await removeObjects(storage_keys).catch(() => 0);
+  return { ...result, files: storage_keys.length, files_removed: filesRemoved };
 }
 
 /* contracts/api.json's Exercise, for the version editor. */
