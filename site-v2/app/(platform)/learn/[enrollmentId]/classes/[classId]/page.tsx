@@ -106,7 +106,6 @@ export default async function ClassPage({
   const captionAsset = detail.assets.find((a) => a.role === "caption" && a.state === "ready");
 
   const lessonModule = outline.modules.find((m) => m.id === detail.class.module_id) ?? null;
-  const moduleIndex = lessonModule ? outline.modules.indexOf(lessonModule) : -1;
   const moduleLessons = ordered.filter((c) => c.module_id === detail.class.module_id);
   const goal = detail.class.learning_goal.trim();
   const summary =
@@ -187,8 +186,8 @@ export default async function ClassPage({
               <div>
                 <p className="flex items-center gap-3 text-ui-eyebrow uppercase text-ui-muted-foreground">
                   <span aria-hidden className="h-px w-8 bg-ui-brand" />
-                  {moduleIndex >= 0 ? `Module ${String(moduleIndex + 1).padStart(2, "0")}` : "Lesson"}
-                  {index >= 0 && ` · Lesson ${index + 1} of ${ordered.length}`}
+                  {/* Its place in the whole program, by format: "Video 1 of 9". */}
+                  {index >= 0 ? `${kindLabel} ${index + 1} of ${ordered.length}` : kindLabel}
                 </p>
                 <h1 id="lesson-title" className="mt-3 font-heading text-ui-title text-ui-foreground">
                   {detail.class.title}
