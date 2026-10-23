@@ -7789,6 +7789,11 @@
               }
             ],
             "description": "D-05: the YouTube video id a video class plays from instead of an uploaded primary asset; null for uploaded media."
+          },
+          "learning_goal": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "D-24: what the learner should take away from the lesson, shown beside the player. Empty when the author has not written one."
           }
         },
         "required": [
@@ -7856,6 +7861,11 @@
               }
             ],
             "description": "D-05: the YouTube video id a video class plays from instead of an uploaded primary asset; null for uploaded media."
+          },
+          "learning_goal": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "D-24: what the learner should take away from the lesson, shown beside the player. Empty when the author has not written one."
           }
         },
         "required": [],
@@ -7939,6 +7949,11 @@
               }
             ],
             "description": "D-05: the YouTube video id a video class plays from instead of an uploaded primary asset; null for uploaded media."
+          },
+          "learning_goal": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "D-24: what the learner should take away from the lesson, shown beside the player. Empty when the author has not written one."
           }
         },
         "required": [
@@ -7953,7 +7968,8 @@
           "source_text",
           "duration_ms",
           "primary_asset_id",
-          "youtube_video_id"
+          "youtube_video_id",
+          "learning_goal"
         ],
         "additionalProperties": false
       },

@@ -52,6 +52,8 @@ export const classSchema = z.object({
   // Defaults to null when absent, so a database that has not yet run M29
   // serves every page as before instead of failing the whole read.
   youtube_video_id: z.string().nullable().default(null),
+  // D-24 (M39). Empty when absent, for the same reason.
+  learning_goal: z.string().default(""),
 });
 
 export const programCreateSchema = z
@@ -106,6 +108,8 @@ export const classCreateSchema = z
     duration_ms: durationMs.nullable().optional(),
     // D-05: a video class may play from YouTube. The id only, never a URL.
     youtube_video_id: z.string().regex(/^[A-Za-z0-9_-]{11}$/).nullable().optional(),
+    // D-24: what the learner should take away; empty clears it.
+    learning_goal: z.string().trim().max(500).optional(),
   })
   .strict();
 
