@@ -34,10 +34,16 @@ import { formatMediaTime, youtubeEmbedUrl } from "@/lib/youtube";
  * There is no quality control: YouTube retired the API calls for it in 2019
  * and now chooses the quality itself.
  *
+ * Captions have one menu (D-20), on every screen size: off, any of the
+ * video's own tracks, or YouTube's automatic translation of a track into
+ * another language — what YouTube's own settings menu offered. The choice is
+ * remembered on this device for the next video. The spoken language cannot
+ * be offered: the IFrame API has no call for a video's audio tracks.
+ *
  * The bar is one row of fixed height (CONTROL_BAR_HEIGHT), so ClassPlayer can
  * hold the player's final size before it loads. On a phone the controls a
  * phone already has (volume) and the ones there is no room for (back ten
- * seconds, the time read-out, the caption language) are left out.
+ * seconds, the time read-out) are left out.
  */
 
 /** The bar's height, as a class; ClassPlayer reserves it below the 16:9 frame. */
@@ -76,7 +82,23 @@ interface CaptionTrack {
   languageCode: string;
   displayName?: string;
   languageName?: string;
+  kind?: string;
+  is_translateable?: boolean;
+  translationLanguage?: TranslationLanguage | null;
 }
+
+interface TranslationLanguage {
+  languageCode: string;
+  languageName?: string;
+}
+
+/** What the captions show: a track, optionally translated, or nothing. */
+interface CaptionChoice {
+  code: string;
+  translateTo: string | null;
+}
+
+const CAPTION_PREF = "pglearn.captions";
 
 /* The subset of the IFrame Player API used here. */
 interface YouTubePlayer {
@@ -100,8 +122,8 @@ interface YouTubePlayer {
    * embed's cc_load_policy, which is documented.
    */
   getOptions?(): string[];
-  getOption?(module: "captions", option: "tracklist" | "track"): unknown;
-  setOption?(module: "captions", option: "track", value: Partial<CaptionTrack>): void;
+  getOption?(module: "captions", option: "tracklist" | "track" | "translationLanguages"): unknown;
+  setOption?(module: "captions", option: "track", value: Partial<CaptionTrack> | Record<string, never>): void;
   loadModule?(module: "captions"): void;
   unloadModule?(module: "captions"): void;
 }
@@ -199,12 +221,53 @@ function readCaptionTracks(player: YouTubePlayer): CaptionTrack[] | null {
   }
 }
 
-function currentCaptionCode(player: YouTubePlayer): string | null {
+function currentCaption(player: YouTubePlayer): CaptionChoice | null {
   try {
     const track = player.getOption?.("captions", "track") as Partial<CaptionTrack> | undefined;
-    return typeof track?.languageCode === "string" ? track.languageCode : null;
+    if (typeof track?.languageCode !== "string" || track.languageCode === "") return null;
+    const to = track.translationLanguage?.languageCode;
+    return { code: track.languageCode, translateTo: typeof to === "string" ? to : null };
   } catch {
     return null;
+  }
+}
+
+/** The languages YouTube can translate captions into, or none when it will not say. */
+function readTranslationLanguages(player: YouTubePlayer): TranslationLanguage[] {
+  try {
+    const list = player.getOption?.("captions", "translationLanguages");
+    if (!Array.isArray(list)) return [];
+    return list
+      .filter((language): language is TranslationLanguage => typeof language?.languageCode === "string")
+      .sort((a, b) => (a.languageName ?? a.languageCode).localeCompare(b.languageName ?? b.languageCode));
+  } catch {
+    return [];
+  }
+}
+
+function applyCaption(player: YouTubePlayer, choice: CaptionChoice, tracks: CaptionTrack[]) {
+  const track = tracks.find((candidate) => candidate.languageCode === choice.code);
+  player.setOption?.("captions", "track", {
+    ...(track ?? { languageCode: choice.code }),
+    translationLanguage: choice.translateTo ? { languageCode: choice.translateTo } : null,
+  });
+}
+
+/* The learner's last choice on this device; storage may be unavailable. */
+function readPreference(): { off: boolean; language: string | null } | null {
+  try {
+    const raw = window.localStorage.getItem(CAPTION_PREF);
+    return raw ? (JSON.parse(raw) as { off: boolean; language: string | null }) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writePreference(off: boolean, language: string | null) {
+  try {
+    window.localStorage.setItem(CAPTION_PREF, JSON.stringify({ off, language }));
+  } catch {
+    // Not remembered; nothing else depends on it.
   }
 }
 
@@ -233,8 +296,13 @@ export function YouTubeFrame({ videoId, title, startSeconds, className, ...handl
   const [rate, setRate] = useState(1);
   const [rates, setRates] = useState<readonly number[]>(RATES);
   const [tracks, setTracks] = useState<CaptionTrack[] | null>(null);
+  const [translations, setTranslations] = useState<TranslationLanguage[]>([]);
   const [captionsOn, setCaptionsOn] = useState(true);
-  const [captionCode, setCaptionCode] = useState<string | null>(null);
+  const [caption, setCaption] = useState<CaptionChoice | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menu = useRef<HTMLDivElement | null>(null);
+  // The remembered choice is applied once, when the tracks first appear.
+  const preferenceApplied = useRef(false);
   const [canFullscreen, setCanFullscreen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
 
@@ -335,9 +403,39 @@ export function YouTubeFrame({ videoId, title, startSeconds, className, ...handl
             onApiChange: () => {
               if (cancelled) return;
               const found = readCaptionTracks(created);
-              if (found && found.length > 0) {
-                setTracks(found);
-                setCaptionCode(currentCaptionCode(created) ?? found[0].languageCode);
+              if (!found || found.length === 0) return;
+              setTracks(found);
+              const offered = readTranslationLanguages(created);
+              if (offered.length > 0) setTranslations(offered);
+              const shown = currentCaption(created) ?? { code: found[0].languageCode, translateTo: null };
+              setCaption(shown);
+
+              if (preferenceApplied.current) return;
+              preferenceApplied.current = true;
+              const preference = readPreference();
+              if (!preference) return;
+              try {
+                if (preference.off) {
+                  created.unloadModule?.("captions");
+                  setCaptionsOn(false);
+                  return;
+                }
+                if (!preference.language || preference.language === shown.code) return;
+                // The language itself if the video has it, else a translation of
+                // the track showing, when YouTube can translate it.
+                const own = found.find((track) => track.languageCode === preference.language);
+                const base = found.find((track) => track.languageCode === shown.code);
+                const next: CaptionChoice | null = own
+                  ? { code: own.languageCode, translateTo: null }
+                  : base?.is_translateable !== false && offered.some((l) => l.languageCode === preference.language)
+                    ? { code: shown.code, translateTo: preference.language }
+                    : null;
+                if (next) {
+                  applyCaption(created, next, found);
+                  setCaption(next);
+                }
+              } catch {
+                // Leave YouTube's default showing.
               }
             },
             onError: ({ data }) => {
@@ -425,35 +523,55 @@ export function YouTubeFrame({ videoId, title, startSeconds, className, ...handl
     setRate(next);
   };
 
-  const toggleCaptions = () => {
+  const captionsOff = () => {
     const p = player.current;
     if (!p) return;
     try {
-      if (captionsOn) {
-        p.unloadModule?.("captions");
-      } else {
-        p.loadModule?.("captions");
-        if (captionCode) p.setOption?.("captions", "track", { languageCode: captionCode });
-      }
-      setCaptionsOn(!captionsOn);
+      p.unloadModule?.("captions");
+      setCaptionsOn(false);
+      writePreference(true, caption?.translateTo ?? caption?.code ?? null);
     } catch {
-      // The undocumented calls stopped answering: stop offering the button.
+      // The undocumented calls stopped answering: stop offering the menu.
       setTracks(null);
     }
+    setMenuOpen(false);
   };
 
-  const chooseCaptions = (code: string) => {
+  const chooseCaptions = (next: CaptionChoice) => {
     const p = player.current;
-    if (!p) return;
+    if (!p || !tracks) return;
     try {
       if (!captionsOn) p.loadModule?.("captions");
-      p.setOption?.("captions", "track", { languageCode: code });
-      setCaptionCode(code);
+      applyCaption(p, next, tracks);
+      setCaption(next);
       setCaptionsOn(true);
+      writePreference(false, next.translateTo ?? next.code);
     } catch {
       setTracks(null);
     }
+    setMenuOpen(false);
   };
+
+  /* The menu closes on a click elsewhere or Escape. */
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onPointer = (event: PointerEvent) => {
+      if (menu.current && !menu.current.contains(event.target as Node)) setMenuOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    // A click into the video goes to the iframe, which the page only sees as blur.
+    const onBlur = () => setMenuOpen(false);
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("blur", onBlur);
+    };
+  }, [menuOpen]);
 
   const toggleFullscreen = () => {
     const doc = document as FullscreenDocument;
@@ -472,15 +590,22 @@ export function YouTubeFrame({ videoId, title, startSeconds, className, ...handl
   const shownDuration = duration > 0 ? duration : 0;
   const shownTime = Math.min(time, shownDuration || time);
   const trackName = (track: CaptionTrack) =>
-    track.displayName ?? track.languageName ?? track.languageCode;
+    `${track.displayName ?? track.languageName ?? track.languageCode}${
+      track.kind === "asr" && !(track.displayName ?? "").includes("(") ? " (auto-generated)" : ""
+    }`;
+  const languageName = (code: string) =>
+    translations.find((language) => language.languageCode === code)?.languageName ?? code;
+  const baseTrack = tracks?.find((track) => track.languageCode === caption?.code) ?? tracks?.[0];
+  const canTranslate = Boolean(baseTrack && baseTrack.is_translateable !== false && translations.length > 0);
 
   return (
     <div
       ref={shell}
       className={
         fullscreen
-          ? "flex h-full w-full flex-col bg-black"
-          : `${className ?? "w-full overflow-hidden rounded-ui"} flex flex-col bg-black`
+          ? "relative flex h-full w-full flex-col bg-black"
+          : // A given box is already positioned (ClassPlayer's is absolute), which the menu needs.
+            `${className ?? "relative w-full overflow-hidden rounded-ui"} flex flex-col bg-black`
       }
     >
       {/* Given a box (ClassPlayer's stage), the frame takes what the bar leaves. */}
@@ -575,32 +700,61 @@ export function YouTubeFrame({ videoId, title, startSeconds, className, ...handl
         />
 
         {tracks && (
-          <>
+          // The menu is placed against the whole player, so it fits above the bar.
+          <div ref={menu}>
             <Button
               type="button"
               size="icon"
               variant="ghost"
-              onClick={toggleCaptions}
-              aria-pressed={captionsOn}
-              aria-label="Captions"
+              onClick={() => setMenuOpen((open) => !open)}
+              aria-haspopup="true"
+              aria-expanded={menuOpen}
+              aria-label="Subtitles and language"
             >
               {captionsOn ? <Captions aria-hidden /> : <CaptionsOff aria-hidden />}
             </Button>
-            {tracks.length > 1 && (
-              <select
-                value={captionCode ?? ""}
-                onChange={(event) => chooseCaptions(event.target.value)}
-                aria-label="Caption language"
-                className="hidden h-9 rounded-full border border-white/40 bg-black px-3 font-ui text-ui-caption text-white sm:block"
+            {menuOpen && (
+              <div
+                role="group"
+                aria-label="Subtitles"
+                className="absolute bottom-16 right-2 z-10 max-h-[calc(100%-4.5rem)] w-64 max-w-[calc(100%-1rem)] overflow-y-auto rounded-ui border border-white/20 bg-black/95 p-2 font-ui text-ui-caption text-white shadow-lg"
               >
+                <p className="px-2 pb-1 pt-1 text-white/60">Subtitles</p>
+                <MenuItem selected={!captionsOn} onClick={captionsOff}>
+                  Off
+                </MenuItem>
                 {tracks.map((track) => (
-                  <option key={track.languageCode} value={track.languageCode}>
+                  <MenuItem
+                    key={`${track.languageCode}-${track.kind ?? ""}`}
+                    selected={captionsOn && caption?.code === track.languageCode && !caption.translateTo}
+                    onClick={() => chooseCaptions({ code: track.languageCode, translateTo: null })}
+                  >
                     {trackName(track)}
-                  </option>
+                  </MenuItem>
                 ))}
-              </select>
+                {canTranslate && baseTrack && (
+                  <label className="mt-2 block border-t border-white/20 px-2 pt-2">
+                    <span className="text-white/60">Translate subtitles to</span>
+                    <select
+                      value={captionsOn && caption?.translateTo ? caption.translateTo : ""}
+                      onChange={(event) =>
+                        event.target.value &&
+                        chooseCaptions({ code: baseTrack.languageCode, translateTo: event.target.value })
+                      }
+                      className="mt-1 h-9 w-full rounded-full border border-white/40 bg-black px-3 text-white"
+                    >
+                      <option value="">Choose a language</option>
+                      {translations.map((language) => (
+                        <option key={language.languageCode} value={language.languageCode}>
+                          {languageName(language.languageCode)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+              </div>
             )}
-          </>
+          </div>
         )}
 
         <select
@@ -630,5 +784,31 @@ export function YouTubeFrame({ videoId, title, startSeconds, className, ...handl
         )}
       </div>
     </div>
+  );
+}
+
+function MenuItem({
+  selected,
+  onClick,
+  children,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={`flex min-h-9 w-full items-center gap-2 rounded-ui-sm px-2 text-left hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ui-ring ${
+        selected ? "font-semibold" : ""
+      }`}
+    >
+      <span aria-hidden className="w-3">
+        {selected ? "✓" : ""}
+      </span>
+      {children}
+    </button>
   );
 }
