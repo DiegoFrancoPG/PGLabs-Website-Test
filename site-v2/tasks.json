@@ -1745,6 +1745,37 @@
       ],
       "notes": "Completes create (D-21) with read, update and remove for accounts in a test organization only. Removing takes the person out of the organization and its cohorts and keeps their records; nothing deletes an account. Passwords follow M38's rule.",
       "evidence": "M38 applied on PostgreSQL 16 after M01–M37 with the fixture seed. In an organization not marked as test: 23514. In a test organization: a new provisioned account becomes an onboarded, active learner in the staff cohort with password_allowed true; a second run changes nothing; the platform admin and a member of a real organization get password_allowed false; a learner calling it is 42501. Not exercised: the Auth admin API against the real project."
+    },
+    {
+      "id": "T41",
+      "title": "Deleting test accounts (D-26)",
+      "status": "done",
+      "release": "pilot",
+      "depends_on": [
+        "T40"
+      ],
+      "requirements": [
+        "FR-02"
+      ],
+      "read": [
+        "HANDOFF.md"
+      ],
+      "implementation_targets": [
+        "M41 delete_test_account",
+        "DELETE /api/v1/organizations/{organization_id}/test-accounts/{user_id} (Auth admin deleteUser)",
+        "Delete permanently, confirmed by typing the email, on each test account"
+      ],
+      "acceptance_ids": [],
+      "operation_ids": [
+        "delete_test_account"
+      ],
+      "checks": [
+        "npm run typecheck",
+        "npm run test:unit",
+        "psql: M41 applied after M01–M40 with the fixture seed"
+      ],
+      "notes": "Erases a pure test account (only test organizations, never an administrator) and its records so its address can be reused; the audit trail stays, without naming the person.",
+      "evidence": "M38 applied on PostgreSQL 16 after M01–M37 with the fixture seed. In an organization not marked as test: 23514. In a test organization: a new provisioned account becomes an onboarded, active learner in the staff cohort with password_allowed true; a second run changes nothing; the platform admin and a member of a real organization get password_allowed false; a learner calling it is 42501. Not exercised: the Auth admin API against the real project."
     }
   ]
 }
