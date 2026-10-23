@@ -1,11 +1,12 @@
 /*
  * Cover photography for program cards.
  *
- * Programs have no image of their own yet — the Enrollment contract carries
- * none — so each program is given one of the site's licensed photographs,
- * chosen from its id. The same program always gets the same cover, on every
- * screen and for every learner. When programs gain a cover field, this is the
- * one place to read it instead.
+ * Since M37 (D-19) an administrator can give a program its own cover: a
+ * photograph from the design system's library (its public path), or an
+ * uploaded image ('upload:<token>', served by the program's cover route).
+ * A program without one is given one of the site's licensed photographs,
+ * chosen from its id, so the same program always gets the same cover on
+ * every screen and for every learner.
  */
 const COVERS = [
   "/human-imagery/01_Hero_Cover/pexels-a-darmel-8134073.jpg",
@@ -20,7 +21,11 @@ const COVERS = [
   "/human-imagery/05_Strategy_Capacity/pexels-theo-decker-5945809.jpg",
 ] as const;
 
-export function programCover(programId: string): string {
+export function programCover(programId: string, cover?: string | null): string {
+  if (cover?.startsWith("/")) return cover;
+  if (cover?.startsWith("upload:")) {
+    return `/api/v1/programs/${programId}/cover?v=${cover.slice("upload:".length)}`;
+  }
   // FNV-1a over the id: stable, cheap, and spreads adjacent uuids apart.
   let hash = 0x811c9dc5;
   for (let i = 0; i < programId.length; i++) {
@@ -29,3 +34,9 @@ export function programCover(programId: string): string {
   }
   return COVERS[(hash >>> 0) % COVERS.length];
 }
+
+/**
+ * An uploaded cover is served through an authenticated redirect to signed
+ * storage, which the image optimizer cannot follow (it has no session).
+ */
+export const isUploadedCover = (cover?: string | null) => Boolean(cover?.startsWith("upload:"));

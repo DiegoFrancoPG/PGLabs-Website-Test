@@ -19,7 +19,7 @@ import { Card } from "@/components/pglearn/ui/card";
 import { Progress } from "@/components/pglearn/ui/progress";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { pageContainer } from "@/components/pglearn/layout";
-import { programCover } from "@/components/pglearn/programCover";
+import { isUploadedCover, programCover } from "@/components/pglearn/programCover";
 import { BrandBanner } from "@/components/pglearn/BrandBanner";
 
 /*
@@ -83,7 +83,8 @@ function ProgramCard({
     <Card className="group overflow-hidden transition-colors hover:border-ui-input">
       <div className="relative aspect-[16/9] overflow-hidden bg-ui-muted">
         <Image
-          src={programCover(enrollment.program_id)}
+          src={programCover(enrollment.program_id, enrollment.program_cover)}
+          unoptimized={isUploadedCover(enrollment.program_cover)}
           alt=""
           fill
           sizes="(min-width: 1024px) 360px, (min-width: 640px) 50vw, 100vw"

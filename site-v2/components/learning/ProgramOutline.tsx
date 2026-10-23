@@ -20,7 +20,7 @@ import { Button } from "@/components/pglearn/ui/button";
 import { Card } from "@/components/pglearn/ui/card";
 import { Progress } from "@/components/pglearn/ui/progress";
 import { pageContainer } from "@/components/pglearn/layout";
-import { programCover } from "@/components/pglearn/programCover";
+import { isUploadedCover, programCover } from "@/components/pglearn/programCover";
 import { formatRelease, isHeldBack } from "@/lib/release";
 
 /*
@@ -111,7 +111,8 @@ export function ProgramOutline({
           <Card className="overflow-hidden">
             <div className="relative aspect-[16/9] bg-ui-muted">
               <Image
-                src={programCover(enrollment.program_id)}
+                src={programCover(enrollment.program_id, enrollment.program_cover)}
+          unoptimized={isUploadedCover(enrollment.program_cover)}
                 alt=""
                 fill
                 priority

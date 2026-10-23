@@ -6716,6 +6716,141 @@
           }
         ]
       }
+    },
+    "/programs/{program_id}/cover": {
+      "get": {
+        "operationId": "get_program_cover",
+        "summary": "redirect to a program's uploaded cover",
+        "description": "M37, D-19. Any signed-in user. 302 to a signed URL valid for an hour; 404 when the program has no uploaded cover.",
+        "x-access": "authenticated",
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to the signed image URL"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "upload_program_cover",
+        "summary": "upload a program's cover image",
+        "description": "M37, D-19. multipart/form-data with one 'file' field: JPEG, PNG or WebP, at most 4 MB. Stores it at programs/{program_id}/cover and sets the program's cover_image to a new 'upload:<token>'.",
+        "x-access": "admin",
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Program"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "request_id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -7269,6 +7404,18 @@
                 "type": "null"
               }
             ]
+          },
+          "cover_image": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "M37: a /human-imagery/ library path, 'upload:<token>' for an uploaded image served by get_program_cover, or null for the automatic choice."
           }
         },
         "required": [
@@ -7313,6 +7460,18 @@
           },
           "archived": {
             "type": "boolean"
+          },
+          "cover_image": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^/human-imagery/"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A photograph from the design system's library, or null. Uploads go through upload_program_cover."
           }
         },
         "required": [],
@@ -8584,6 +8743,18 @@
                 "type": "null"
               }
             ]
+          },
+          "program_cover": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "M37: the program's cover_image."
           }
         },
         "required": [

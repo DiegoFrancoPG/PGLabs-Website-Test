@@ -7,6 +7,8 @@ import { RpcError } from "@/lib/rpc";
 import { listPrograms, getVersion } from "@/features/content/content";
 import { AppShell } from "@/components/layout/AppShell";
 import { OpenDraft } from "@/components/admin/OpenDraft";
+import { EditProgram } from "@/components/admin/EditProgram";
+import { ProgramCoverPicker } from "@/components/admin/ProgramCoverPicker";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Badge } from "@/components/pglearn/ui/badge";
 import { Button } from "@/components/pglearn/ui/button";
@@ -68,6 +70,16 @@ export default async function ProgramPage({
           {program.archived && <Badge variant="outline">Archived</Badge>}
         </div>
         {program.summary && <p className="mt-2 text-ui-body text-ui-muted-foreground">{program.summary}</p>}
+        <div className="mt-4">
+          <EditProgram programId={program.id} title={program.title} summary={program.summary} />
+        </div>
+
+        <section className="mt-10">
+          <h2 className="text-ui-eyebrow uppercase text-ui-foreground">Cover</h2>
+          <Card className="mt-3 p-5">
+            <ProgramCoverPicker programId={program.id} cover={program.cover_image} />
+          </Card>
+        </section>
 
         <section className="mt-10">
           <h2 className="text-ui-eyebrow uppercase text-ui-foreground">Draft</h2>

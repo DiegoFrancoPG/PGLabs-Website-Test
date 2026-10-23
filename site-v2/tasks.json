@@ -1648,6 +1648,39 @@
       ],
       "notes": "Archiving stays as it was. Deleting is permanent and admin-only; the M02 freeze triggers let a published row go only inside delete_program for that program (transaction-local app.purging_program). The audit log and app.tutor_usage are kept.",
       "evidence": "M36 applied on PostgreSQL 16 after M01–M35 with the fixture seed, plus a primary asset on a published class and a tutor session. A learner is refused (42501); a wrong title is 22023; as admin 'AI Foundations' (4 versions, 5 enrollments, 1 certificate, 2 grants) is deleted with its asset and tutor session, its storage key is returned, a program.deleted audit row is written, and the other program is untouched. Afterwards raw UPDATE/DELETE of a published version is still 23514, also with a stale purge setting. Not exercised: the integration suite (it would run against the configured production database in this environment), and storage removal against a real bucket."
+    },
+    {
+      "id": "T38",
+      "title": "Program name editing and cover images (D-19)",
+      "status": "done",
+      "release": "pilot",
+      "depends_on": [
+        "T37"
+      ],
+      "requirements": [
+        "FR-07"
+      ],
+      "read": [
+        "HANDOFF.md"
+      ],
+      "implementation_targets": [
+        "M37 programs.cover_image, program_json, update_program, enrollment_json program_cover",
+        "GET/POST /api/v1/programs/{program_id}/cover",
+        "program page: Edit name and summary, cover picker (design-system library or upload)",
+        "learner cards and outline use the chosen cover"
+      ],
+      "acceptance_ids": [],
+      "operation_ids": [
+        "get_program_cover",
+        "upload_program_cover"
+      ],
+      "checks": [
+        "npm run typecheck",
+        "npm run test:unit",
+        "psql: M37 applied after M01–M36 with the fixture seed"
+      ],
+      "notes": "The program's name had no edit control; the draft editor's title is the version's and never reached learners. Uploaded covers live in the private bucket at programs/<id>/cover and are served by an authenticated redirect to a signed URL.",
+      "evidence": "M37 applied on PostgreSQL 16 after M01–M36 with the fixture seed. update_program accepts a library path and an upload token, refuses '/human-imagery/../x.jpg' and an external URL, clears on '', and keeps the cover when only the title changes; list_my_enrollments returns the new title and program_cover. Not exercised: the integration suite (production database) and uploads against the real bucket."
     }
   ]
 }
