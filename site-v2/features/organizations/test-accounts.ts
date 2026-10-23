@@ -129,3 +129,108 @@ export async function createTestAccounts(
   }
   return { items };
 }
+
+/*
+ * Managing a test account after it exists (D-25, M40): its role, whether it is
+ * still in the organization, and a new password. Name and email are
+ * update_member_profile's (M30), as for any member.
+ */
+
+export const testAccountPatchSchema = z
+  .object({
+    role: z.enum(["learner", "manager"]).optional(),
+    status: z.enum(["active", "removed"]).optional(),
+  })
+  .strict()
+  .refine((v) => Object.keys(v).length > 0, { message: "at least one field is required" });
+
+export const testAccountPasswordSchema = z
+  .object({
+    /** The new password, or omitted to generate one. */
+    password: z.string().min(10).max(72).optional(),
+  })
+  .strict();
+
+const managedSchema = z.object({
+  user_id: z.string().uuid(),
+  email: z.string(),
+  display_name: z.string(),
+  role: z.enum(["learner", "manager"]),
+  status: z.enum(["invited", "active", "removed"]),
+  password_allowed: z.boolean(),
+});
+
+export type ManagedTestAccount = z.infer<typeof managedSchema>;
+
+/*
+ * The administrator and test-organization checks, made here before Auth is
+ * touched, as createTestAccounts makes them. The database repeats both.
+ */
+async function assertTestOrganization(organizationId: string): Promise<void> {
+  if (!(await getMe()).platform_admin) throw new RpcError("FORBIDDEN", "Not permitted.");
+  const organization = (await listOrganizations(100)).items.find((o) => o.id === organizationId);
+  if (!organization) throw new RpcError("NOT_FOUND", "Not found.");
+  if (!organization.is_test) {
+    throw new RpcError("CONFLICT", "Only accounts in a test organization can be managed here.");
+  }
+}
+
+export async function updateTestAccount(
+  organizationId: string,
+  userId: string,
+  input: z.infer<typeof testAccountPatchSchema>
+): Promise<Omit<ManagedTestAccount, "password_allowed">> {
+  await assertTestOrganization(organizationId);
+  try {
+    const account = managedSchema.parse(
+      await callRpc("update_test_account", { organization_id: organizationId, user_id: userId, ...input })
+    );
+    return {
+      user_id: account.user_id,
+      email: account.email,
+      display_name: account.display_name,
+      role: account.role,
+      status: account.status,
+    };
+  } catch (err) {
+    /*
+     * The organization is a test one (checked above), so the business rule
+     * that refused this is M02's: an active organization keeps a manager.
+     */
+    if (err instanceof RpcError && err.code === "CONFLICT") {
+      throw new RpcError(
+        "CONFLICT",
+        "The organization would be left without a manager. Add or keep another manager first."
+      );
+    }
+    throw err;
+  }
+}
+
+export async function resetTestAccountPassword(
+  organizationId: string,
+  userId: string,
+  input: z.infer<typeof testAccountPasswordSchema>
+): Promise<{ email: string; password: string }> {
+  await assertTestOrganization(organizationId);
+  const account = managedSchema.parse(
+    await callRpc("update_test_account", {
+      organization_id: organizationId,
+      user_id: userId,
+      password_reset: true,
+    })
+  );
+  // M38's rule: an administrator, or a member of a real organization, keeps
+  // the password they chose.
+  if (!account.password_allowed) {
+    throw new RpcError(
+      "CONFLICT",
+      "This person also belongs to a real organization or is an administrator, so they keep their own password."
+    );
+  }
+  const password = input.password ?? generatePassword();
+  const { error } = await serviceClient().auth.admin.updateUserById(userId, { password, email_confirm: true });
+  // Auth's own message (a weak password, say) helps the administrator.
+  if (error) throw new RpcError("VALIDATION_ERROR", error.message);
+  return { email: account.email, password };
+}

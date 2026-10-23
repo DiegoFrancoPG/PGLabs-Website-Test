@@ -6944,6 +6944,210 @@
           }
         }
       }
+    },
+    "/organizations/{organization_id}/test-accounts/{user_id}": {
+      "patch": {
+        "operationId": "update_test_account",
+        "summary": "change a test account's role, or remove or restore it",
+        "description": "M40, D-25. Admin only; the organization must be a test organization. A learner is kept in the staff cohort; a manager, or a removed account, is taken out of the organization's cohorts. Removing stops learning there and keeps records; an active organization must keep a manager (409).",
+        "x-access": "admin",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/TestAccount"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "request_id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestAccountPatch"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organizations/{organization_id}/test-accounts/{user_id}/password": {
+      "post": {
+        "operationId": "reset_test_account_password",
+        "summary": "set a new password for a test account",
+        "description": "M40, D-25. Admin only; the organization must be a test organization. Sets the password through the Auth admin API and returns it once. Refused (409) for a platform administrator or a member of a real organization, who keep their own (the M38 rule).",
+        "x-access": "admin",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/TestAccountPasswordResult"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "request_id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestAccountPassword"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -10207,6 +10411,96 @@
         },
         "required": [
           "items"
+        ],
+        "additionalProperties": false
+      },
+      "TestAccountPatch": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "learner",
+              "manager"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "removed"
+            ]
+          }
+        },
+        "required": [],
+        "additionalProperties": false,
+        "minProperties": 1
+      },
+      "TestAccountPassword": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 72,
+            "description": "Omitted to generate one."
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "TestAccount": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "learner",
+              "manager"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "invited",
+              "active",
+              "removed"
+            ]
+          }
+        },
+        "required": [
+          "user_id",
+          "email",
+          "display_name",
+          "role",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "TestAccountPasswordResult": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "description": "Shown once; not stored anywhere the application can show it again."
+          }
+        },
+        "required": [
+          "email",
+          "password"
         ],
         "additionalProperties": false
       }
