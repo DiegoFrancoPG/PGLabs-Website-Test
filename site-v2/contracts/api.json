@@ -6851,6 +6851,99 @@
           }
         }
       }
+    },
+    "/organizations/{organization_id}/test-accounts": {
+      "post": {
+        "operationId": "create_test_accounts",
+        "summary": "create accounts with a password in a test organization",
+        "description": "M38, D-21. Admin only; the organization must be a test organization. Creates or finds each Auth account, provisions it and makes it an active member (learners join the staff cohort). An existing account's password is set only when it belongs to test organizations alone.",
+        "x-access": "admin",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/TestAccountsResult"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "request_id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestAccounts"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -10003,6 +10096,101 @@
           "grants",
           "files",
           "files_removed"
+        ],
+        "additionalProperties": false
+      },
+      "TestAccounts": {
+        "type": "object",
+        "properties": {
+          "accounts": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "items": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "maxLength": 254
+                },
+                "display_name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                }
+              },
+              "required": [
+                "email",
+                "display_name"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "learner",
+              "manager"
+            ]
+          },
+          "password": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 72
+          }
+        },
+        "required": [
+          "accounts",
+          "role"
+        ],
+        "additionalProperties": false
+      },
+      "TestAccountsResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string"
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": [
+                    "created",
+                    "password_set",
+                    "password_kept",
+                    "failed"
+                  ]
+                },
+                "password": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "email",
+                "outcome",
+                "password"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
         ],
         "additionalProperties": false
       }

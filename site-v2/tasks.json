@@ -1681,6 +1681,37 @@
       ],
       "notes": "The program's name had no edit control; the draft editor's title is the version's and never reached learners. Uploaded covers live in the private bucket at programs/<id>/cover and are served by an authenticated redirect to a signed URL.",
       "evidence": "M37 applied on PostgreSQL 16 after M01–M36 with the fixture seed. update_program accepts a library path and an upload token, refuses '/human-imagery/../x.jpg' and an external URL, clears on '', and keeps the cover when only the title changes; list_my_enrollments returns the new title and program_cover. Not exercised: the integration suite (production database) and uploads against the real bucket."
+    },
+    {
+      "id": "T39",
+      "title": "Test accounts with a password (D-21)",
+      "status": "done",
+      "release": "pilot",
+      "depends_on": [
+        "T38"
+      ],
+      "requirements": [
+        "FR-02"
+      ],
+      "read": [
+        "HANDOFF.md"
+      ],
+      "implementation_targets": [
+        "M38 create_test_account",
+        "POST /api/v1/organizations/{organization_id}/test-accounts (Auth admin createUser/updateUserById)",
+        "Create test accounts form on a test organization's card"
+      ],
+      "acceptance_ids": [],
+      "operation_ids": [
+        "create_test_accounts"
+      ],
+      "checks": [
+        "npm run typecheck",
+        "npm run test:unit",
+        "psql: M38 applied after M01–M37 with the fixture seed"
+      ],
+      "notes": "A deliberate, test-only exception to invitation-by-email (spec/03) while email delivery is not set up: an administrator sets the password, only in a test organization, and never for an account that is a platform administrator or a member of a real organization.",
+      "evidence": "M38 applied on PostgreSQL 16 after M01–M37 with the fixture seed. In an organization not marked as test: 23514. In a test organization: a new provisioned account becomes an onboarded, active learner in the staff cohort with password_allowed true; a second run changes nothing; the platform admin and a member of a real organization get password_allowed false; a learner calling it is 42501. Not exercised: the Auth admin API against the real project."
     }
   ]
 }

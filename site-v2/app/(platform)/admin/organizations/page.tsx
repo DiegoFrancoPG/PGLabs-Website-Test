@@ -14,6 +14,7 @@ import { EditOrganization } from "@/components/admin/EditOrganization";
 import { EditMember } from "@/components/admin/EditMember";
 import { GrantStatus } from "@/components/admin/GrantStatus";
 import { MoveToLatest, TestOrganizationToggle } from "@/components/admin/TestOrganization";
+import { TestAccounts } from "@/components/admin/TestAccounts";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Badge } from "@/components/pglearn/ui/badge";
 import { Button } from "@/components/pglearn/ui/button";
@@ -213,6 +214,8 @@ export default async function OrganizationsPage() {
                       timezones={timezones}
                     />
                     <TestOrganizationToggle organizationId={organization.id} isTest={organization.is_test} />
+                    {/* D-21: accounts with a password, for the team's own testing. */}
+                    {organization.is_test && <TestAccounts organizationId={organization.id} />}
                     <GrantAccess
                       organizationId={organization.id}
                       programs={programs.items
