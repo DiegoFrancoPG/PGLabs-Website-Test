@@ -86,8 +86,9 @@ export default async function VersionPage({
              Preview badge and disables learner completion/tutor-history
              mutations" — nothing on this screen records progress at all. */
           <Alert variant="info" className="mt-6">
-            This version is published and cannot be changed. Everybody learning it stays on it.
-            Open the program&rsquo;s draft to prepare the next version.
+            This version is published, so its lessons cannot be changed and everybody learning it
+            stays on it. You can still rename, schedule, hide or show its modules below. Open the
+            program&rsquo;s draft to change lessons for the next version.
           </Alert>
         )}
 

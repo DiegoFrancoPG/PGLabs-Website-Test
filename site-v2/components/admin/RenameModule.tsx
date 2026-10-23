@@ -51,16 +51,15 @@ export function RenameModule({ moduleId, title }: { moduleId: string; title: str
     return (
       <Button
         type="button"
-        variant="ghost"
-        size="icon"
-        aria-label={`Rename ${title}`}
-        title="Rename"
+        variant="subtle"
+        size="sm"
         onClick={() => {
           setValue(title);
           setEditing(true);
         }}
       >
         <Pencil aria-hidden />
+        Rename<span className="sr-only"> {title}</span>
       </Button>
     );
   }
