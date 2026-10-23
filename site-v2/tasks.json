@@ -1562,6 +1562,35 @@
       ],
       "notes": "For development, at the product owner's request: enrollments stay pinned to their version, so test users never see new versions. An admin can mark an organization as a test organization and, only there, move its people on a program to the latest published version. The move re-creates the enrollment on the latest version with progress copied by position and deletes the old one; completed enrollments are left alone.",
       "evidence": "M33 applied after M01–M32 on PostgreSQL 16 with stubbed auth/storage, the fixture seed and a second published version of Amber's program. Moving before marking the organization is 23514; a manager marking or moving is 42501. As admin: 3 enrollments moved to v2, 1 completed skipped, progress copied (Amber keeps her completed lesson), the old enrollment is gone, her outline reads from v2; moving again moves nothing. Not exercised: the integration suite and the admin page against the real database."
+    },
+    {
+      "id": "T35",
+      "title": "Renaming a module, also when published (D-14)",
+      "status": "done",
+      "release": "pilot",
+      "depends_on": [
+        "T33"
+      ],
+      "requirements": [
+        "FR-07"
+      ],
+      "read": [
+        "spec/02-data-and-security.md",
+        "HANDOFF.md"
+      ],
+      "implementation_targets": [
+        "M34 module_titles, module_json and update_module, clone carries the shown title",
+        "version editor rename control"
+      ],
+      "acceptance_ids": [],
+      "operation_ids": [],
+      "checks": [
+        "npm run typecheck",
+        "npm run test:unit",
+        "psql: M34 applied after M01–M33 with the fixture seed"
+      ],
+      "notes": "update_module now also renames a published module: the M02 freeze is kept, and the title is stored beside the frozen row in app.module_titles and returned by module_json. tests/integration/content.test.ts changed accordingly: update_module on a published module now succeeds while the stored row stays unchanged; raw UPDATEs of published modules are still refused (database-security, publication).",
+      "evidence": "M34 applied after M01–M33 on PostgreSQL 16 with stubbed auth/storage and the fixture seed. As admin: a published module is renamed (trimmed), the stored row keeps its old title, Amber's outline shows the new one, a raw UPDATE is still 23514, a 161-character title is 22023, a draft module is renamed in place with no override row, and clone_version_content copies the shown title. A learner renaming is 42501. Not exercised: the integration suite (it would run against the configured production database in this environment)."
     }
   ]
 }
