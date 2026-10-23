@@ -1,29 +1,35 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { LogOut } from "lucide-react";
 import { getMe } from "@/features/identity/me";
 import { signOut } from "@/app/(platform)/login/actions";
-import { Button } from "@/components/pglearn/ui/button";
 import { pageContainer } from "@/components/pglearn/layout";
 import { Logo } from "@/components/pglearn/Logo";
-import { ThemeToggle } from "@/components/pglearn/ThemeToggle";
+import { ProfileMenu } from "@/components/pglearn/ProfileMenu";
 import { THEME_COOKIE, parseTheme } from "@/components/pglearn/theme";
 
 /*
- * The one application shell (spec/04).
+ * The one application shell (spec/04), cut down for the PG Learn launch: the
+ * wordmark on the left and the account menu (Settings, light/dark mode, Sign
+ * out) on the right. Learners need nothing else — their learning is the home
+ * page the wordmark links to.
  *
- * "One application shell: Learner navigation for enrolled content/certificates,
- * Organization navigation when manager, Admin navigation for platform admin. A
- * multi-organization manager explicitly selects an organization; show the
- * selected name in all manager screens and export context. Scope is rechecked
- * by server."
+ * Managers alone get two shortcuts in the bar: "Learning" and their
+ * organization. A manager of several organizations gets "Organizations"
+ * instead, because spec/04 requires that they explicitly select one. Platform
+ * admin destinations live in the account menu.
  *
  * The navigation is built from `get_me`, which returns the caller's own
  * contexts and admin flag. It is a convenience, not a control: every screen it
- * links to re-establishes the caller's rights from the database, so a
- * navigation item that should not be there would still lead to a refusal
- * rather than to somebody else's data.
+ * links to re-establishes the caller's rights from the database.
  */
+
+const ADMIN_LINKS = [
+  { href: "/admin/programs", label: "Programs" },
+  { href: "/admin/organizations", label: "Organizations" },
+  { href: "/admin/individuals", label: "Individuals" },
+  { href: "/admin/reports", label: "Reports" },
+  { href: "/admin/operations", label: "Operations" },
+];
 
 export async function AppShell({
   children,
@@ -43,68 +49,36 @@ export async function AppShell({
   return (
     <div className="min-h-screen bg-ui-background">
       <header className="sticky top-0 z-40 border-b border-ui-border bg-ui-card">
-        <div className={`${pageContainer} flex min-h-[72px] flex-wrap items-center gap-x-8 gap-y-2 py-3 lg:flex-nowrap`}>
-          <Link href="/learn">
+        <div className={`${pageContainer} flex min-h-[72px] items-center gap-4 py-3`}>
+          <Link href="/learn" className="shrink-0">
             <Logo />
           </Link>
 
-          {/* On a phone the navigation takes its own row and scrolls sideways, so
-              the wordmark and the account actions stay on one line above it. */}
-          <nav
-            aria-label="Main"
-            className="order-last -mx-1 flex w-full items-center gap-1 overflow-x-auto px-1 pb-1 lg:order-none lg:mx-0 lg:w-auto lg:flex-1 lg:overflow-visible lg:px-0 lg:pb-0"
-          >
-            <NavLink href="/learn" current={active === "learn"}>
-              My learning
-            </NavLink>
-
-            {/*
-              * A manager of exactly one organization is taken straight to it.
-              * A manager of several must choose, which is why they get a list
-              * rather than a guess — spec/04: "A multi-organization manager
-              * explicitly selects an organization."
-              */}
-            {managed.length === 1 && (
-              <NavLink href={`/manage/${managed[0].organization_id}`} current={active === "manage"}>
-                {managed[0].organization_name}
+          {managed.length > 0 && (
+            <nav aria-label="Main" className="ml-auto flex min-w-0 items-center gap-1 overflow-x-auto">
+              <NavLink href="/learn" current={active === "learn"}>
+                Learning
               </NavLink>
-            )}
-            {managed.length > 1 && (
-              <NavLink href="/manage" current={active === "manage"}>
-                Organizations
-              </NavLink>
-            )}
-
-            {me.platform_admin && (
-              <>
-                <NavLink href="/admin/programs" current={active === "admin"}>
-                  Programs
+              {managed.length === 1 ? (
+                <NavLink href={`/manage/${managed[0].organization_id}`} current={active === "manage"}>
+                  {managed[0].organization_name}
                 </NavLink>
-                <NavLink href="/admin/organizations">Organizations</NavLink>
-                <NavLink href="/admin/individuals">Individuals</NavLink>
-                <NavLink href="/admin/reports">Reports</NavLink>
-                <NavLink href="/admin/operations">Operations</NavLink>
-              </>
-            )}
-            {/* Settings is navigation, so it lives inside the landmark rather
-                than beside it — a screen reader listing the navigation should
-                find every place this person can go. */}
-            <NavLink href="/settings" current={active === "settings"} className="lg:ml-auto">
-              Settings
-            </NavLink>
-          </nav>
+              ) : (
+                <NavLink href="/manage" current={active === "manage"}>
+                  Organizations
+                </NavLink>
+              )}
+            </nav>
+          )}
 
-          <div className="ml-auto flex items-center gap-1 lg:ml-0">
-            <ThemeToggle initial={theme} />
-            {/* Signing out is an action, not a destination. */}
-            <form action={signOut}>
-              {/* Icon-only on a phone so the bar stays one line; the label stays
-                  in the accessible name either way. */}
-              <Button type="submit" variant="outline" size="sm" className="h-11 px-3 sm:px-4">
-                <LogOut aria-hidden />
-                <span className="sr-only sm:not-sr-only">Sign out</span>
-              </Button>
-            </form>
+          <div className={managed.length > 0 ? "shrink-0" : "ml-auto shrink-0"}>
+            <ProfileMenu
+              name={me.profile.display_name}
+              email={me.profile.email}
+              initialTheme={theme}
+              signOut={signOut}
+              adminLinks={me.platform_admin ? ADMIN_LINKS : []}
+            />
           </div>
         </div>
       </header>

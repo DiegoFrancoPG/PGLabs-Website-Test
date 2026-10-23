@@ -19,47 +19,42 @@ const { org_a: ORG_A, program_shared: PROGRAM } = fixtures.ids;
 test.describe("the application shell", () => {
   test.skip(({ viewport }) => (viewport?.width ?? 1440) < 768, "covered at desktop width");
 
-  test("gives a learner their own navigation and nothing else", async ({ page }) => {
+  test("gives a learner the wordmark and the account menu, and no navigation", async ({ page }) => {
     await signIn(page, "amber@example.invalid");
     await page.goto("/learn");
 
-    const nav = page.getByRole("navigation", { name: "Main" });
-    await expect(nav.getByRole("link", { name: "My learning" })).toBeVisible();
-    await expect(nav.getByRole("link", { name: "Settings" })).toBeVisible();
+    // The PG Learn launch: only managers get shortcuts in the bar.
+    await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(0);
 
-    // A learner is not a manager and not an admin.
-    await expect(nav.getByRole("link", { name: "Programs" })).toBeHidden();
-    await expect(nav.getByRole("link", { name: "Operations" })).toBeHidden();
-    await expect(nav.getByRole("link", { name: "Organizations" })).toBeHidden();
+    await page.getByRole("button", { name: /Account menu/ }).click();
+    const account = page.getByRole("navigation", { name: "Account" });
+    await expect(account.getByRole("link", { name: "Settings" })).toBeVisible();
+    await expect(account.getByRole("link", { name: "Programs" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /Dark mode|Light mode/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
   });
 
-  test("takes a single-organization manager straight to their organization", async ({ page }) => {
+  test("gives a single-organization manager Learning and their organization", async ({ page }) => {
     await signIn(page, "manager_a@example.invalid");
     await page.goto("/learn");
 
     const nav = page.getByRole("navigation", { name: "Main" });
+    await expect(nav.getByRole("link", { name: "Learning" })).toHaveAttribute("aria-current", "page");
     // Named, not "Organizations": spec/04 wants the selected name shown.
     const link = nav.getByRole("link", { name: "Demo Organization A" });
     await expect(link).toHaveAttribute("href", `/manage/${ORG_A}`);
-    await expect(nav.getByRole("link", { name: "Operations" })).toBeHidden();
+    await expect(nav.getByRole("link", { name: "Operations" })).toHaveCount(0);
   });
 
-  test("gives a platform admin the admin navigation", async ({ page }) => {
+  test("gives a platform admin the admin destinations in the account menu", async ({ page }) => {
     await signIn(page, "admin@example.invalid");
     await page.goto("/learn");
 
-    const nav = page.getByRole("navigation", { name: "Main" });
+    await page.getByRole("button", { name: /Account menu/ }).click();
+    const account = page.getByRole("navigation", { name: "Account" });
     for (const name of ["Programs", "Organizations", "Individuals", "Reports", "Operations"]) {
-      await expect(nav.getByRole("link", { name })).toBeVisible();
+      await expect(account.getByRole("link", { name })).toBeVisible();
     }
-  });
-
-  test("marks the current page for a screen reader, not only visually", async ({ page }) => {
-    await signIn(page, "admin@example.invalid");
-    await page.goto("/admin/programs");
-    await expect(
-      page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Programs" })
-    ).toHaveAttribute("aria-current", "page");
   });
 });
 
@@ -215,18 +210,19 @@ test.describe("AC-053 the admin screens are operable", () => {
 test.describe("AC-053 the manager screens are operable", () => {
   test.skip(({ viewport }) => (viewport?.width ?? 1440) < 768, "covered at desktop width");
 
-  test("shows cohorts and reaches a roster", async ({ page }) => {
+  test("shows the staff list instead of cohorts", async ({ page }) => {
     await signIn(page, "manager_a@example.invalid");
     await page.goto(`/manage/${ORG_A}`);
 
-    await expect(page.getByRole("heading", { name: "Cohorts" })).toBeVisible();
-    await page.getByRole("link", { name: /Cohort/ }).first().click();
-
-    await expect(page).toHaveURL(new RegExp(`/manage/${ORG_A}/cohorts/`));
-    await expect(page.getByRole("heading", { name: "Roster" })).toBeVisible();
-    // The rule that shapes the screen, stated on it.
-    await expect(page.getByText(/does not assign them anything/)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Staff" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Cohorts" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Add people" })).toBeVisible();
     await expect(page.getByRole("table")).toContainText("amber@example.invalid");
+
+    // Filtering by status narrows the list through the URL.
+    await page.getByLabel("Status").selectOption("completed");
+    await page.getByRole("button", { name: "Apply" }).click();
+    await expect(page).toHaveURL(/status=completed/);
   });
 
   test("keeps a manager out of the admin screens", async ({ page }) => {

@@ -26,9 +26,10 @@ test.describe("AC-036 and AC-038 the manager's reports", () => {
     await page.goto(`/manage/${ORG_A}`);
 
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Demo Organization A");
-    await expect(page.getByText("Assigned")).toBeVisible();
-    await expect(page.getByText("Overdue")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Reports" })).toBeVisible();
+    const totals = page.getByRole("region", { name: "Organization totals" });
+    await expect(totals.getByText("Assigned", { exact: true })).toBeVisible();
+    await expect(totals.getByText("Overdue", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Staff" })).toBeVisible();
   });
 
   test("shows the fixture's numbers and rows for offering A", async ({ page }) => {

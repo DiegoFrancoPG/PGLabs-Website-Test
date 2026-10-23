@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { isAllowedOrigin } from "@/lib/origin";
 
 /*
  * Next 16 renamed this convention from `middleware` to `proxy`; the behaviour
@@ -32,15 +33,17 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (MUTATING.has(request.method) && !NON_COOKIE_AUTH.test(pathname)) {
-    const origin = request.headers.get("origin");
-    const expected = process.env.NEXT_PUBLIC_APP_URL;
     /*
      * An absent Origin is rejected too, not just a foreign one: browsers send
      * it on every cross-origin mutation, so a missing header on a
      * cookie-authenticated write is not something to give the benefit of the
-     * doubt to.
+     * doubt to. lib/origin explains why the served host is also accepted.
      */
-    if (!origin || !expected || origin !== new URL(expected).origin) {
+    const allowed = isAllowedOrigin(request.headers.get("origin"), process.env.NEXT_PUBLIC_APP_URL, {
+      host: request.headers.get("x-forwarded-host") ?? request.headers.get("host"),
+      proto: request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", ""),
+    });
+    if (!allowed) {
       return NextResponse.json(
         {
           error: { code: "FORBIDDEN", message: "Cross-origin request rejected.", fields: [] },

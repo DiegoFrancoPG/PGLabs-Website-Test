@@ -29,10 +29,21 @@ import { formatMediaTime, youtubeEmbedUrl } from "@/lib/youtube";
  * It also draws the controls. YouTube's own bar carries its logo and a "Watch
  * on YouTube" link that takes the learner out of the lesson, so the embed asks
  * for none (controls=0) and the bar below is ours: play, back ten seconds, the
- * timeline, volume, captions and fullscreen. Speed stays in ClassPlayer, which
- * offers it for both players. There is no quality control: YouTube retired the
- * API calls for it in 2019 and now chooses the quality itself.
+ * timeline, volume, captions, speed and fullscreen. Speed has to be here: with
+ * YouTube's bar goes its settings menu, which is where a learner set the rate.
+ * There is no quality control: YouTube retired the API calls for it in 2019
+ * and now chooses the quality itself.
+ *
+ * The bar is one row of fixed height (CONTROL_BAR_HEIGHT), so ClassPlayer can
+ * hold the player's final size before it loads. On a phone the controls a
+ * phone already has (volume) and the ones there is no room for (back ten
+ * seconds, the time read-out, the caption language) are left out.
  */
+
+/** The bar's height, as a class; ClassPlayer reserves it below the 16:9 frame. */
+export const CONTROL_BAR_HEIGHT = "h-14";
+
+const RATES = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
 
 export interface MediaHandle {
   currentTime: number;
@@ -57,6 +68,8 @@ interface Props extends Handlers {
   title: string;
   /** Where to resume. Passed as the embed's start, so resuming does not autoplay. */
   startSeconds: number;
+  /** The frame's own box; by default a 16:9 block. */
+  className?: string;
 }
 
 interface CaptionTrack {
@@ -74,6 +87,7 @@ interface YouTubePlayer {
   setPlaybackRate(rate: number): void;
   playVideo(): void;
   pauseVideo(): void;
+  getAvailablePlaybackRates(): number[];
   mute(): void;
   unMute(): void;
   isMuted(): boolean;
@@ -194,7 +208,7 @@ function currentCaptionCode(player: YouTubePlayer): string | null {
   }
 }
 
-export function YouTubeFrame({ videoId, title, startSeconds, ...handlers }: Props) {
+export function YouTubeFrame({ videoId, title, startSeconds, className, ...handlers }: Props) {
   const frame = useRef<HTMLIFrameElement | null>(null);
   const shell = useRef<HTMLDivElement | null>(null);
   const player = useRef<YouTubePlayer | null>(null);
@@ -216,6 +230,8 @@ export function YouTubeFrame({ videoId, title, startSeconds, ...handlers }: Prop
   const [duration, setDuration] = useState(0);
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(100);
+  const [rate, setRate] = useState(1);
+  const [rates, setRates] = useState<readonly number[]>(RATES);
   const [tracks, setTracks] = useState<CaptionTrack[] | null>(null);
   const [captionsOn, setCaptionsOn] = useState(true);
   const [captionCode, setCaptionCode] = useState<string | null>(null);
@@ -250,6 +266,11 @@ export function YouTubeFrame({ videoId, title, startSeconds, ...handlers }: Prop
               setDuration(created.getDuration());
               setMuted(created.isMuted());
               setVolume(created.getVolume());
+              setRate(created.getPlaybackRate());
+              // Only the speeds this video offers, of the ones the bar lists.
+              const offered = created.getAvailablePlaybackRates?.() ?? [];
+              const usable = RATES.filter((option) => offered.includes(option));
+              if (usable.length > 1) setRates(usable);
               readTime();
               latest.current.onReady({
                 get currentTime() {
@@ -302,7 +323,9 @@ export function YouTubeFrame({ videoId, title, startSeconds, ...handlers }: Prop
               }
             },
             onPlaybackRateChange: ({ data }) => {
-              if (!cancelled) latest.current.onRateChange(data);
+              if (cancelled) return;
+              setRate(data);
+              latest.current.onRateChange(data);
             },
             /*
              * Fired when a module such as captions loads. Turning captions off
@@ -395,6 +418,13 @@ export function YouTubeFrame({ videoId, title, startSeconds, ...handlers }: Prop
     }
   };
 
+  const changeRate = (next: number) => {
+    const p = player.current;
+    if (!p) return;
+    p.setPlaybackRate(next);
+    setRate(next);
+  };
+
   const toggleCaptions = () => {
     const p = player.current;
     if (!p) return;
@@ -450,10 +480,11 @@ export function YouTubeFrame({ videoId, title, startSeconds, ...handlers }: Prop
       className={
         fullscreen
           ? "flex h-full w-full flex-col bg-black"
-          : "w-full overflow-hidden rounded-ui bg-black"
+          : `${className ?? "w-full overflow-hidden rounded-ui"} flex flex-col bg-black`
       }
     >
-      <div className={fullscreen ? "min-h-0 flex-1" : "aspect-video w-full"}>
+      {/* Given a box (ClassPlayer's stage), the frame takes what the bar leaves. */}
+      <div className={fullscreen || className ? "min-h-0 flex-1" : "aspect-video w-full"}>
         <iframe
           ref={frame}
           src={src}
@@ -474,7 +505,7 @@ export function YouTubeFrame({ videoId, title, startSeconds, ...handlers }: Prop
         role="group"
         aria-label="Video controls"
         style={ON_DARK}
-        className="flex flex-wrap items-center gap-x-1 gap-y-2 px-2 py-2 text-white"
+        className={`flex ${CONTROL_BAR_HEIGHT} shrink-0 items-center gap-1 px-1 text-white sm:px-2`}
       >
         <Button
           type="button"
@@ -490,6 +521,7 @@ export function YouTubeFrame({ videoId, title, startSeconds, ...handlers }: Prop
           type="button"
           size="icon"
           variant="ghost"
+          className="hidden sm:inline-flex"
           disabled={!ready}
           onClick={() => seek(time - BACK_SECONDS)}
           aria-label={`Back ${BACK_SECONDS} seconds`}
@@ -497,7 +529,7 @@ export function YouTubeFrame({ videoId, title, startSeconds, ...handlers }: Prop
           <RotateCcw aria-hidden />
         </Button>
 
-        <div className="flex min-w-40 flex-1 items-center gap-3 px-2">
+        <div className="flex min-w-0 flex-1 items-center gap-3 px-1 sm:px-2">
           <input
             type="range"
             min={0}
@@ -510,7 +542,10 @@ export function YouTubeFrame({ videoId, title, startSeconds, ...handlers }: Prop
             aria-valuetext={`${formatMediaTime(shownTime)} of ${formatMediaTime(shownDuration)}`}
             className="h-11 w-full cursor-pointer accent-ui-brand disabled:cursor-default"
           />
-          <span className="whitespace-nowrap font-ui text-ui-caption tabular-nums" aria-hidden>
+          <span
+            className="hidden whitespace-nowrap font-ui text-ui-caption tabular-nums sm:inline"
+            aria-hidden
+          >
             {formatMediaTime(shownTime)} / {formatMediaTime(shownDuration)}
           </span>
         </div>
@@ -519,6 +554,7 @@ export function YouTubeFrame({ videoId, title, startSeconds, ...handlers }: Prop
           type="button"
           size="icon"
           variant="ghost"
+          className="hidden sm:inline-flex"
           disabled={!ready}
           onClick={toggleMute}
           aria-label={muted ? "Unmute" : "Mute"}
@@ -555,7 +591,7 @@ export function YouTubeFrame({ videoId, title, startSeconds, ...handlers }: Prop
                 value={captionCode ?? ""}
                 onChange={(event) => chooseCaptions(event.target.value)}
                 aria-label="Caption language"
-                className="h-9 rounded-full border border-white/40 bg-black px-3 font-ui text-ui-caption text-white"
+                className="hidden h-9 rounded-full border border-white/40 bg-black px-3 font-ui text-ui-caption text-white sm:block"
               >
                 {tracks.map((track) => (
                   <option key={track.languageCode} value={track.languageCode}>
@@ -566,6 +602,20 @@ export function YouTubeFrame({ videoId, title, startSeconds, ...handlers }: Prop
             )}
           </>
         )}
+
+        <select
+          value={rate}
+          disabled={!ready}
+          onChange={(event) => changeRate(Number(event.target.value))}
+          aria-label="Playback speed"
+          className="h-9 shrink-0 rounded-full border border-white/40 bg-black px-2 font-ui text-ui-caption text-white"
+        >
+          {rates.map((option) => (
+            <option key={option} value={option}>
+              {option}×
+            </option>
+          ))}
+        </select>
 
         {canFullscreen && (
           <Button

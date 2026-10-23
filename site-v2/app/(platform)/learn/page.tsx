@@ -20,6 +20,7 @@ import { Progress } from "@/components/pglearn/ui/progress";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { pageContainer } from "@/components/pglearn/layout";
 import { programCover } from "@/components/pglearn/programCover";
+import { BrandBanner } from "@/components/pglearn/BrandBanner";
 
 /*
  * spec/04 /learn: "Program cards: title, organization or Personal,
@@ -182,13 +183,23 @@ export default async function LearnPage() {
   const me = await getMe();
   if (me.profile.onboarded_at === null) return <FinishSetUp email={me.profile.email} />;
 
-  const enrollments = await listMyEnrollments();
+  /*
+   * A program an admin removed from the organization's catalog (its grant
+   * revoked, D-09) leaves the learner's home rather than sitting there as a
+   * locked card. The record is kept, and comes back if the program is
+   * restored.
+   */
+  const enrollments = (await listMyEnrollments()).filter(
+    (enrollment) => enrollment.availability !== "revoked"
+  );
   const now = new Date().toISOString();
 
   return (
     <AppShell active="learn">
     <main className={`${pageContainer} py-10`}>
-      <h1 className="font-heading text-ui-title text-ui-foreground">Your learning</h1>
+      <BrandBanner />
+
+      <h1 className="mt-10 font-heading text-ui-title text-ui-foreground">Your learning</h1>
       <p className="mt-1 text-ui-body text-ui-muted-foreground">{me.profile.email}</p>
 
       {enrollments.length === 0 ? (
