@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { callRpc } from "@/lib/rpc";
-import { copyObject, playbackPathFromStorageKey, removeObjects } from "@/lib/storage";
+import { copyObject, playbackPathFromStorageKey, programCoverKey, removeObjects } from "@/lib/storage";
 import { serviceClient } from "@/lib/supabase/server";
 import { verifiedUser } from "@/lib/auth";
+import { isLibraryCover } from "@/lib/covers";
 
 /* Mirrors the content schemas in contracts/api.json. */
 export const programSchema = z.object({
@@ -10,6 +11,8 @@ export const programSchema = z.object({
   title: z.string().min(1).max(160),
   summary: z.string().max(2000),
   archived: z.boolean(),
+  // M37 (D-19). Defaults to null so a database without M37 still reads.
+  cover_image: z.string().nullable().default(null),
   latest_published_version_id: z.string().uuid().nullable(),
 });
 
@@ -60,6 +63,16 @@ export const programPatchSchema = z
     title: z.string().trim().min(1).max(160).optional(),
     summary: z.string().max(2000).optional(),
     archived: z.boolean().optional(),
+    /*
+     * A photograph from the design system's library, or null for the
+     * automatic choice. An uploaded image is set by the cover route, which
+     * stores the file first.
+     */
+    cover_image: z
+      .string()
+      .refine(isLibraryCover, { message: "choose a photograph from the library" })
+      .nullable()
+      .optional(),
   })
   .strict()
   .refine((v) => Object.keys(v).length > 0, { message: "at least one field is required" });
@@ -165,6 +178,8 @@ export async function deleteProgram(programId: string, input: z.infer<typeof pro
     await callRpc("delete_program", { program_id: programId, ...input })
   );
   const filesRemoved = await removeObjects(storage_keys).catch(() => 0);
+  // The uploaded cover (M37) is not an asset; it sits at a fixed key, if anywhere.
+  await removeObjects([programCoverKey(programId)]).catch(() => 0);
   return { ...result, files: storage_keys.length, files_removed: filesRemoved };
 }
 

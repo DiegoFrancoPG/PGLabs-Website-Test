@@ -20,6 +20,8 @@ export const enrollmentSchema = z.object({
   user_id: z.string().uuid(),
   program_id: z.string().uuid(),
   program_title: z.string(),
+  // M37 (D-19). Defaults to null so a database without M37 still reads.
+  program_cover: z.string().nullable().default(null),
   version_id: z.string().uuid(),
   organization_id: z.string().uuid().nullable(),
   offering_id: z.string().uuid().nullable(),

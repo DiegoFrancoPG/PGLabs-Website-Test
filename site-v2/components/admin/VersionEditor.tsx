@@ -122,6 +122,11 @@ export function VersionEditor({
             onChange={(event) => setTitle(event.target.value)}
             className="mt-1 w-full pglearn-field"
           />
+          {/* D-19: renaming a draft never renamed the program, which surprised people. */}
+          <p className="mt-1 text-ui-body text-ui-muted-foreground">
+            Only shown here, to tell versions apart. Learners see the program&rsquo;s name, which you change on
+            the program page.
+          </p>
 
           <label
             htmlFor="version-description"
