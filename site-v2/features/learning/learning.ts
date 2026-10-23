@@ -85,6 +85,8 @@ export const classDetailSchema = z.object({
     // Defaults to null when absent, so a database that has not yet run M29
     // serves every page as before instead of failing the whole read.
     youtube_video_id: z.string().nullable().default(null),
+    // D-24 (M39). Empty when absent, for the same reason.
+    learning_goal: z.string().default(""),
   }),
   assets: z.array(
     z.object({

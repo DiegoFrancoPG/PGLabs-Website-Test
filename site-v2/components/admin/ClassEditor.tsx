@@ -20,6 +20,9 @@ import { parseYouTubeVideoId, youtubeWatchUrl } from "@/lib/youtube";
  * A video comes from one of two sources (D-05): an uploaded file, or a YouTube
  * link. For YouTube the duration is read from the player, since there is no
  * file to read it from, and can be corrected by hand.
+ *
+ * Every format has a learning goal (D-24): what the learner should take away,
+ * shown on the card beside the lesson.
  */
 
 interface ClassRow {
@@ -33,6 +36,7 @@ interface ClassRow {
   duration_ms: number | string | null;
   primary_asset_id: string | null;
   youtube_video_id: string | null;
+  learning_goal: string;
 }
 
 /* "9:58" or "1:02:03" to milliseconds; null for anything else. */
@@ -78,6 +82,7 @@ export function ClassEditor({
   const [kind, setKind] = useState(cls.kind);
   const [required, setRequired] = useState(cls.required);
   const [body, setBody] = useState(cls.body_md);
+  const [goal, setGoal] = useState(cls.learning_goal);
   const [source, setSource] = useState<"upload" | "youtube">(cls.youtube_video_id ? "youtube" : "upload");
   const [youtubeLink, setYoutubeLink] = useState(cls.youtube_video_id ?? "");
   const [clock, setClock] = useState(cls.duration_ms ? formatClock(Number(cls.duration_ms)) : "");
@@ -128,6 +133,7 @@ export function ClassEditor({
           title,
           kind,
           required,
+          learning_goal: goal,
           /*
            * Only what this format actually has: the schema refuses a body on a
            * media class and a duration on a text one.
@@ -231,6 +237,24 @@ export function ClassEditor({
             onChange={(event) => setTitle(event.target.value)}
             className="mt-1 w-full pglearn-field"
           />
+
+          <label htmlFor={`goal-${cls.id}`} className="mt-4 block text-ui-eyebrow uppercase text-ui-muted-foreground">
+            Learning goal
+          </label>
+          <textarea
+            id={`goal-${cls.id}`}
+            rows={2}
+            value={goal}
+            disabled={readOnly}
+            maxLength={500}
+            placeholder="By the end of this lesson, the learner can…"
+            aria-describedby={`goal-help-${cls.id}`}
+            onChange={(event) => setGoal(event.target.value)}
+            className="mt-1 w-full pglearn-field"
+          />
+          <p id={`goal-help-${cls.id}`} className="mt-1 text-ui-body text-ui-muted-foreground">
+            Shown to learners beside the lesson. Up to 500 characters.
+          </p>
 
           <div className="mt-4 flex flex-wrap gap-6">
             <div>

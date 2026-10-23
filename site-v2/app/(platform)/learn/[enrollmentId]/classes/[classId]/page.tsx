@@ -23,8 +23,9 @@ import { pageContainer } from "@/components/pglearn/layout";
  *
  * Two columns from lg up: on the left the video, sticky so it stays in view,
  * with previous/next under it; on the right everything about this lesson —
- * where it sits in the program, a three-line summary (lib/summary), links to
- * its source files and the other lessons in its module. A reading lesson puts
+ * where it sits in the program, its learning goal (D-24) or, when the author
+ * wrote none, a three-line summary (lib/summary), links to its source files
+ * and the other lessons in its module. A reading lesson puts
  * its text where the video would be.
  *
  * The PG Learn launch has no practical exercises and no tutor, so neither is
@@ -107,7 +108,9 @@ export default async function ClassPage({
   const lessonModule = outline.modules.find((m) => m.id === detail.class.module_id) ?? null;
   const moduleIndex = lessonModule ? outline.modules.indexOf(lessonModule) : -1;
   const moduleLessons = ordered.filter((c) => c.module_id === detail.class.module_id);
-  const summary = detail.class.kind === "text" ? "" : lessonSummary(detail.class.body_md, detail.class.source_text);
+  const goal = detail.class.learning_goal.trim();
+  const summary =
+    goal || detail.class.kind === "text" ? "" : lessonSummary(detail.class.body_md, detail.class.source_text);
   const kindLabel = { video: "Video", audio: "Audio", text: "Reading" }[detail.class.kind];
   const duration = detail.class.kind === "text" ? null : formatDuration(detail.class.duration_ms);
   const hasMedia = Boolean(
@@ -205,6 +208,19 @@ export default async function ClassPage({
                 </Badge>
                 {detail.progress.class_complete && <Badge variant="azure">Complete</Badge>}
               </div>
+
+              {goal && (
+                <section aria-labelledby="learning-goal-title" className="rounded-ui-sm bg-ui-wash p-4">
+                  <h2
+                    id="learning-goal-title"
+                    className="flex items-center gap-3 text-ui-eyebrow uppercase text-ui-muted-foreground"
+                  >
+                    <span aria-hidden className="h-px w-8 bg-ui-brand" />
+                    Learning goal
+                  </h2>
+                  <p className="mt-2 whitespace-pre-line text-ui-body text-ui-foreground">{goal}</p>
+                </section>
+              )}
 
               {summary && (
                 <p className="line-clamp-3 text-ui-body text-ui-foreground" title={summary}>
