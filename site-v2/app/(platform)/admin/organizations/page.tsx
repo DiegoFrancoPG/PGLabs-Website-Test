@@ -15,6 +15,7 @@ import { EditMember } from "@/components/admin/EditMember";
 import { GrantStatus } from "@/components/admin/GrantStatus";
 import { MoveToLatest, TestOrganizationToggle } from "@/components/admin/TestOrganization";
 import { TestAccounts } from "@/components/admin/TestAccounts";
+import { TestAccountList } from "@/components/admin/TestAccountList";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Badge } from "@/components/pglearn/ui/badge";
 import { Button } from "@/components/pglearn/ui/button";
@@ -133,36 +134,44 @@ export default async function OrganizationsPage() {
                     </div>
                   </div>
 
-                  <div className="mt-4">
-                    <h3 className="text-ui-eyebrow uppercase text-ui-muted-foreground">
-                      {managers.length === 1 ? "Manager" : "Managers"}
-                    </h3>
-                    {memberList === null ? (
-                      <p className="mt-2 text-ui-body text-ui-muted-foreground">
-                        Managers can be shown once the database update M30 is applied.
-                      </p>
-                    ) : managers.length === 0 ? (
-                      <p className="mt-2 text-ui-body text-ui-muted-foreground">No active manager.</p>
-                    ) : (
-                      <ul className="mt-2 flex flex-col divide-y divide-ui-border">
-                        {managers.map((manager) => (
-                          <li key={manager.user_id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
-                            <span className="min-w-0 flex-1">
-                              <span className="font-semibold text-ui-foreground">{manager.display_name}</span>{" "}
-                              {!manager.onboarded && <Badge variant="outline">Not set up yet</Badge>}
-                              <br />
-                              <span className="text-ui-body text-ui-muted-foreground">{manager.email}</span>
-                            </span>
-                            <EditMember
-                              userId={manager.user_id}
-                              name={manager.display_name}
-                              email={manager.email}
-                            />
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
+                  {/* D-25: a test organization lists every account, with its management. */}
+                  {organization.is_test && memberList !== null ? (
+                    <div className="mt-4">
+                      <h3 className="text-ui-eyebrow uppercase text-ui-muted-foreground">Test accounts</h3>
+                      <TestAccountList organizationId={organization.id} members={memberList} />
+                    </div>
+                  ) : (
+                    <div className="mt-4">
+                      <h3 className="text-ui-eyebrow uppercase text-ui-muted-foreground">
+                        {managers.length === 1 ? "Manager" : "Managers"}
+                      </h3>
+                      {memberList === null ? (
+                        <p className="mt-2 text-ui-body text-ui-muted-foreground">
+                          Managers can be shown once the database update M30 is applied.
+                        </p>
+                      ) : managers.length === 0 ? (
+                        <p className="mt-2 text-ui-body text-ui-muted-foreground">No active manager.</p>
+                      ) : (
+                        <ul className="mt-2 flex flex-col divide-y divide-ui-border">
+                          {managers.map((manager) => (
+                            <li key={manager.user_id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+                              <span className="min-w-0 flex-1">
+                                <span className="font-semibold text-ui-foreground">{manager.display_name}</span>{" "}
+                                {!manager.onboarded && <Badge variant="outline">Not set up yet</Badge>}
+                                <br />
+                                <span className="text-ui-body text-ui-muted-foreground">{manager.email}</span>
+                              </span>
+                              <EditMember
+                                userId={manager.user_id}
+                                name={manager.display_name}
+                                email={manager.email}
+                              />
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
 
                   <div className="mt-4">
                     <h3 className="text-ui-eyebrow uppercase text-ui-muted-foreground">Catalog access</h3>

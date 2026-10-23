@@ -1712,6 +1712,39 @@
       ],
       "notes": "A deliberate, test-only exception to invitation-by-email (spec/03) while email delivery is not set up: an administrator sets the password, only in a test organization, and never for an account that is a platform administrator or a member of a real organization.",
       "evidence": "M38 applied on PostgreSQL 16 after M01–M37 with the fixture seed. In an organization not marked as test: 23514. In a test organization: a new provisioned account becomes an onboarded, active learner in the staff cohort with password_allowed true; a second run changes nothing; the platform admin and a member of a real organization get password_allowed false; a learner calling it is 42501. Not exercised: the Auth admin API against the real project."
+    },
+    {
+      "id": "T40",
+      "title": "Managing test accounts (D-25)",
+      "status": "done",
+      "release": "pilot",
+      "depends_on": [
+        "T39"
+      ],
+      "requirements": [
+        "FR-02"
+      ],
+      "read": [
+        "HANDOFF.md"
+      ],
+      "implementation_targets": [
+        "M40 update_test_account",
+        "PATCH /api/v1/organizations/{organization_id}/test-accounts/{user_id}",
+        "POST /api/v1/organizations/{organization_id}/test-accounts/{user_id}/password (Auth admin updateUserById)",
+        "Test accounts list on a test organization's card: edit, role, reset password, remove/restore"
+      ],
+      "acceptance_ids": [],
+      "operation_ids": [
+        "update_test_account",
+        "reset_test_account_password"
+      ],
+      "checks": [
+        "npm run typecheck",
+        "npm run test:unit",
+        "psql: M40 applied after M01–M39 with the fixture seed"
+      ],
+      "notes": "Completes create (D-21) with read, update and remove for accounts in a test organization only. Removing takes the person out of the organization and its cohorts and keeps their records; nothing deletes an account. Passwords follow M38's rule.",
+      "evidence": "M38 applied on PostgreSQL 16 after M01–M37 with the fixture seed. In an organization not marked as test: 23514. In a test organization: a new provisioned account becomes an onboarded, active learner in the staff cohort with password_allowed true; a second run changes nothing; the platform admin and a member of a real organization get password_allowed false; a learner calling it is 42501. Not exercised: the Auth admin API against the real project."
     }
   ]
 }
