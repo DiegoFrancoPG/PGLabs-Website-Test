@@ -41,7 +41,8 @@ export function GrantAccess({
           organization_id: organizationId,
           user_id: null,
           starts_at: `${startsAt}T00:00:00.000Z`,
-          ends_at: endsAt ? `${endsAt}T00:00:00.000Z` : null,
+          // Through the end of the chosen day, as assignment dates are.
+          ends_at: endsAt ? `${endsAt}T23:59:59.000Z` : null,
         }),
       });
       const json = await response.json();

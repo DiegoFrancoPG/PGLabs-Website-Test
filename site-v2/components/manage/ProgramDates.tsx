@@ -55,7 +55,7 @@ export function ProgramDates({ schedule }: { schedule: ProgramSchedule }) {
     if (startsAt !== day(schedule.startsAt)) patch.starts_at = `${startsAt}T00:00:00.000Z`;
     if (dueAt !== day(schedule.dueAt)) patch.due_at = `${dueAt}T23:59:59.000Z`;
     if (accessEndsAt !== day(schedule.accessEndsAt)) {
-      patch.access_ends_at = accessEndsAt ? `${accessEndsAt}T00:00:00.000Z` : null;
+      patch.access_ends_at = accessEndsAt ? `${accessEndsAt}T23:59:59.000Z` : null;
     }
     if (Object.keys(patch).length === 0) {
       setOpen(false);
