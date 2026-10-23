@@ -232,6 +232,16 @@ export async function removeObject(path: string): Promise<void> {
   await bucket().remove([path]);
 }
 
+/** Removes many objects, 100 a request; returns how many the store removed. */
+export async function removeObjects(paths: string[]): Promise<number> {
+  let removed = 0;
+  for (let i = 0; i < paths.length; i += 100) {
+    const { data } = await bucket().remove(paths.slice(i, i + 100));
+    removed += data?.length ?? 0;
+  }
+  return removed;
+}
+
 /**
  * Copying one object to another key, for version cloning (T27).
  *
