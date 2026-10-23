@@ -13,7 +13,8 @@ import { Button } from "@/components/pglearn/ui/button";
  * role, set a new password, and take the person out of the organization or
  * bring them back (update_test_account, M40). Accounts are created with
  * TestAccounts (D-21). A removed account keeps its records and is listed so
- * it can be restored; nothing here deletes an account.
+ * it can be restored. "Delete permanently" (D-26, M41) erases the account and
+ * its records everywhere, after the administrator types its email.
  */
 
 export interface TestAccountMember {
@@ -49,11 +50,13 @@ function TestAccountRow({ organizationId, member }: { organizationId: string; me
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [typed, setTyped] = useState("");
   const [password, setPassword] = useState<string | null>(null);
   const removed = member.status === "removed";
   const base = `/api/v1/organizations/${organizationId}/test-accounts/${member.user_id}`;
 
-  async function send(url: string, method: "PATCH" | "POST", body: Record<string, unknown>) {
+  async function send(url: string, method: "PATCH" | "POST" | "DELETE", body: Record<string, unknown>) {
     setPending(true);
     setError(null);
     try {
@@ -66,7 +69,7 @@ function TestAccountRow({ organizationId, member }: { organizationId: string; me
       if (!response.ok) {
         throw new Error(
           response.status === 403
-            ? "Not permitted. If you are an administrator, the database update M40 may not be applied yet."
+            ? "Not permitted. If you are an administrator, the database updates M40 and M41 may not be applied yet."
             : (json?.error?.message ?? "The change could not be saved.")
         );
       }
@@ -84,6 +87,16 @@ function TestAccountRow({ organizationId, member }: { organizationId: string; me
       setConfirmRemove(false);
       router.refresh();
     }
+  }
+
+  async function remove() {
+    const data = await send(base, "DELETE", {});
+    if (!data) return;
+    if (data.auth_deleted === false) {
+      // Rare: the records are gone, but Auth kept the sign-in identity.
+      setError("The account's records were deleted, but its sign-in could not be. Try deleting it again later.");
+    }
+    router.refresh();
   }
 
   async function resetPassword() {
@@ -133,7 +146,57 @@ function TestAccountRow({ organizationId, member }: { organizationId: string; me
             Restore<span className="sr-only"> {member.display_name}</span>
           </Button>
         )}
+        <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={() => setConfirmDelete(true)}>
+          Delete permanently<span className="sr-only"> {member.display_name}</span>
+        </Button>
       </div>
+
+      {confirmDelete && (
+        <div
+          role="alertdialog"
+          aria-label={`Delete ${member.display_name} permanently`}
+          className="mt-3 rounded-ui border border-ui-border p-4"
+        >
+          <p className="text-ui-body">
+            This deletes {member.display_name}&apos;s account everywhere, with all their progress, certificates and
+            notifications, and frees {member.email} to be used again. It cannot be undone. Only accounts that belong to
+            test organizations alone can be deleted.
+          </p>
+          <label htmlFor={`delete-${member.user_id}`} className="mt-3 block text-ui-eyebrow uppercase text-ui-muted-foreground">
+            Type the email to confirm
+          </label>
+          <input
+            id={`delete-${member.user_id}`}
+            value={typed}
+            autoComplete="off"
+            onChange={(event) => setTyped(event.target.value)}
+            className="mt-1 w-full pglearn-field sm:max-w-sm"
+          />
+          <div className="mt-3 flex gap-3">
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              disabled={pending || typed.trim().toLowerCase() !== member.email.toLowerCase()}
+              onClick={remove}
+            >
+              {pending ? "Deleting…" : "Delete permanently"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={pending}
+              onClick={() => {
+                setConfirmDelete(false);
+                setTyped("");
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
 
       {confirmRemove && (
         <div role="alertdialog" aria-label={`Remove ${member.display_name}`} className="mt-3 rounded-ui border border-ui-border p-4">

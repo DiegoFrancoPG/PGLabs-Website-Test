@@ -222,7 +222,7 @@ export function ProgramOutline({
 
         {/* One card per module, as many as the program has. */}
         <div className="flex flex-col gap-4">
-          {modules.map((module, moduleIndex) => {
+          {modules.map((module) => {
             const moduleClasses = classes.filter((c) => c.module_id === module.id);
             const done = moduleClasses.filter((c) => c.completed).length;
             const percent = moduleClasses.length === 0 ? 0 : Math.round((done / moduleClasses.length) * 100);
@@ -233,14 +233,8 @@ export function ProgramOutline({
                   <div className="flex flex-col gap-3 border-b border-ui-border p-5 sm:p-6">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="flex items-center gap-3 text-ui-eyebrow uppercase text-ui-muted-foreground">
-                          <span aria-hidden className="h-px w-8 bg-ui-brand" />
-                          Module {String(moduleIndex + 1).padStart(2, "0")}
-                        </p>
-                        <h2
-                          id={`module-${module.id}`}
-                          className="mt-2 font-heading text-ui-heading text-ui-foreground"
-                        >
+                        {/* No "Module 01" eyebrow: a module is an internal grouping, its title is enough. */}
+                        <h2 id={`module-${module.id}`} className="font-heading text-ui-heading text-ui-foreground">
                           {module.title}
                         </h2>
                       </div>

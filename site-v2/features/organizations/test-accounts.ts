@@ -234,3 +234,37 @@ export async function resetTestAccountPassword(
   if (error) throw new RpcError("VALIDATION_ERROR", error.message);
   return { email: account.email, password };
 }
+
+/*
+ * Deleting a test account for good (D-26, M41). The database erases the
+ * account's data first, because the profile references the Auth identity;
+ * then the Auth identity itself is deleted, so the address can be used again.
+ * delete_test_account refuses anybody who is not a pure test account.
+ */
+export async function deleteTestAccount(
+  organizationId: string,
+  userId: string
+): Promise<{ email: string; auth_deleted: boolean }> {
+  await assertTestOrganization(organizationId);
+  let email: string;
+  try {
+    email = z
+      .object({ email: z.string() })
+      .parse(await callRpc("delete_test_account", { user_id: userId })).email;
+  } catch (err) {
+    if (err instanceof RpcError && err.code === "CONFLICT") {
+      throw new RpcError(
+        "CONFLICT",
+        "This account cannot be deleted: it is an administrator, belongs to a real organization or learns outside one, or is the organization's last manager."
+      );
+    }
+    throw err;
+  }
+  const { error } = await serviceClient().auth.admin.deleteUser(userId);
+  if (error) {
+    // The data is already gone; only the sign-in identity remains.
+    console.error("[test-accounts] the Auth identity could not be deleted", { code: error.code });
+    return { email, auth_deleted: false };
+  }
+  return { email, auth_deleted: true };
+}
