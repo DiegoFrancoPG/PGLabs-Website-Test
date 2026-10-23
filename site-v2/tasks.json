@@ -1528,6 +1528,40 @@
       ],
       "notes": "At the product owner's request a module can be removed. In a draft it is deleted with its lessons. A published version is frozen, so there it is hidden: it leaves the outline, its lessons are not found, and its required lessons stop counting in totals, reports and completion. Hiding settles completion for active, started, incomplete enrollments on the version, which can issue certificates; unhiding never takes a completion back. The six functions that count required lessons were recreated from their latest definitions with one listed-module filter each.",
       "evidence": "M32 applied after M01–M31 on PostgreSQL 16 with stubbed auth/storage and the fixture seed, plus an extra required module on Amber's published version. Hiding it: required_total 4 → 3, the module leaves the outline, get_learning_class and complete_text on its lesson are P0002, report_rows agrees, and Amber, who had done every other required lesson, is completed with exactly one certificate and one certificate outbox row; hiding again changes nothing. Unhiding restores the total and keeps the completion. delete_module on a published module is 23514, on a draft deletes the module and its lessons and closes the position gap; unknown is P0002. A learner setting hidden is 42501; a non-boolean is 22023. Not exercised: the integration suite and the pages against the real database."
+    },
+    {
+      "id": "T34",
+      "title": "Test organizations follow the latest version (D-13)",
+      "status": "done",
+      "release": "pilot",
+      "depends_on": [
+        "T31",
+        "T33"
+      ],
+      "requirements": [
+        "FR-02",
+        "FR-08"
+      ],
+      "read": [
+        "spec/03-behavior.md",
+        "HANDOFF.md"
+      ],
+      "implementation_targets": [
+        "M33 test_organizations, set_organization_test, move_to_latest_version",
+        "admin organization card: test toggle and move per program"
+      ],
+      "acceptance_ids": [],
+      "operation_ids": [
+        "set_organization_test",
+        "move_to_latest_version"
+      ],
+      "checks": [
+        "npm run typecheck",
+        "npm run test:unit",
+        "psql: M33 applied after M01–M32 with the fixture seed and a second published version"
+      ],
+      "notes": "For development, at the product owner's request: enrollments stay pinned to their version, so test users never see new versions. An admin can mark an organization as a test organization and, only there, move its people on a program to the latest published version. The move re-creates the enrollment on the latest version with progress copied by position and deletes the old one; completed enrollments are left alone.",
+      "evidence": "M33 applied after M01–M32 on PostgreSQL 16 with stubbed auth/storage, the fixture seed and a second published version of Amber's program. Moving before marking the organization is 23514; a manager marking or moving is 42501. As admin: 3 enrollments moved to v2, 1 completed skipped, progress copied (Amber keeps her completed lesson), the old enrollment is gone, her outline reads from v2; moving again moves nothing. Not exercised: the integration suite and the admin page against the real database."
     }
   ]
 }

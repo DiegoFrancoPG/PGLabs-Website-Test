@@ -499,6 +499,192 @@
         }
       }
     },
+    "/organizations/{organization_id}/test": {
+      "put": {
+        "operationId": "set_organization_test",
+        "summary": "mark or unmark a test organization",
+        "description": "",
+        "x-access": "admin",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Organization"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "request_id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizationTest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organizations/{organization_id}/move-to-latest": {
+      "post": {
+        "operationId": "move_to_latest_version",
+        "summary": "move a test organization to the latest published version",
+        "description": "",
+        "x-access": "admin",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/MoveToLatestResult"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "request_id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveToLatest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/organizations/{organization_id}/members": {
       "get": {
         "operationId": "list_organization_members",
@@ -6637,6 +6823,10 @@
               "active",
               "suspended"
             ]
+          },
+          "is_test": {
+            "type": "boolean",
+            "description": "M33 (D-13): a test organization, whose people can be moved to the latest published version."
           }
         },
         "required": [
@@ -9447,6 +9637,55 @@
         },
         "required": [
           "hidden"
+        ],
+        "additionalProperties": false
+      },
+      "OrganizationTest": {
+        "type": "object",
+        "properties": {
+          "is_test": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "is_test"
+        ],
+        "additionalProperties": false
+      },
+      "MoveToLatest": {
+        "type": "object",
+        "properties": {
+          "program_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "program_id"
+        ],
+        "additionalProperties": false
+      },
+      "MoveToLatestResult": {
+        "type": "object",
+        "properties": {
+          "version_number": {
+            "type": "integer"
+          },
+          "moved": {
+            "type": "integer"
+          },
+          "skipped_completed": {
+            "type": "integer"
+          },
+          "progress_copied": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version_number",
+          "moved",
+          "skipped_completed",
+          "progress_copied"
         ],
         "additionalProperties": false
       }
