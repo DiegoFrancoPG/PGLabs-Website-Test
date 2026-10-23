@@ -274,8 +274,13 @@ describe.skipIf(!hasDatabase)("AC-014 draft editing and ordering", () => {
       const detail = await client.query(rpc("get_version", { version_id: published }));
       const moduleId = detail.rows[0].out.modules[0].id;
 
-      // The M02 freeze applies whatever path reaches the table.
-      expect(await sqlStateOf(client, rpc("update_module", { module_id: moduleId, title: "Edited" }))).toBe("23514");
+      // The M02 freeze applies whatever path reaches the table. D-14: renaming
+      // a published module is allowed, but stored beside the frozen row (M34),
+      // which itself stays unchanged.
+      const renamed = await client.query(rpc("update_module", { module_id: moduleId, title: "Edited" }));
+      expect(renamed.rows[0].out.title).toBe("Edited");
+      const stored = await client.query("SELECT title FROM app.modules WHERE id = $1", [moduleId]);
+      expect(stored.rows[0].title).not.toBe("Edited");
       expect(
         await sqlStateOf(client, rpc("create_class", { request_id: KEY, module_id: moduleId, title: "New", kind: "text" }))
       ).toBe("23514");

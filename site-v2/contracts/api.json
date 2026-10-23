@@ -2540,7 +2540,7 @@
       "patch": {
         "operationId": "update_module",
         "summary": "update module",
-        "description": "",
+        "description": "M34 (D-14): also on a published version, where the new title is stored beside the frozen module and returned in its place.",
         "x-access": "admin",
         "parameters": [
           {
