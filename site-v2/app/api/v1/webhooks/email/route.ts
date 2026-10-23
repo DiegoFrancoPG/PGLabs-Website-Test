@@ -1,4 +1,10 @@
-import { verifyEmailWebhook, EmailNotConfiguredError } from "@/lib/email/provider";
+import {
+  verifyEmailWebhook,
+  verifySendGridWebhook,
+  EmailNotConfiguredError,
+  type ProviderEmailEvent,
+} from "@/lib/email/provider";
+import { emailProviderName } from "@/lib/env";
 import { serviceClient } from "@/lib/supabase/server";
 import { jsonError, jsonOk, resolveRequestId } from "@/lib/http";
 
@@ -12,6 +18,10 @@ import { jsonError, jsonOk, resolveRequestId } from "@/lib/http";
  * and verified before anything reaches the database, so a forged callback
  * cannot mark somebody's mail delivered or leave a record a later
  * reconciliation would trust.
+ *
+ * The configured provider decides how a callback is verified (D-23): a
+ * SendGrid deployment accepts only SendGrid's signature, and a Resend one only
+ * Resend's, so a provider that is not sending cannot write events either.
  */
 export const dynamic = "force-dynamic";
 
@@ -20,10 +30,13 @@ export async function POST(request: Request) {
 
   // Raw, not parsed: the signature is over these exact bytes.
   const rawBody = await request.text();
+  const sendGrid = emailProviderName() === "sendgrid";
 
-  let event;
+  let events: ProviderEmailEvent[];
   try {
-    event = await verifyEmailWebhook(rawBody, request.headers);
+    events = sendGrid
+      ? verifySendGridWebhook(rawBody, request.headers)
+      : [await verifyEmailWebhook(rawBody, request.headers)];
   } catch (err) {
     if (err instanceof EmailNotConfiguredError) {
       return jsonError("NOT_CONFIGURED", "Email callbacks are not configured.", requestId);
@@ -34,19 +47,29 @@ export async function POST(request: Request) {
   }
 
   const supabase = serviceClient();
-  const { data, error } = await supabase.rpc("pglearn_job", {
-    job: "email.event",
-    payload: {
-      provider_event_id: event.providerEventId,
-      provider_email_id: event.providerEmailId,
-      type: event.type,
-    },
-  });
+  const results: unknown[] = [];
+  for (const event of events) {
+    const { data, error } = await supabase.rpc("pglearn_job", {
+      job: "email.event",
+      payload: {
+        provider_event_id: event.providerEventId,
+        provider_email_id: event.providerEmailId,
+        type: event.type,
+      },
+    });
 
-  if (error) {
-    console.error("[webhook] could not record a verified event", { code: error.code });
-    return jsonError("CONFLICT", "The callback could not be recorded.", requestId);
+    if (error) {
+      /*
+       * SendGrid redelivers the whole batch on a non-2xx. The events already
+       * recorded are deduplicated by their ids on the way back, so failing the
+       * batch here loses nothing.
+       */
+      console.error("[webhook] could not record a verified event", { code: error.code });
+      return jsonError("CONFLICT", "The callback could not be recorded.", requestId);
+    }
+    results.push(data);
   }
 
-  return jsonOk(data, requestId);
+  // Resend sends one event per callback and keeps its single result.
+  return jsonOk(sendGrid ? { ok: true, recorded: results.length } : results[0], requestId);
 }

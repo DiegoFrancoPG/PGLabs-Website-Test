@@ -1,5 +1,5 @@
-import { timingSafeEqual } from "node:crypto";
-import { serverEnv } from "@/lib/env";
+import { createPublicKey, timingSafeEqual, verify } from "node:crypto";
+import { serverEnv, emailProviderName } from "@/lib/env";
 
 /*
  * The email provider, as spec/05 declares it:
@@ -114,16 +114,186 @@ export class ResendEmailProvider implements EmailProvider {
     }
 
     const detail = await response.text().catch(() => "");
-    /*
-     * 4xx other than 429 is the provider saying no: a malformed address, a
-     * blocked domain, a rejected sender. Those can be recorded as failed.
-     * 429 and 5xx say nothing about whether the message went out.
-     */
-    if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+    if (isDefinitiveRejection(response.status)) {
       throw new EmailRejected(`the provider rejected the message (${response.status})`);
     }
     console.error("[email] provider error", { status: response.status, detail: detail.slice(0, 300) });
     throw new EmailUncertain(`the provider returned ${response.status}`);
+  }
+}
+
+/**
+ * The adapter's own reading of a response status, shared by both providers.
+ *
+ * 4xx other than 429 is the provider saying no: a malformed address, a blocked
+ * domain, a rejected sender. Those can be recorded as failed. 429 and 5xx say
+ * nothing about whether the message went out.
+ */
+function isDefinitiveRejection(status: number): boolean {
+  return status >= 400 && status < 500 && status !== 429;
+}
+
+/**
+ * SendGrid, over its v3 Web API (D-23).
+ *
+ * Unlike Resend, SendGrid has no idempotency key: a retry after an uncertain
+ * outcome can deliver the message a second time. The outbox still retries an
+ * unknown outcome, because a reminder or invitation that never arrives is the
+ * worse failure; HANDOFF.md D-23 records the trade. The outbox id travels in
+ * `custom_args`, so a duplicate can be traced to its row in SendGrid's
+ * activity feed.
+ *
+ * Click, open and subscription tracking are switched off: tracking would
+ * rewrite every link through SendGrid's domain, and the templates promise
+ * links only into the application (tests/unit/email.test.ts).
+ */
+export class SendGridEmailProvider implements EmailProvider {
+  constructor(
+    private readonly apiKey: string,
+    private readonly from: string,
+    private readonly timeoutMs = REQUEST_TIMEOUT_MS
+  ) {}
+
+  async send(message: EmailMessage): Promise<{ providerId: string }> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    let response: Response;
+    try {
+      response = await fetch("https://api.sendgrid.com/v3/mail/send", {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify(sendGridBody(message, this.from)),
+      });
+    } catch (err) {
+      throw new EmailUncertain(
+        (err as Error).name === "AbortError" ? "the provider did not answer in time" : "the provider could not be reached"
+      );
+    } finally {
+      clearTimeout(timer);
+    }
+
+    if (response.ok) {
+      // 202 with an empty body; the id that callbacks carry is in this header.
+      const id = response.headers.get("x-message-id");
+      if (!id) throw new EmailUncertain("the provider accepted without an id");
+      return { providerId: id };
+    }
+
+    const detail = await response.text().catch(() => "");
+    if (isDefinitiveRejection(response.status)) {
+      throw new EmailRejected(`the provider rejected the message (${response.status})`);
+    }
+    console.error("[email] provider error", { status: response.status, detail: detail.slice(0, 300) });
+    throw new EmailUncertain(`the provider returned ${response.status}`);
+  }
+}
+
+/** The v3 mail/send body for one message. Exported for its test. */
+export function sendGridBody(message: EmailMessage, from: string) {
+  return {
+    personalizations: [{ to: [{ email: message.to }] }],
+    from: { email: from },
+    subject: message.subject,
+    // SendGrid requires text/plain before text/html.
+    content: [
+      { type: "text/plain", value: message.text },
+      { type: "text/html", value: message.html },
+    ],
+    custom_args: { outbox_id: message.idempotencyKey },
+    tracking_settings: {
+      click_tracking: { enable: false, enable_text: false },
+      open_tracking: { enable: false },
+      subscription_tracking: { enable: false },
+    },
+  };
+}
+
+/**
+ * Verifies a SendGrid Signed Event Webhook and returns the events it carries.
+ *
+ * SendGrid signs the timestamp header followed by the raw body with ECDSA
+ * (P-256, SHA-256) and sends the DER signature in base64. As with Resend,
+ * nothing is parsed, let alone written, until the signature holds.
+ *
+ * There is no freshness window: SendGrid documents none, and a replayed
+ * authentic batch changes nothing, because every event is deduplicated by its
+ * `sg_event_id` (M21).
+ *
+ * One POST carries a batch. Engagement events (open, click, unsubscribe) and
+ * `deferred`, which SendGrid follows with a final delivered, bounce or
+ * dropped, are left out rather than recorded as failures.
+ */
+export function verifySendGridWebhook(rawBody: string, headers: Headers): ProviderEmailEvent[] {
+  const publicKey = serverEnv().SENDGRID_WEBHOOK_PUBLIC_KEY;
+  if (!publicKey) throw new EmailNotConfiguredError();
+
+  const signature = headers.get("x-twilio-email-event-webhook-signature");
+  const timestamp = headers.get("x-twilio-email-event-webhook-timestamp");
+  if (!signature || !timestamp) throw new Error("the webhook carried no signature");
+
+  const key = createPublicKey({ key: Buffer.from(publicKey, "base64"), format: "der", type: "spki" });
+  const valid = verify(
+    "sha256",
+    Buffer.from(timestamp + rawBody, "utf8"),
+    key,
+    Buffer.from(signature, "base64")
+  );
+  if (!valid) throw new Error("the webhook signature did not verify");
+
+  let payload: unknown;
+  try {
+    payload = JSON.parse(rawBody);
+  } catch {
+    throw new Error("the webhook body was not valid JSON");
+  }
+  if (!Array.isArray(payload)) throw new Error("the webhook body was not a batch");
+
+  const events: ProviderEmailEvent[] = [];
+  for (const raw of payload as Array<Record<string, unknown>>) {
+    const type = normalizeSendGridEventType(typeof raw.event === "string" ? raw.event : "");
+    if (!type) continue;
+    if (typeof raw.sg_event_id !== "string" || !raw.sg_event_id) {
+      throw new Error("a webhook event carried no event id");
+    }
+    events.push({
+      providerEventId: raw.sg_event_id,
+      providerEmailId: sendGridMessageId(typeof raw.sg_message_id === "string" ? raw.sg_message_id : ""),
+      type,
+    });
+  }
+  return events;
+}
+
+/**
+ * The X-Message-Id the send saved, from a callback's sg_message_id. SendGrid
+ * appends a dot and its own routing suffix to the id it returned
+ * ("<x-message-id>.filterdrecv-…"); the outbox stores the bare id.
+ */
+export function sendGridMessageId(sgMessageId: string): string {
+  const dot = sgMessageId.indexOf(".");
+  return dot === -1 ? sgMessageId : sgMessageId.slice(0, dot);
+}
+
+/** SendGrid's vocabulary, or null for an event the outbox does not track. */
+export function normalizeSendGridEventType(event: string): ProviderEmailEvent["type"] | null {
+  switch (event) {
+    case "processed":
+      return "accepted";
+    case "delivered":
+      return "delivered";
+    case "bounce":
+      return "bounced";
+    case "spamreport":
+      return "complained";
+    case "dropped":
+      return "failed";
+    default:
+      return null;
   }
 }
 
@@ -237,6 +407,12 @@ export function maySendTo(address: string): boolean {
 /** The configured provider, or null when the key or sender is missing. */
 export function emailProvider(): EmailProvider | null {
   const env = serverEnv();
-  if (!env.RESEND_API_KEY || !env.EMAIL_FROM) return null;
-  return new ResendEmailProvider(env.RESEND_API_KEY, env.EMAIL_FROM);
+  switch (emailProviderName(env)) {
+    case "sendgrid":
+      return new SendGridEmailProvider(env.SENDGRID_API_KEY!, env.EMAIL_FROM!);
+    case "resend":
+      return new ResendEmailProvider(env.RESEND_API_KEY!, env.EMAIL_FROM!);
+    default:
+      return null;
+  }
 }

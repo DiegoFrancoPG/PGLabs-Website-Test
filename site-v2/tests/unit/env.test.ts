@@ -103,6 +103,39 @@ describe("optional integrations", () => {
     expect(integrationStatus()).toEqual({ email: "configured", tutor: "configured" });
   });
 
+  it("counts SendGrid as configured, with a sender", async () => {
+    delete process.env.RESEND_API_KEY;
+    process.env.SENDGRID_API_KEY = "SG.test";
+    process.env.EMAIL_FROM = "learn@example.test";
+    const { integrationStatus, emailProviderName } = await loadEnv();
+    expect(integrationStatus().email).toBe("configured");
+    expect(emailProviderName()).toBe("sendgrid");
+  });
+
+  it("needs a sender for SendGrid too", async () => {
+    process.env.SENDGRID_API_KEY = "SG.test";
+    delete process.env.EMAIL_FROM;
+    const { integrationStatus, emailProviderName } = await loadEnv();
+    expect(integrationStatus().email).toBe("not_configured");
+    expect(emailProviderName()).toBeNull();
+  });
+
+  it("sends through SendGrid when both providers have keys", async () => {
+    process.env.SENDGRID_API_KEY = "SG.test";
+    process.env.RESEND_API_KEY = "re_test";
+    process.env.EMAIL_FROM = "learn@example.test";
+    const { emailProviderName } = await loadEnv();
+    expect(emailProviderName()).toBe("sendgrid");
+  });
+
+  it("keeps Resend when only its key is present", async () => {
+    delete process.env.SENDGRID_API_KEY;
+    process.env.RESEND_API_KEY = "re_test";
+    process.env.EMAIL_FROM = "learn@example.test";
+    const { emailProviderName } = await loadEnv();
+    expect(emailProviderName()).toBe("resend");
+  });
+
   it("a missing optional key never blocks core configuration", async () => {
     delete process.env.OPENAI_API_KEY;
     const { serverEnv } = await loadEnv();

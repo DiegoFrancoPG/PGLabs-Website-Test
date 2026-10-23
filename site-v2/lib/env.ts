@@ -66,6 +66,13 @@ const coreSchema = z.object({
 const optionalSchema = z.object({
   RESEND_API_KEY: z.string().min(1).optional(),
   RESEND_WEBHOOK_SECRET: z.string().min(1).optional(),
+  /*
+   * SendGrid (D-23). When its key is set it is the provider, Resend or not.
+   * The public key is the Signed Event Webhook's verification key, as the
+   * SendGrid console shows it (base64 DER).
+   */
+  SENDGRID_API_KEY: z.string().min(1).optional(),
+  SENDGRID_WEBHOOK_PUBLIC_KEY: z.string().min(1).optional(),
   EMAIL_FROM: z.string().email().optional(),
   /*
    * Who may actually be written to. spec/05 requires a controlled first send,
@@ -114,6 +121,20 @@ export function resetServerEnvCache(): void {
 
 export type IntegrationName = "email" | "tutor";
 
+export type EmailProviderName = "sendgrid" | "resend";
+
+/**
+ * Which provider sends, or null when none can: a key and a sender are both
+ * needed. SendGrid wins when both keys are present, so a leftover Resend key
+ * cannot quietly route mail somewhere else.
+ */
+export function emailProviderName(env: ServerEnv = serverEnv()): EmailProviderName | null {
+  if (!env.EMAIL_FROM) return null;
+  if (env.SENDGRID_API_KEY) return "sendgrid";
+  if (env.RESEND_API_KEY) return "resend";
+  return null;
+}
+
 /**
  * What `/admin/operations` renders (spec/04: "missing model/email configuration
  * clearly shown"). Reports whether an integration can run — never the keys.
@@ -121,7 +142,7 @@ export type IntegrationName = "email" | "tutor";
 export function integrationStatus(): Record<IntegrationName, "configured" | "not_configured"> {
   const env = serverEnv();
   return {
-    email: env.RESEND_API_KEY && env.EMAIL_FROM ? "configured" : "not_configured",
+    email: emailProviderName(env) ? "configured" : "not_configured",
     tutor: env.OPENAI_API_KEY ? "configured" : "not_configured",
   };
 }
