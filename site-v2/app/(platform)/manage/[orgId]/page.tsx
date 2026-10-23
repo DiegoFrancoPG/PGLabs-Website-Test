@@ -9,6 +9,7 @@ import { listCohorts, listCohortMembers } from "@/features/organizations/cohorts
 import { listGrants } from "@/features/organizations/grants";
 import { listPrograms } from "@/features/content/content";
 import { reportEnrollments, type ReportRow } from "@/features/reporting/reports";
+import { listOfferings } from "@/features/content/enrollment";
 import {
   SORT_KEYS,
   STAFF_COHORT_NAME,
@@ -23,6 +24,7 @@ import {
 import { AppShell } from "@/components/layout/AppShell";
 import { AddStaff } from "@/components/manage/AddStaff";
 import { AssignProgram } from "@/components/manage/AssignProgram";
+import { ProgramDates, type ProgramSchedule } from "@/components/manage/ProgramDates";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Badge } from "@/components/pglearn/ui/badge";
 import { Button } from "@/components/pglearn/ui/button";
@@ -84,13 +86,17 @@ function formatDate(iso: string | null): string {
   return new Intl.DateTimeFormat("en-CA", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(iso));
 }
 
-/* Every enrollment in the organization, page by page (the RPC caps a page at 100). */
-async function allEnrollments(orgId: string) {
-  const first = await reportEnrollments({ organization_id: orgId, limit: 100 });
+/*
+ * Every enrollment in the organization, or in one assignment, page by page
+ * (the RPC caps a page at 100).
+ */
+async function allEnrollments(orgId: string, offeringId?: string) {
+  const scope = offeringId ? { offering_id: offeringId } : { organization_id: orgId };
+  const first = await reportEnrollments({ ...scope, limit: 100 });
   const items: ReportRow[] = [...first.items];
   let cursor = first.next_cursor;
   for (let page = 0; cursor && page < 50; page += 1) {
-    const next = await reportEnrollments({ organization_id: orgId, limit: 100, cursor });
+    const next = await reportEnrollments({ ...scope, limit: 100, cursor });
     items.push(...next.items);
     cursor = next.next_cursor;
   }
@@ -113,13 +119,15 @@ export default async function ManagePage({
   let cohorts;
   let grants;
   let programs;
+  let offerings;
   try {
-    [report, organizations, cohorts, grants, programs] = await Promise.all([
+    [report, organizations, cohorts, grants, programs, offerings] = await Promise.all([
       allEnrollments(orgId),
       listOrganizations(100),
       listCohorts(orgId),
       listGrants(orgId),
       listPrograms(),
+      listOfferings(orgId),
     ]);
   } catch (err) {
     // The database refuses an organization the caller does not manage, so this
@@ -152,6 +160,34 @@ export default async function ManagePage({
 
   const activeGrants = grants.items.filter((grant) => grant.status === "active");
 
+  /*
+   * D-17: each assignment's dates, editable. An assignment nobody is on any
+   * more (everybody moved to a newer version, or cancelled) is left out.
+   */
+  const schedules: ProgramSchedule[] = (
+    await Promise.all(
+      offerings.items
+        .filter((offering) => offering.status === "active")
+        .map(async (offering) => {
+          const rows = (await allEnrollments(orgId, offering.id)).items;
+          return {
+            offeringId: offering.id,
+            programTitle: programs.items.find((p) => p.id === offering.program_id)?.title ?? "A program",
+            version: rows[0]?.version_number ?? null,
+            startsAt: offering.starts_at,
+            dueAt: offering.due_at,
+            accessEndsAt: offering.access_ends_at,
+            openEnrollmentIds: rows
+              .filter((row) => row.state === "not_started" || row.state === "in_progress")
+              .map((row) => row.enrollment_id),
+            people: rows.length,
+          };
+        })
+    )
+  )
+    .filter((schedule) => schedule.people > 0)
+    .sort((a, b) => a.programTitle.localeCompare(b.programTitle) || (b.version ?? 0) - (a.version ?? 0));
+
   return (
     <AppShell active="manage">
       <main className={`${pageContainer} py-8 sm:py-10`}>
@@ -178,6 +214,24 @@ export default async function ManagePage({
             value={summary.completion_rate === null ? "—" : `${summary.completion_rate}%`}
           />
         </section>
+
+        {schedules.length > 0 && (
+          <section aria-labelledby="programs-title" className="mt-10">
+            <h2 id="programs-title" className="font-heading text-ui-heading text-ui-foreground">
+              Assigned programs
+            </h2>
+            <p className="mt-1 text-ui-body text-ui-muted-foreground">
+              When each program starts, when it is due, and when access ends.
+            </p>
+            <Card className="mt-4 px-5 py-2">
+              <ul className="flex flex-col divide-y divide-ui-border">
+                {schedules.map((schedule) => (
+                  <ProgramDates key={schedule.offeringId} schedule={schedule} />
+                ))}
+              </ul>
+            </Card>
+          </section>
+        )}
 
         <section aria-labelledby="staff-title" className="mt-10">
           <div className="flex flex-wrap items-end justify-between gap-3">
