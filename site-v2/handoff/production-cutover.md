@@ -58,7 +58,7 @@ Six of these are outside this repository and nobody can proceed without them.
    non-deterministic even if the schedule were reduced.
 3. **The domain**, and the decision of which host serves the apex. Deploying site-v2 replaces
    whatever serves the marketing site today; that is Part 6.
-4. **`RESEND_API_KEY`, `EMAIL_FROM` and a verified sender domain.** Without these no invitation and
+4. **`SENDGRID_API_KEY`, `EMAIL_FROM` and a verified sender domain** (D-23; `RESEND_API_KEY` still works if SendGrid is not set). Without these no invitation and
    no reminder is delivered, so no learner can be onboarded. Everything around sending —
    scheduling, claiming, retries, webhook verification, reconciliation — is already implemented and
    tested; only the credential is missing.
@@ -156,8 +156,8 @@ Link the repository, set the root to `site-v2`, and set these environment variab
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | the new project's publishable key |
 | `SUPABASE_SERVICE_ROLE_KEY` | the new project's secret key — **never** `NEXT_PUBLIC_` |
 | `CRON_SECRET` | the generated random string |
-| `RESEND_API_KEY`, `EMAIL_FROM` | from the verified sender |
-| `RESEND_WEBHOOK_SECRET` | from the Resend webhook, once Part 5 creates it |
+| `SENDGRID_API_KEY`, `EMAIL_FROM` | a SendGrid API key with Mail Send, and a sender verified in SendGrid |
+| `SENDGRID_WEBHOOK_PUBLIC_KEY` | from the Signed Event Webhook, once Part 5 creates it |
 | `OPENAI_API_KEY` | if the tutor is in scope |
 | `CERTIFICATE_ISSUER` | the confirmed string |
 
@@ -174,9 +174,14 @@ fails the deployment rather than a learner's first request.
 
 ## Part 5 — Wire the webhook and the schedule
 
-- **Resend webhook** → `https://<origin>/api/v1/webhooks/email`. Take the signing secret it issues
-  and set it as `RESEND_WEBHOOK_SECRET`, then redeploy. Delivery events are Svix-signed and an
-  unverified payload is rejected.
+- **SendGrid Event Webhook** (Settings → Mail Settings → Event Webhook) → `https://<origin>/api/v1/webhooks/email`,
+  with the Processed, Delivered, Dropped, Bounced and Spam Report events and **Signed Event Webhook**
+  enabled. Set its verification key as `SENDGRID_WEBHOOK_PUBLIC_KEY`, then redeploy. An unverified
+  payload is rejected.
+- **Supabase Auth SMTP** (Authentication → Emails → SMTP Settings) → host `smtp.sendgrid.net`, port
+  `587`, user `apikey`, password the SendGrid API key, sender the verified address. Password-reset
+  email is sent by Supabase, not the application, and without this it uses Supabase's built-in
+  sender, which allows only a couple of messages an hour.
 - **Crons** are declared in `vercel.json` and register themselves on deploy:
   `/api/v1/jobs/reminders` hourly, `/api/v1/jobs/retention` at 03:15 daily.
 
@@ -229,7 +234,7 @@ reachable over the Data API even with the service key — that is the boundary w
    critical defect; a 401 that never becomes a scheduled run means `CRON_SECRET` differs between
    Vercel's cron configuration and the environment.
 4. Invite one real person at PG Labs and have them accept. This is the first real outbound email the
-   system has ever sent and it exercises Resend, the sender verification, the Auth link, the
+   system has ever sent and it exercises SendGrid, the sender verification, the Auth link, the
    callback allow-list and `NEXT_PUBLIC_APP_URL` in one action. Confirm the delivery event arrives
    through the webhook.
 5. Upload one real video with its captions, publish it, and play it to completion as a learner.

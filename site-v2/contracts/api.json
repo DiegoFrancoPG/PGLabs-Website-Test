@@ -6657,7 +6657,7 @@
       "post": {
         "operationId": "email_webhook",
         "summary": "email webhook",
-        "description": "Raw Resend webhook body, verified using official SDK signature verification before parsing; payload schema is provider-owned. Body is capped at 1 MiB.",
+        "description": "Raw webhook body of the configured email provider (D-23), verified before parsing: Resend with official SDK Svix signature verification, or a SendGrid Signed Event Webhook batch (ECDSA over timestamp + raw body). Payload schema is provider-owned. Body is capped at 1 MiB.",
         "x-access": "webhook",
         "parameters": [],
         "responses": {
@@ -10223,7 +10223,7 @@
         "type": "apiKey",
         "in": "header",
         "name": "svix-signature",
-        "description": "Also requires svix-id and svix-timestamp; verify raw body with provider SDK."
+        "description": "Resend: also requires svix-id and svix-timestamp; verify raw body with provider SDK. SendGrid (D-23): X-Twilio-Email-Event-Webhook-Signature and X-Twilio-Email-Event-Webhook-Timestamp instead."
       }
     }
   }
