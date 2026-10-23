@@ -35,10 +35,9 @@ export type InviteCreate = z.infer<typeof inviteCreateSchema>;
  * here so existing callers are unchanged. */
 export { normalizeEmail };
 
-/** Finds the Auth account for an address, or creates one. Idempotent by email. */
-async function ensureAuthIdentity(email: string): Promise<string> {
+/** The Auth account id for an address, or null when there is none. */
+export async function findAuthUser(email: string): Promise<string | null> {
   const service = serviceClient();
-
   for (let page = 1; page <= 20; page += 1) {
     const { data, error } = await service.auth.admin.listUsers({ page, perPage: 200 });
     if (error) throw new Error(`auth lookup failed: ${error.message}`);
@@ -46,6 +45,14 @@ async function ensureAuthIdentity(email: string): Promise<string> {
     const found = data.users.find((u) => normalizeEmail(u.email ?? "") === email);
     if (found) return found.id;
   }
+  return null;
+}
+
+/** Finds the Auth account for an address, or creates one. Idempotent by email. */
+async function ensureAuthIdentity(email: string): Promise<string> {
+  const service = serviceClient();
+  const existing = await findAuthUser(email);
+  if (existing) return existing;
 
   /*
    * generateLink creates the identity and returns the action link. The link is

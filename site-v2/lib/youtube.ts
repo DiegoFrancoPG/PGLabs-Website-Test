@@ -66,6 +66,12 @@ export function youtubeWatchUrl(videoId: string): string {
  * is how progress is measured. rel=0 keeps suggestions to the same channel,
  * cc_load_policy=1 shows captions by default as the uploaded-file player does,
  * and start resumes where the learner left off without starting playback.
+ *
+ * controls=0 hides YouTube's own control bar, whose logo and "Watch on
+ * YouTube" link take the learner out of the lesson; YouTubeFrame draws the
+ * controls instead. fs=0 and iv_load_policy=3 drop the fullscreen button and
+ * annotations that would otherwise still show over the picture. YouTube may
+ * still show its title or logo in some states: no parameter removes those.
  */
 export function youtubeEmbedUrl(videoId: string, options: { origin: string; startSeconds: number }): string {
   if (!isYouTubeVideoId(videoId)) throw new Error("Not a YouTube video id");
@@ -74,8 +80,20 @@ export function youtubeEmbedUrl(videoId: string, options: { origin: string; star
     origin: options.origin,
     rel: "0",
     cc_load_policy: "1",
+    controls: "0",
+    fs: "0",
+    iv_load_policy: "3",
     playsinline: "1",
     start: String(Math.max(0, Math.floor(options.startSeconds))),
   });
   return `${YOUTUBE_EMBED_ORIGIN}/embed/${videoId}?${params.toString()}`;
+}
+
+/** A media time as the player shows it: 0:05, 10:15, 1:02:03. */
+export function formatMediaTime(seconds: number): string {
+  const total = Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0;
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = String(total % 60).padStart(2, "0");
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
 }

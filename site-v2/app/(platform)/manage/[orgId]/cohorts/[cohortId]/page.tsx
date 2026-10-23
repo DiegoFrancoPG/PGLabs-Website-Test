@@ -192,6 +192,10 @@ export default async function CohortPage({
                     // Only a PUBLISHED version can be assigned; a grant whose
                     // program has none is shown as not yet assignable.
                     versionId: program?.latest_published_version_id ?? null,
+                    // The organization's access window, which every assignment must sit inside.
+                    startsAt: grant.starts_at,
+                    endsAt: grant.ends_at,
+                    archived: program?.archived ?? false,
                   };
                 })}
                 members={members.items

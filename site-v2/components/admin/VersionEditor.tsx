@@ -6,6 +6,7 @@ import type { VersionDetail } from "@/features/content/content";
 import { ClassEditor } from "@/components/admin/ClassEditor";
 import { ModuleRelease } from "@/components/admin/ModuleRelease";
 import { RemoveModule } from "@/components/admin/RemoveModule";
+import { RenameModule } from "@/components/admin/RenameModule";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Button } from "@/components/pglearn/ui/button";
 import { Card } from "@/components/pglearn/ui/card";
@@ -121,6 +122,11 @@ export function VersionEditor({
             onChange={(event) => setTitle(event.target.value)}
             className="mt-1 w-full pglearn-field"
           />
+          {/* D-19: renaming a draft never renamed the program, which surprised people. */}
+          <p className="mt-1 text-ui-body text-ui-muted-foreground">
+            Only shown here, to tell versions apart. Learners see the program&rsquo;s name, which you change on
+            the program page.
+          </p>
 
           <label
             htmlFor="version-description"
@@ -201,14 +207,18 @@ export function VersionEditor({
             {modules.map((module, index) => (
               <Card key={module.id} className={`p-5 ${module.hidden ? "opacity-70" : ""}`}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h3 className="flex flex-wrap items-center gap-2 font-heading text-ui-heading text-ui-foreground">
-                    {module.title}
-                    {module.hidden && (
-                      <span className="rounded-ui-sm border border-ui-border px-2 py-0.5 font-ui text-ui-caption text-ui-muted-foreground">
-                        Hidden from learners
-                      </span>
-                    )}
-                  </h3>
+                  <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                    <h3 className="flex flex-wrap items-center gap-2 font-heading text-ui-heading text-ui-foreground">
+                      {module.title}
+                      {module.hidden && (
+                        <span className="rounded-ui-sm border border-ui-border px-2 py-0.5 font-ui text-ui-caption text-ui-muted-foreground">
+                          Hidden from learners
+                        </span>
+                      )}
+                    </h3>
+                    {/* Also on a published version (D-14). */}
+                    <RenameModule moduleId={module.id} title={module.title} />
+                  </div>
                   {!readOnly && (
                     <div className="flex gap-2">
                       {/* spec/04 asks for up/down reorder rather than drag, which

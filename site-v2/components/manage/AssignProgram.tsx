@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Button } from "@/components/pglearn/ui/button";
 import { Card } from "@/components/pglearn/ui/card";
+import { assignmentProblem } from "@/lib/assignment";
 
 /*
  * Assigning a program to some of a cohort.
@@ -23,7 +24,13 @@ interface Grant {
   programTitle: string;
   /** The version this grant would assign: the program's latest published one. */
   versionId: string | null;
+  /** The organization's access to the program; assignments must fit inside it. */
+  startsAt?: string;
+  endsAt?: string | null;
+  /** An archived program cannot be assigned to anyone new. */
+  archived?: boolean;
 }
+
 
 interface Member {
   userId: string;
@@ -42,7 +49,7 @@ export function AssignProgram({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const assignable = grants.filter((grant) => grant.versionId !== null);
+  const assignable = grants.filter((grant) => grant.versionId !== null && !grant.archived);
   const [grantId, setGrantId] = useState(assignable[0]?.id ?? "");
   const [startsAt, setStartsAt] = useState(() => new Date().toISOString().slice(0, 10));
   const [dueAt, setDueAt] = useState("");
@@ -60,6 +67,12 @@ export function AssignProgram({
     try {
       const grant = assignable.find((candidate) => candidate.id === grantId);
       if (!grant?.versionId) throw new Error("Choose a program to assign.");
+      const starts = `${startsAt}T00:00:00.000Z`;
+      const due = `${dueAt}T23:59:59.000Z`;
+      // The end of the chosen day, like the due date, so both may be the same day.
+      const accessEnds = accessEndsAt ? `${accessEndsAt}T23:59:59.000Z` : null;
+      const problem = assignmentProblem(grant, starts, due, accessEnds);
+      if (problem) throw new Error(problem);
 
       const created = await fetch("/api/v1/offerings", {
         method: "POST",
@@ -74,14 +87,18 @@ export function AssignProgram({
           cohort_id: cohortId,
           version_id: grant.versionId,
           grant_id: grant.id,
-          starts_at: `${startsAt}T00:00:00.000Z`,
-          due_at: `${dueAt}T23:59:59.000Z`,
-          access_ends_at: accessEndsAt ? `${accessEndsAt}T00:00:00.000Z` : null,
+          starts_at: starts,
+          due_at: due,
+          access_ends_at: accessEnds,
         }),
       });
       const offering = await created.json();
       if (!created.ok) {
-        throw new Error(offering?.error?.message ?? "The assignment could not be created.");
+        throw new Error(
+          offering?.error?.code === "CONFLICT"
+            ? "The assignment was refused. Check that the program is still available to this organization and that the dates fit its access."
+            : (offering?.error?.message ?? "The assignment could not be created.")
+        );
       }
 
       const enrolled = await fetch(`/api/v1/offerings/${offering.data.id}/enrollments`, {
@@ -100,7 +117,9 @@ export function AssignProgram({
         throw new Error(
           fields.length > 0
             ? `${result.error.message} ${fields.map((f) => f.message).join(" ")}`
-            : (result?.error?.message ?? "Nobody was enrolled.")
+            : result?.error?.code === "CONFLICT"
+              ? "Nobody was enrolled: everybody selected must still be on the staff list and a member of this organization. Refresh the page and try again."
+              : (result?.error?.message ?? "Nobody was enrolled.")
         );
       }
 
@@ -122,7 +141,7 @@ export function AssignProgram({
       <p className="text-ui-body text-ui-muted-foreground">
         {members.length === 0
           ? "Add somebody to the roster before assigning learning."
-          : "Every granted program is still a draft. Publish a version before assigning it."}
+          : "No granted program can be assigned: each is archived or has no published version yet."}
       </p>
     );
   }

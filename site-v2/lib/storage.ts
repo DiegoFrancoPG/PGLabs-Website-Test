@@ -232,6 +232,30 @@ export async function removeObject(path: string): Promise<void> {
   await bucket().remove([path]);
 }
 
+/*
+ * A program's uploaded cover (M37, D-19). One fixed key per program, so a
+ * new upload replaces the old file and nothing is left behind; the database
+ * keeps a token that changes with each upload, for cache busting.
+ */
+export const programCoverKey = (programId: string) => `programs/${programId}/cover`;
+
+export async function uploadProgramCover(programId: string, file: Blob, contentType: string): Promise<void> {
+  const { error } = await bucket().upload(programCoverKey(programId), file, { upsert: true, contentType });
+  if (error) {
+    throw new StorageError("STORAGE_UNAVAILABLE", "The image could not be stored.");
+  }
+}
+
+/** Removes many objects, 100 a request; returns how many the store removed. */
+export async function removeObjects(paths: string[]): Promise<number> {
+  let removed = 0;
+  for (let i = 0; i < paths.length; i += 100) {
+    const { data } = await bucket().remove(paths.slice(i, i + 100));
+    removed += data?.length ?? 0;
+  }
+  return removed;
+}
+
 /**
  * Copying one object to another key, for version cloning (T27).
  *

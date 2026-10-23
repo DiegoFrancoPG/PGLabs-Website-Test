@@ -499,6 +499,192 @@
         }
       }
     },
+    "/organizations/{organization_id}/test": {
+      "put": {
+        "operationId": "set_organization_test",
+        "summary": "mark or unmark a test organization",
+        "description": "",
+        "x-access": "admin",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Organization"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "request_id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizationTest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organizations/{organization_id}/move-to-latest": {
+      "post": {
+        "operationId": "move_to_latest_version",
+        "summary": "move a test organization to the latest published version",
+        "description": "",
+        "x-access": "admin",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/MoveToLatestResult"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "request_id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveToLatest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/organizations/{organization_id}/members": {
       "get": {
         "operationId": "list_organization_members",
@@ -1997,6 +2183,97 @@
             }
           }
         }
+      },
+      "delete": {
+        "operationId": "delete_program",
+        "summary": "delete a program and everything that depends on it",
+        "description": "M36, D-18. Permanent: removes every version and its content and files, the program's grants and offerings, and every enrollment in it with its progress and certificates. confirm_title must equal the program title.",
+        "x-access": "admin",
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ProgramDeleted"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "request_id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgramDelete"
+              }
+            }
+          }
+        }
       }
     },
     "/programs/{program_id}/versions": {
@@ -2354,7 +2631,7 @@
       "patch": {
         "operationId": "update_module",
         "summary": "update module",
-        "description": "",
+        "description": "M34 (D-14): also on a published version, where the new title is stored beside the frozen module and returned in its place.",
         "x-access": "admin",
         "parameters": [
           {
@@ -6439,6 +6716,234 @@
           }
         ]
       }
+    },
+    "/programs/{program_id}/cover": {
+      "get": {
+        "operationId": "get_program_cover",
+        "summary": "redirect to a program's uploaded cover",
+        "description": "M37, D-19. Any signed-in user. 302 to a signed URL valid for an hour; 404 when the program has no uploaded cover.",
+        "x-access": "authenticated",
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to the signed image URL"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "upload_program_cover",
+        "summary": "upload a program's cover image",
+        "description": "M37, D-19. multipart/form-data with one 'file' field: JPEG, PNG or WebP, at most 4 MB. Stores it at programs/{program_id}/cover and sets the program's cover_image to a new 'upload:<token>'.",
+        "x-access": "admin",
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Program"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "request_id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organizations/{organization_id}/test-accounts": {
+      "post": {
+        "operationId": "create_test_accounts",
+        "summary": "create accounts with a password in a test organization",
+        "description": "M38, D-21. Admin only; the organization must be a test organization. Creates or finds each Auth account, provisions it and makes it an active member (learners join the staff cohort). An existing account's password is set only when it belongs to test organizations alone.",
+        "x-access": "admin",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/TestAccountsResult"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "request_id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestAccounts"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6637,6 +7142,10 @@
               "active",
               "suspended"
             ]
+          },
+          "is_test": {
+            "type": "boolean",
+            "description": "M33 (D-13): a test organization, whose people can be moved to the latest published version."
           }
         },
         "required": [
@@ -6988,6 +7497,18 @@
                 "type": "null"
               }
             ]
+          },
+          "cover_image": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "M37: a /human-imagery/ library path, 'upload:<token>' for an uploaded image served by get_program_cover, or null for the automatic choice."
           }
         },
         "required": [
@@ -7032,6 +7553,18 @@
           },
           "archived": {
             "type": "boolean"
+          },
+          "cover_image": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^/human-imagery/"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A photograph from the design system's library, or null. Uploads go through upload_program_cover."
           }
         },
         "required": [],
@@ -8303,6 +8836,18 @@
                 "type": "null"
               }
             ]
+          },
+          "program_cover": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "M37: the program's cover_image."
           }
         },
         "required": [
@@ -9447,6 +9992,205 @@
         },
         "required": [
           "hidden"
+        ],
+        "additionalProperties": false
+      },
+      "OrganizationTest": {
+        "type": "object",
+        "properties": {
+          "is_test": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "is_test"
+        ],
+        "additionalProperties": false
+      },
+      "MoveToLatest": {
+        "type": "object",
+        "properties": {
+          "program_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "program_id"
+        ],
+        "additionalProperties": false
+      },
+      "MoveToLatestResult": {
+        "type": "object",
+        "properties": {
+          "version_number": {
+            "type": "integer"
+          },
+          "moved": {
+            "type": "integer"
+          },
+          "skipped_completed": {
+            "type": "integer"
+          },
+          "progress_copied": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version_number",
+          "moved",
+          "skipped_completed",
+          "progress_copied"
+        ],
+        "additionalProperties": false
+      },
+      "ProgramDelete": {
+        "type": "object",
+        "properties": {
+          "confirm_title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "confirm_title"
+        ],
+        "additionalProperties": false
+      },
+      "ProgramDeleted": {
+        "type": "object",
+        "properties": {
+          "program_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "versions": {
+            "type": "integer"
+          },
+          "enrollments": {
+            "type": "integer"
+          },
+          "certificates": {
+            "type": "integer"
+          },
+          "grants": {
+            "type": "integer"
+          },
+          "files": {
+            "type": "integer"
+          },
+          "files_removed": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "program_id",
+          "title",
+          "versions",
+          "enrollments",
+          "certificates",
+          "grants",
+          "files",
+          "files_removed"
+        ],
+        "additionalProperties": false
+      },
+      "TestAccounts": {
+        "type": "object",
+        "properties": {
+          "accounts": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "items": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "maxLength": 254
+                },
+                "display_name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                }
+              },
+              "required": [
+                "email",
+                "display_name"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "learner",
+              "manager"
+            ]
+          },
+          "password": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 72
+          }
+        },
+        "required": [
+          "accounts",
+          "role"
+        ],
+        "additionalProperties": false
+      },
+      "TestAccountsResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string"
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": [
+                    "created",
+                    "password_set",
+                    "password_kept",
+                    "failed"
+                  ]
+                },
+                "password": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "email",
+                "outcome",
+                "password"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
         ],
         "additionalProperties": false
       }

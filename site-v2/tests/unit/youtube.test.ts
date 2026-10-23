@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isYouTubeVideoId, parseYouTubeVideoId, youtubeEmbedUrl } from "@/lib/youtube";
+import { formatMediaTime, isYouTubeVideoId, parseYouTubeVideoId, youtubeEmbedUrl } from "@/lib/youtube";
 
 /*
  * D-05: what an author may paste for a YouTube class, and the one URL the
@@ -58,9 +58,30 @@ describe("youtubeEmbedUrl", () => {
     expect(url.searchParams.get("cc_load_policy")).toBe("1");
   });
 
+  it("hides YouTube's own controls, whose links leave the lesson", () => {
+    const url = new URL(youtubeEmbedUrl(ID, { origin: "https://learn.example.org", startSeconds: 0 }));
+    expect(url.searchParams.get("controls")).toBe("0");
+    expect(url.searchParams.get("fs")).toBe("0");
+    expect(url.searchParams.get("iv_load_policy")).toBe("3");
+    expect(url.searchParams.get("rel")).toBe("0");
+  });
+
   it("refuses anything that is not an id, so nothing else reaches the src", () => {
     expect(() => youtubeEmbedUrl("../../x", { origin: "https://a.example", startSeconds: 0 })).toThrow();
     expect(isYouTubeVideoId(`${ID}?autoplay=1`)).toBe(false);
+  });
+});
+
+describe("formatMediaTime", () => {
+  it.each([
+    [0, "0:00"],
+    [5.9, "0:05"],
+    [615, "10:15"],
+    [3723, "1:02:03"],
+    [-4, "0:00"],
+    [Number.NaN, "0:00"],
+  ])("shows %s seconds as %s", (seconds, label) => {
+    expect(formatMediaTime(seconds)).toBe(label);
   });
 });
 

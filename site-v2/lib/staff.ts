@@ -24,6 +24,7 @@ export interface StaffMember {
 export interface StaffEnrollment {
   enrollment_id: string;
   program: string;
+  version_number?: number;
   learner_name: string;
   learner_email: string;
   invitation_state: "pending" | "accepted" | "expired" | "cancelled" | "none";
@@ -46,6 +47,8 @@ export interface StaffRow {
   /** Whether they have joined yet: "invited" until the invitation is accepted. */
   account: "invited" | "active" | "removed";
   program: string | null;
+  /** The program version the enrollment is on, when there is one. */
+  version: number | null;
   status: StaffStatus;
   progress: number | null;
   requiredCompleted: number | null;
@@ -104,6 +107,7 @@ export function buildStaffRows(
         email: member.email,
         account: member.membership_status,
         program: null,
+        version: null,
         status: "not_assigned",
         progress: null,
         requiredCompleted: null,
@@ -128,6 +132,7 @@ export function buildStaffRows(
         email: member?.email ?? enrollment.learner_email,
         account: member?.membership_status ?? accountFrom(enrollment.invitation_state),
         program: enrollment.program,
+        version: enrollment.version_number ?? null,
         status: enrollment.state,
         progress: enrollment.progress_percent,
         requiredCompleted: enrollment.required_completed,
@@ -210,5 +215,91 @@ export function queryStaff(rows: StaffRow[], query: StaffQuery): StaffRow[] {
     const emptyB = isEmpty(b, sort);
     if (emptyA !== emptyB) return emptyA ? 1 : -1;
     return sign * compare(a, b, sort) || a.name.localeCompare(b.name, "en", { sensitivity: "base" });
+  });
+}
+
+/*
+ * One row per person on the screen: a person learning several programs is
+ * listed once, with one line per program in each column. The program-level
+ * filters (status, overdue, program) choose which of their lines show, and a
+ * person with none left is not listed; the search matches the person.
+ * Sorting compares people by their lines: the highest progress, the earliest
+ * due date, the latest completion or activity.
+ */
+export interface StaffPerson {
+  key: string;
+  name: string;
+  email: string;
+  account: StaffRow["account"];
+  entries: StaffRow[];
+}
+
+function group(rows: StaffRow[]): StaffPerson[] {
+  const people = new Map<string, StaffPerson>();
+  for (const row of rows) {
+    const id = row.email.trim().toLowerCase();
+    const person = people.get(id);
+    if (person) {
+      person.entries.push(row);
+      // Accepted anywhere means they have an account.
+      if (row.account === "active") person.account = "active";
+    } else {
+      people.set(id, { key: `person:${id}`, name: row.name, email: row.email, account: row.account, entries: [row] });
+    }
+  }
+  return [...people.values()];
+}
+
+function pick(values: (string | number | null)[], want: "max" | "min"): number | null {
+  const numbers = values
+    .filter((v): v is string | number => v !== null)
+    .map((v) => (typeof v === "number" ? v : Date.parse(v)));
+  if (numbers.length === 0) return null;
+  return want === "max" ? Math.max(...numbers) : Math.min(...numbers);
+}
+
+function personKey(person: StaffPerson, sort: SortKey): string | number | null {
+  const e = person.entries;
+  switch (sort) {
+    case "name":
+      return person.name;
+    case "program":
+      return e.map((r) => r.program ?? "").sort()[0] || null;
+    case "status":
+      return Math.min(...e.map((r) => STATUS_ORDER[r.status]));
+    case "progress":
+      return pick(e.map((r) => r.progress), "max");
+    case "due":
+      return pick(e.map((r) => r.dueAt), "min");
+    case "completed":
+      return pick(e.map((r) => r.completedAt), "max");
+    case "activity":
+      return pick(e.map((r) => r.lastActivityAt), "max");
+  }
+}
+
+export function queryPeople(rows: StaffRow[], query: StaffQuery): StaffPerson[] {
+  // Lines first, by every filter but the search, each person's in program order.
+  const lines = queryStaff(rows, { ...query, q: undefined, sort: "program", dir: "asc" });
+  const q = query.q?.trim().toLowerCase();
+  const people = group(lines).filter(
+    (person) => !q || person.name.toLowerCase().includes(q) || person.email.toLowerCase().includes(q)
+  );
+
+  const sort = query.sort ?? "name";
+  const sign = query.dir === "desc" ? -1 : 1;
+  return people.sort((a, b) => {
+    const ka = personKey(a, sort);
+    const kb = personKey(b, sort);
+    // People with no value for the column stay at the bottom in both directions.
+    if ((ka === null) !== (kb === null)) return ka === null ? 1 : -1;
+    let order = 0;
+    if (ka !== null && kb !== null) {
+      order =
+        typeof ka === "number" && typeof kb === "number"
+          ? ka - kb
+          : String(ka).localeCompare(String(kb), "en", { sensitivity: "base" });
+    }
+    return sign * order || a.name.localeCompare(b.name, "en", { sensitivity: "base" });
   });
 }

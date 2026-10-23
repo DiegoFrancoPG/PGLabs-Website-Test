@@ -8,6 +8,7 @@ import { listPrograms } from "@/features/content/content";
 import { AppShell } from "@/components/layout/AppShell";
 import { NewProgram } from "@/components/admin/NewProgram";
 import { ArchiveProgram } from "@/components/admin/ArchiveProgram";
+import { DeleteProgram } from "@/components/admin/DeleteProgram";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Badge } from "@/components/pglearn/ui/badge";
 import { Button } from "@/components/pglearn/ui/button";
@@ -88,6 +89,7 @@ export default async function ProgramsPage() {
                       <Link href={`/admin/programs/${program.id}`}>Open</Link>
                     </Button>
                     <ArchiveProgram programId={program.id} archived={false} />
+                    <DeleteProgram programId={program.id} title={program.title} />
                   </div>
                 </Card>
               ))}
@@ -110,11 +112,12 @@ export default async function ProgramsPage() {
                     <Card key={program.id} className="p-5">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <h3 className="text-ui-lead text-ui-foreground">{program.title}</h3>
-                        <div className="flex gap-3">
+                        <div className="flex flex-wrap gap-3">
                           <Button variant="outline" size="sm" asChild>
                             <Link href={`/admin/programs/${program.id}`}>Open</Link>
                           </Button>
                           <ArchiveProgram programId={program.id} archived />
+                          <DeleteProgram programId={program.id} title={program.title} />
                         </div>
                       </div>
                     </Card>
