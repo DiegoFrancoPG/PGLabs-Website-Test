@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildStaffRows, queryStaff, type StaffEnrollment, type StaffMember } from "@/lib/staff";
+import { buildStaffRows, queryPeople, queryStaff, type StaffEnrollment, type StaffMember } from "@/lib/staff";
 
 /*
  * The manager's staff list (PG Learn launch): cohort members joined to their
@@ -90,6 +90,47 @@ describe("queryStaff", () => {
     expect(queryStaff(rows, { sort: "progress", dir: "desc" }).map((r) => r.name)).toEqual([
       "Amber Ito",
       "Bo Diaz",
+      "Cy Lee",
+    ]);
+  });
+});
+
+describe("queryPeople", () => {
+  // Amber learns two programs; she must be listed once, with a line for each.
+  const rows = buildStaffRows(
+    members,
+    [
+      ...enrollments,
+      enrollment("e4", "amber@example.org", { program: "Data Basics", version_number: 2, progress_percent: 40 }),
+    ],
+    now
+  );
+
+  it("lists each person once, with one line per program in program order", () => {
+    const people = queryPeople(rows, {});
+    expect(people.map((p) => p.name)).toEqual(["Amber Ito", "Bo Diaz", "Cy Lee"]);
+    const amber = people[0];
+    expect(amber.entries.map((e) => e.program)).toEqual(["AI Foundations", "Data Basics"]);
+    expect(amber.entries[1].version).toBe(2);
+  });
+
+  it("keeps only the lines a program filter matches, and drops people with none", () => {
+    const people = queryPeople(rows, { program: "Data Basics" });
+    expect(people.map((p) => p.name)).toEqual(["Amber Ito"]);
+    expect(people[0].entries).toHaveLength(1);
+    expect(queryPeople(rows, { status: "completed" }).map((p) => p.name)).toEqual(["Amber Ito"]);
+  });
+
+  it("searches people and sorts them by their best line", () => {
+    expect(queryPeople(rows, { q: "bo@" }).map((p) => p.name)).toEqual(["Bo Diaz"]);
+    expect(queryPeople(rows, { sort: "progress", dir: "desc" }).map((p) => p.name)).toEqual([
+      "Amber Ito",
+      "Bo Diaz",
+      "Cy Lee",
+    ]);
+    expect(queryPeople(rows, { sort: "progress", dir: "asc" }).map((p) => p.name)).toEqual([
+      "Bo Diaz",
+      "Amber Ito",
       "Cy Lee",
     ]);
   });

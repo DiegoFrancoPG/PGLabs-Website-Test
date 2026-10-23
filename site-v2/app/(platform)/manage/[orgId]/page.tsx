@@ -13,9 +13,10 @@ import {
   SORT_KEYS,
   STAFF_COHORT_NAME,
   buildStaffRows,
-  queryStaff,
+  queryPeople,
   type SortKey,
   type StaffQuery,
+  type StaffPerson,
   type StaffRow,
   type StaffStatus,
 } from "@/lib/staff";
@@ -143,9 +144,10 @@ export default async function ManagePage({
 
   const allRows = buildStaffRows(members, report.items, new Date());
   const query = queryFrom(search);
-  const rows = queryStaff(allRows, query);
+  // One row per person; a person in several programs gets a line per program.
+  const people = queryPeople(allRows, query);
   const programNames = [...new Set(allRows.map((row) => row.program).filter((p): p is string => !!p))].sort();
-  const people = new Set(allRows.map((row) => row.email.toLowerCase())).size;
+  const peopleTotal = new Set(allRows.map((row) => row.email.toLowerCase())).size;
   const filtered = Boolean(query.q || query.status || query.overdue !== undefined || query.program);
 
   const activeGrants = grants.items.filter((grant) => grant.status === "active");
@@ -165,7 +167,7 @@ export default async function ManagePage({
         </p>
 
         <section aria-label="Organization totals" className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-          <Total label="Staff" value={people} />
+          <Total label="Staff" value={peopleTotal} />
           <Total label="Assigned" value={summary.assigned} />
           <Total label="In progress" value={summary.in_progress} />
           <Total label="Completed" value={summary.completed} />
@@ -293,7 +295,7 @@ export default async function ManagePage({
                 Add the people in your organization, then assign them a program.
               </p>
             </Card>
-          ) : rows.length === 0 ? (
+          ) : people.length === 0 ? (
             <Card className="mt-6 p-8">
               <p className="text-ui-lead text-ui-foreground">Nobody matches these filters.</p>
               <p className="mt-2 text-ui-body text-ui-muted-foreground">
@@ -307,7 +309,7 @@ export default async function ManagePage({
             <Card className="mt-6 overflow-x-auto">
               <table className="w-full min-w-[60rem] border-collapse text-ui-body">
                 <caption className="sr-only">
-                  Staff of {organization?.name}, {rows.length} {rows.length === 1 ? "row" : "rows"}
+                  Staff of {organization?.name}, {people.length} {people.length === 1 ? "person" : "people"}
                 </caption>
                 <thead>
                   <tr className="border-b border-ui-border text-left">
@@ -321,16 +323,17 @@ export default async function ManagePage({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-ui-border">
-                  {rows.map((row) => (
-                    <Row key={row.key} row={row} />
+                  {people.map((person) => (
+                    <PersonRow key={person.key} person={person} />
                   ))}
                 </tbody>
               </table>
             </Card>
           )}
-          {rows.length > 0 && (
+          {people.length > 0 && (
             <p className="mt-3 text-ui-caption text-ui-muted-foreground">
-              Showing {rows.length} of {allRows.length}. Dates are in UTC.
+              Showing {people.length} of {peopleTotal} {peopleTotal === 1 ? "person" : "people"}. Dates are
+              in UTC.
             </p>
           )}
         </section>
@@ -339,55 +342,93 @@ export default async function ManagePage({
   );
 }
 
-function Row({ row }: { row: StaffRow }) {
+/*
+ * One person, once. Every column after the first holds one line per program
+ * they are assigned, in the same order and height, so a program's status,
+ * progress and dates read across.
+ */
+function PersonRow({ person }: { person: StaffPerson }) {
+  const lines = (render: (row: StaffRow) => React.ReactNode) => (
+    <div className="flex flex-col divide-y divide-ui-border">
+      {person.entries.map((row) => (
+        <div key={row.key} className="flex min-h-11 items-center py-1.5">
+          {render(row)}
+        </div>
+      ))}
+    </div>
+  );
+
   return (
-    <tr>
+    <tr className="align-top">
       <td className="px-5 py-3">
-        <span className="font-semibold text-ui-foreground">{row.name}</span>
-        {row.account === "invited" && (
+        <span className="font-semibold text-ui-foreground">{person.name}</span>
+        {person.account === "invited" && (
           <>
             {" "}
             <Badge variant="outline">Invited</Badge>
           </>
         )}
-        {row.account === "removed" && (
+        {person.account === "removed" && (
           <>
             {" "}
             <Badge variant="outline">Removed</Badge>
           </>
         )}
         <br />
-        <span className="text-ui-muted-foreground">{row.email}</span>
+        <span className="text-ui-muted-foreground">{person.email}</span>
       </td>
-      <td className="px-5 py-3">{row.program ?? <span className="text-ui-muted-foreground">—</span>}</td>
-      <td className="px-5 py-3">
-        <span className="inline-flex flex-wrap items-center gap-1.5">
-          <Badge
-            variant={
-              row.status === "completed" ? "azure" : row.status === "not_assigned" ? "outline" : "secondary"
-            }
-          >
-            {STATUS_LABEL[row.status]}
-          </Badge>
-          {row.overdue && <Badge variant="coral">Overdue</Badge>}
-        </span>
-      </td>
-      <td className="px-5 py-3">
-        {row.progress === null ? (
-          <span className="text-ui-muted-foreground">—</span>
-        ) : (
-          <div className="flex min-w-[8rem] items-center gap-3">
-            <Progress value={row.progress} className="flex-1" aria-label={`${row.name} progress`} />
-            <span className="tabular w-10 text-right text-ui-foreground">{row.progress}%</span>
-          </div>
+      <td className="px-5 py-1.5">
+        {lines((row) =>
+          row.program ? (
+            <span>
+              {row.program}
+              {row.version !== null && <span className="text-ui-muted-foreground"> · v{row.version}</span>}
+            </span>
+          ) : (
+            <span className="text-ui-muted-foreground">—</span>
+          )
         )}
       </td>
-      <td className="tabular px-5 py-3">{formatDate(row.dueAt)}</td>
-      <td className="tabular px-5 py-3">
-        {formatDate(row.completedAt)}
-        {row.onTime === false && <span className="text-ui-destructive"> late</span>}
+      <td className="px-5 py-1.5">
+        {lines((row) => (
+          <span className="inline-flex flex-wrap items-center gap-1.5">
+            <Badge
+              variant={
+                row.status === "completed" ? "azure" : row.status === "not_assigned" ? "outline" : "secondary"
+              }
+            >
+              {STATUS_LABEL[row.status]}
+            </Badge>
+            {row.overdue && <Badge variant="coral">Overdue</Badge>}
+          </span>
+        ))}
       </td>
-      <td className="tabular px-5 py-3">{formatDate(row.lastActivityAt)}</td>
+      <td className="px-5 py-1.5">
+        {lines((row) =>
+          row.progress === null ? (
+            <span className="text-ui-muted-foreground">—</span>
+          ) : (
+            <div className="flex min-w-[8rem] flex-1 items-center gap-3">
+              <Progress
+                value={row.progress}
+                className="flex-1"
+                aria-label={`${person.name}, ${row.program ?? "program"} progress`}
+              />
+              <span className="tabular w-10 text-right text-ui-foreground">{row.progress}%</span>
+            </div>
+          )
+        )}
+      </td>
+      <td className="tabular px-5 py-1.5">{lines((row) => formatDate(row.dueAt))}</td>
+      <td className="tabular px-5 py-1.5">
+        {lines((row) => (
+          <>
+            {formatDate(row.completedAt)}
+            {row.onTime === false && <span className="text-ui-destructive">&nbsp;late</span>}
+          </>
+        ))}
+      </td>
+      <td className="tabular px-5 py-1.5">{lines((row) => formatDate(row.lastActivityAt))}</td>
     </tr>
   );
 }
