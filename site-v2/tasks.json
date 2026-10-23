@@ -1591,6 +1591,31 @@
       ],
       "notes": "update_module now also renames a published module: the M02 freeze is kept, and the title is stored beside the frozen row in app.module_titles and returned by module_json. tests/integration/content.test.ts changed accordingly: update_module on a published module now succeeds while the stored row stays unchanged; raw UPDATEs of published modules are still refused (database-security, publication).",
       "evidence": "M34 applied after M01–M33 on PostgreSQL 16 with stubbed auth/storage and the fixture seed. As admin: a published module is renamed (trimmed), the stored row keeps its old title, Amber's outline shows the new one, a raw UPDATE is still 23514, a 161-character title is 22023, a draft module is renamed in place with no override row, and clone_version_content copies the shown title. A learner renaming is 42501. Not exercised: the integration suite (it would run against the configured production database in this environment)."
+    },
+    {
+      "id": "T36",
+      "title": "New versions keep module schedules (D-16)",
+      "status": "done",
+      "release": "pilot",
+      "depends_on": [
+        "T35"
+      ],
+      "requirements": [
+        "FR-07"
+      ],
+      "read": [
+        "HANDOFF.md"
+      ],
+      "implementation_targets": [
+        "M35 clone_version_content copies module_releases and hidden_modules by position"
+      ],
+      "acceptance_ids": [],
+      "operation_ids": [],
+      "checks": [
+        "psql: M35 applied after M01–M34; a clone carries a module's release date"
+      ],
+      "notes": "Cloning a version did not copy release dates or hidden flags, so test users moved to a new version saw every module open.",
+      "evidence": "M35 applied on PostgreSQL 16 after M01–M34 with the fixture seed: a version cloned from one whose first module opens on 2030-01-01 has the same date on its first module. aplicar-m35.sql applies once and stops cleanly on a second run."
     }
   ]
 }
