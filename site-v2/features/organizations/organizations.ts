@@ -9,6 +9,8 @@ export const organizationSchema = z.object({
   name: z.string().min(1).max(120),
   timezone: z.string(),
   status: z.enum(["active", "suspended"]),
+  // M33 (D-13). Defaults to false so a database without M33 still reads.
+  is_test: z.boolean().default(false),
 });
 
 export type Organization = z.infer<typeof organizationSchema>;
@@ -131,4 +133,28 @@ export async function updateMemberProfile(
   if (provisionError) throw new Error(`profile re-sync failed: ${provisionError.message}`);
 
   return { ...current, email };
+}
+
+/* M33 (D-13): test organizations, and moving their people to the latest version. */
+export const organizationTestSchema = z.object({ is_test: z.boolean() }).strict();
+
+export const moveToLatestSchema = z.object({ program_id: z.string().uuid() }).strict();
+
+export const moveToLatestResultSchema = z.object({
+  version_number: z.number().int(),
+  moved: z.number().int(),
+  skipped_completed: z.number().int(),
+  progress_copied: z.number().int(),
+});
+
+export async function setOrganizationTest(organizationId: string, input: z.infer<typeof organizationTestSchema>) {
+  return organizationSchema.parse(
+    await callRpc("set_organization_test", { organization_id: organizationId, ...input })
+  );
+}
+
+export async function moveToLatestVersion(organizationId: string, input: z.infer<typeof moveToLatestSchema>) {
+  return moveToLatestResultSchema.parse(
+    await callRpc("move_to_latest_version", { organization_id: organizationId, ...input })
+  );
 }

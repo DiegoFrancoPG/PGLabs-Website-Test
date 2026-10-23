@@ -13,6 +13,7 @@ import { GrantAccess } from "@/components/admin/GrantAccess";
 import { EditOrganization } from "@/components/admin/EditOrganization";
 import { EditMember } from "@/components/admin/EditMember";
 import { GrantStatus } from "@/components/admin/GrantStatus";
+import { MoveToLatest, TestOrganizationToggle } from "@/components/admin/TestOrganization";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Badge } from "@/components/pglearn/ui/badge";
 import { Button } from "@/components/pglearn/ui/button";
@@ -123,9 +124,12 @@ export default async function OrganizationsPage() {
                       <h2 className="font-heading font-heading text-ui-heading text-ui-foreground">{organization.name}</h2>
                       <p className="mt-1 text-ui-body text-ui-muted-foreground">{organization.timezone}</p>
                     </div>
-                    <Badge variant={organization.status === "active" ? "azure" : "coral"}>
-                      {organization.status}
-                    </Badge>
+                    <div className="flex flex-wrap gap-1.5">
+                      {organization.is_test && <Badge variant="outline">Test organization</Badge>}
+                      <Badge variant={organization.status === "active" ? "azure" : "coral"}>
+                        {organization.status}
+                      </Badge>
+                    </div>
                   </div>
 
                   <div className="mt-4">
@@ -183,6 +187,14 @@ export default async function OrganizationsPage() {
                                 {grant.status === "active" ? "active" : "removed"}
                               </Badge>
                               <GrantStatus grantId={grant.id} programTitle={title} status={grant.status} />
+                              {/* D-13: only a test organization follows the latest version. */}
+                              {organization.is_test && grant.status === "active" && (
+                                <MoveToLatest
+                                  organizationId={organization.id}
+                                  programId={grant.program_id}
+                                  programTitle={title}
+                                />
+                              )}
                             </li>
                           );
                         })}
@@ -200,6 +212,7 @@ export default async function OrganizationsPage() {
                       timezone={organization.timezone}
                       timezones={timezones}
                     />
+                    <TestOrganizationToggle organizationId={organization.id} isTest={organization.is_test} />
                     <GrantAccess
                       organizationId={organization.id}
                       programs={programs.items
