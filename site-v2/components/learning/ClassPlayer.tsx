@@ -5,7 +5,11 @@ import { Play } from "lucide-react";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Button } from "@/components/pglearn/ui/button";
 import type { Progress } from "@/features/learning/playback";
-import { YouTubeFrame, type MediaHandle } from "@/components/learning/YouTubeFrame";
+import {
+  CONTROL_BAR_HEIGHT,
+  YouTubeFrame,
+  type MediaHandle,
+} from "@/components/learning/YouTubeFrame";
 
 /*
  * The media player (spec/04 §class page, spec/03 §4).
@@ -22,7 +26,9 @@ import { YouTubeFrame, type MediaHandle } from "@/components/learning/YouTubeFra
  *
  * A video class may instead play from YouTube (D-05). YouTubeFrame stands in
  * for the media element — same current time, rate and events — so everything
- * below measures a YouTube video exactly as it measures an uploaded file.
+ * below measures a YouTube video exactly as it measures an uploaded file. It
+ * draws its own controls in place of YouTube's, whose "Watch on YouTube" link
+ * leaves the lesson.
  */
 
 const HEARTBEAT_MS = 15_000;
@@ -284,12 +290,14 @@ export function ClassPlayer({
    * The stage: a box with the media's final size from the first render, so
    * nothing below it moves while the session opens and the player loads. A
    * placeholder fills it until the media is ready, then the media fades in
-   * over it. Speed is the player's own control (YouTube's settings menu, or
-   * the browser's on an uploaded file); the heartbeat reads the rate from the
-   * player either way.
+   * over it. Speed is the player's own control (YouTubeFrame's bar, or the
+   * browser's on an uploaded file); the heartbeat reads the rate from the
+   * player either way. A YouTube stage is 16:9 plus YouTubeFrame's control
+   * bar, held by an invisible spacer of that size.
    */
-  const stage =
-    kind === "video"
+  const stage = youtubeVideoId
+    ? "relative w-full overflow-hidden rounded-ui border border-ui-border bg-ui-card"
+    : kind === "video"
       ? "relative aspect-video w-full overflow-hidden rounded-ui border border-ui-border bg-ui-card"
       : "relative h-16 w-full overflow-hidden rounded-ui border border-ui-border bg-ui-card";
   const fade = `absolute inset-0 h-full w-full transition-opacity duration-500 ${ready ? "opacity-100" : "opacity-0"}`;
@@ -307,6 +315,12 @@ export function ClassPlayer({
       )}
 
       <div className={stage} aria-busy={!ready && !error}>
+        {youtubeVideoId && (
+          <div aria-hidden>
+            <div className="aspect-video w-full" />
+            <div className={CONTROL_BAR_HEIGHT} />
+          </div>
+        )}
         {error ? (
           <div className="absolute inset-0 flex items-center justify-center p-6">
             <Alert variant="warning">This lesson could not be opened: {error}</Alert>
