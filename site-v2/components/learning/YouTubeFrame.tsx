@@ -300,6 +300,9 @@ export function YouTubeFrame({ videoId, title, startSeconds, className, ...handl
   const [captionsOn, setCaptionsOn] = useState(true);
   const [caption, setCaption] = useState<CaptionChoice | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  // YouTube loads its captions module once playback begins, so before then
+  // "no tracks yet" says nothing about the video.
+  const [started, setStarted] = useState(false);
   const menu = useRef<HTMLDivElement | null>(null);
   // The remembered choice is applied once, when the tracks first appear.
   const preferenceApplied = useRef(false);
@@ -366,6 +369,7 @@ export function YouTubeFrame({ videoId, title, startSeconds, className, ...handl
               setDuration(created.getDuration());
               if (data === STATE.PLAYING) {
                 setPlaying(true);
+                setStarted(true);
                 if (!playingNow) {
                   playingNow = true;
                   latest.current.onPlay();
@@ -403,7 +407,17 @@ export function YouTubeFrame({ videoId, title, startSeconds, className, ...handl
             onApiChange: () => {
               if (cancelled) return;
               const found = readCaptionTracks(created);
-              if (!found || found.length === 0) return;
+              if (!found || found.length === 0) {
+                // What YouTube answered, for diagnosing a video whose menu stays empty.
+                let options: unknown = "unavailable";
+                try {
+                  options = created.getOptions?.() ?? "unavailable";
+                } catch {
+                  // Reported as unavailable.
+                }
+                console.info("[youtube] no caption tracks reported", { options });
+                return;
+              }
               setTracks(found);
               const offered = readTranslationLanguages(created);
               if (offered.length > 0) setTranslations(offered);
@@ -699,63 +713,75 @@ export function YouTubeFrame({ videoId, title, startSeconds, className, ...handl
           className="hidden h-11 w-24 cursor-pointer accent-ui-brand sm:block"
         />
 
-        {tracks && (
-          // The menu is placed against the whole player, so it fits above the bar.
-          <div ref={menu}>
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              onClick={() => setMenuOpen((open) => !open)}
-              aria-haspopup="true"
-              aria-expanded={menuOpen}
-              aria-label="Subtitles and language"
+        {/*
+         * Always shown, so learners can find it: with no tracks the menu says
+         * why, rather than the button appearing only once YouTube reports some.
+         * The menu is placed against the whole player, so it fits above the bar.
+         */}
+        <div ref={menu}>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            disabled={!ready}
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-haspopup="true"
+            aria-expanded={menuOpen}
+            aria-label="Subtitles and language"
+          >
+            {tracks && captionsOn ? <Captions aria-hidden /> : <CaptionsOff aria-hidden />}
+          </Button>
+          {menuOpen && (
+            <div
+              role="group"
+              aria-label="Subtitles"
+              className="absolute bottom-16 right-2 z-10 max-h-[calc(100%-4.5rem)] w-64 max-w-[calc(100%-1rem)] overflow-y-auto rounded-ui border border-white/20 bg-black/95 p-2 font-ui text-ui-caption text-white shadow-lg"
             >
-              {captionsOn ? <Captions aria-hidden /> : <CaptionsOff aria-hidden />}
-            </Button>
-            {menuOpen && (
-              <div
-                role="group"
-                aria-label="Subtitles"
-                className="absolute bottom-16 right-2 z-10 max-h-[calc(100%-4.5rem)] w-64 max-w-[calc(100%-1rem)] overflow-y-auto rounded-ui border border-white/20 bg-black/95 p-2 font-ui text-ui-caption text-white shadow-lg"
-              >
-                <p className="px-2 pb-1 pt-1 text-white/60">Subtitles</p>
+              <p className="px-2 pb-1 pt-1 text-white/60">Subtitles</p>
+              {!tracks && (
+                <p className="px-2 py-2 text-white">
+                  {started
+                    ? "No subtitles are available for this video."
+                    : "Subtitles appear once the video starts playing."}
+                </p>
+              )}
+              {tracks && (
                 <MenuItem selected={!captionsOn} onClick={captionsOff}>
                   Off
                 </MenuItem>
-                {tracks.map((track) => (
-                  <MenuItem
-                    key={`${track.languageCode}-${track.kind ?? ""}`}
-                    selected={captionsOn && caption?.code === track.languageCode && !caption.translateTo}
-                    onClick={() => chooseCaptions({ code: track.languageCode, translateTo: null })}
+              )}
+              {tracks?.map((track) => (
+                <MenuItem
+                  key={`${track.languageCode}-${track.kind ?? ""}`}
+                  selected={captionsOn && caption?.code === track.languageCode && !caption.translateTo}
+                  onClick={() => chooseCaptions({ code: track.languageCode, translateTo: null })}
+                >
+                  {trackName(track)}
+                </MenuItem>
+              ))}
+              {canTranslate && baseTrack && (
+                <label className="mt-2 block border-t border-white/20 px-2 pt-2">
+                  <span className="text-white/60">Translate subtitles to</span>
+                  <select
+                    value={captionsOn && caption?.translateTo ? caption.translateTo : ""}
+                    onChange={(event) =>
+                      event.target.value &&
+                      chooseCaptions({ code: baseTrack.languageCode, translateTo: event.target.value })
+                    }
+                    className="mt-1 h-9 w-full rounded-full border border-white/40 bg-black px-3 text-white"
                   >
-                    {trackName(track)}
-                  </MenuItem>
-                ))}
-                {canTranslate && baseTrack && (
-                  <label className="mt-2 block border-t border-white/20 px-2 pt-2">
-                    <span className="text-white/60">Translate subtitles to</span>
-                    <select
-                      value={captionsOn && caption?.translateTo ? caption.translateTo : ""}
-                      onChange={(event) =>
-                        event.target.value &&
-                        chooseCaptions({ code: baseTrack.languageCode, translateTo: event.target.value })
-                      }
-                      className="mt-1 h-9 w-full rounded-full border border-white/40 bg-black px-3 text-white"
-                    >
-                      <option value="">Choose a language</option>
-                      {translations.map((language) => (
-                        <option key={language.languageCode} value={language.languageCode}>
-                          {languageName(language.languageCode)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+                    <option value="">Choose a language</option>
+                    {translations.map((language) => (
+                      <option key={language.languageCode} value={language.languageCode}>
+                        {languageName(language.languageCode)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </div>
+          )}
+        </div>
 
         <select
           value={rate}

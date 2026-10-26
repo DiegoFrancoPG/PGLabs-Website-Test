@@ -3,6 +3,7 @@ import { callRpc } from "@/lib/rpc";
 import { normalizeEmail } from "@/lib/email-address";
 import { serviceClient } from "@/lib/supabase/server";
 import { invitationSchema, type Invitation } from "@/features/identity/invitations";
+import { sendInvitationEmail, type InvitationDelivery } from "@/features/organizations/invitation-email";
 
 /*
  * Creating an invitation spans two systems that cannot share a transaction.
@@ -57,7 +58,7 @@ async function ensureAuthIdentity(email: string): Promise<string> {
   /*
    * generateLink creates the identity and returns the action link. The link is
    * deliberately NOT returned from this function: spec/03 forbids exposing it
-   * to the manager, and T21 is what puts it in an email.
+   * to the manager. The email carries a fresh one (invitation-email.ts, D-27).
    */
   const { data, error } = await service.auth.admin.generateLink({ type: "invite", email });
   if (error || !data.user) throw new Error(`auth invite failed: ${error?.message ?? "no user"}`);
@@ -78,7 +79,7 @@ export async function createInvitation(
   });
   if (provisionError) throw new Error(`provisioning failed: ${provisionError.message}`);
 
-  return invitationSchema.parse(
+  const invitation = invitationSchema.parse(
     await callRpc("create_invitation", {
       request_id: requestId,
       user_id: userId,
@@ -86,10 +87,30 @@ export async function createInvitation(
       role: input.role,
     })
   );
+  return withDelivery(invitation);
+}
+
+/*
+ * D-27: the email goes out as soon as the invitation exists. A delivery
+ * problem is reported in delivery_status, never as a failed invitation, so the
+ * inviter sees it and can resend.
+ */
+async function withDelivery(invitation: Invitation): Promise<Invitation> {
+  if (invitation.status !== "pending") return invitation;
+  let delivery: InvitationDelivery;
+  try {
+    delivery = await sendInvitationEmail(invitation.id);
+  } catch (err) {
+    console.error("[invitation] the email could not be sent", (err as Error).name);
+    return invitation;
+  }
+  return delivery === "not_sent" ? invitation : { ...invitation, delivery_status: delivery };
 }
 
 export async function resendInvitation(invitationId: string, requestId: string): Promise<Invitation> {
-  return invitationSchema.parse(
+  const invitation = invitationSchema.parse(
     await callRpc("resend_invitation", { request_id: requestId, invitation_id: invitationId })
   );
+  // A resend makes a new invitation, and with it a new link.
+  return withDelivery(invitation);
 }
