@@ -68,7 +68,7 @@ describe.skipIf(!hasDatabase)("AC-010 invitation retry and expiry", () => {
     });
   });
 
-  it("replaces an expired invitation with a fresh 24-hour one", async () => {
+  it("replaces an expired invitation with a fresh 7-day one (D-28)", async () => {
     await inRollback(async (client) => {
       await client.query("DELETE FROM app.invitations WHERE user_id=$1", [DANA]);
       const old = await client.query(
@@ -86,14 +86,14 @@ describe.skipIf(!hasDatabase)("AC-010 invitation retry and expiry", () => {
       expect(fresh.id).not.toBe(oldId);
       expect(fresh.status).toBe("pending");
       /*
-       * The expiry is now()+24h on the DATABASE's clock, compared here against
-       * this machine's. The two are a few tens of milliseconds apart against a
-       * hosted instance, so the upper bound carries a minute of tolerance —
-       * what is being checked is 24 hours rather than 7 days.
+       * The expiry is now()+7 days on the DATABASE's clock (D-28, M43; spec/03
+       * said 24 hours), compared here against this machine's. The two are a
+       * few tens of milliseconds apart against a hosted instance, so the upper
+       * bound carries a minute of tolerance.
        */
       const hours = (new Date(fresh.expires_at).getTime() - Date.now()) / 3_600_000;
-      expect(hours).toBeGreaterThan(23);
-      expect(hours).toBeLessThanOrEqual(24 + 1 / 60);
+      expect(hours).toBeGreaterThan(7 * 24 - 1);
+      expect(hours).toBeLessThanOrEqual(7 * 24 + 1 / 60);
 
       await client.query("RESET ROLE");
       // The old row is expired rather than deleted, so the trail survives.

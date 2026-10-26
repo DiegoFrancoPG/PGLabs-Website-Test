@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { CONFIRM_TYPES, safeNext } from "@/lib/auth-links";
+import { createHash } from "node:crypto";
 
 /*
- * D-27: the invitation email (features/organizations/invitation-email.ts) and
- * the links it carries (lib/auth-links, /auth/confirm, /auth/verify).
+ * D-27, D-28: the invitation email (features/organizations/invitation-email.ts)
+ * and the 7-day link it carries (features/organizations/invitation-link.ts).
  */
 
 const INVITATION = "11111111-1111-4111-8111-111111111111";
@@ -13,10 +13,12 @@ const rpc = vi.fn();
 const getUserById = vi.fn();
 const generateLink = vi.fn();
 const send = vi.fn();
+const verifyOtp = vi.fn();
 let provider: { send: typeof send } | null = { send };
 
 vi.mock("@/lib/supabase/server", () => ({
   serviceClient: () => ({ rpc, auth: { admin: { getUserById, generateLink } } }),
+  userClient: async () => ({ auth: { verifyOtp } }),
 }));
 vi.mock("@/lib/email/provider", async (importOriginal) => {
   const real = await importOriginal<typeof import("@/lib/email/provider")>();
@@ -34,7 +36,7 @@ beforeEach(async () => {
   };
   (await import("@/lib/env")).resetServerEnvCache();
   provider = { send };
-  for (const mock of [rpc, getUserById, generateLink, send]) mock.mockReset();
+  for (const mock of [rpc, getUserById, generateLink, send, verifyOtp]) mock.mockReset();
 });
 afterEach(() => {
   process.env = { ...ORIGINAL };
@@ -47,85 +49,57 @@ function context(overrides: Record<string, unknown> = {}) {
   };
 }
 
-/** rpc answers invitation.context with ctx and records every invitation.sent. */
+/** rpc answers invitation.context with ctx and records every other job. */
 function databaseWith(ctx: Record<string, unknown>) {
   rpc.mockImplementation(async (_fn: string, { job }: { job: string }) =>
     job === "invitation.context" ? { data: ctx, error: null } : { data: { status: "x" }, error: null }
   );
 }
-const recorded = () =>
-  rpc.mock.calls.filter(([, args]) => args.job === "invitation.sent").map(([, args]) => args.payload);
+const jobs = (name: string) =>
+  rpc.mock.calls.filter(([, args]) => args.job === name).map(([, args]) => args.payload);
+const recorded = () => jobs("invitation.sent");
+const sha256 = (value: string) => createHash("sha256").update(value).digest("hex");
 
-describe("the links", () => {
-  it("lands a new invitee on choosing a password, then the invitation", async () => {
-    const { nextAfterConfirm } = await import("@/features/organizations/invitation-email");
-    expect(nextAfterConfirm(INVITATION, false)).toBe(`/set-password?next=%2Finvitations%2F${INVITATION}`);
-    expect(nextAfterConfirm(INVITATION, true)).toBe(`/invitations/${INVITATION}`);
-  });
-
-  it("points at our own confirm page, never at Auth's verify endpoint", async () => {
-    const { confirmUrl } = await import("@/features/organizations/invitation-email");
-    const url = new URL(confirmUrl("https://pglearn.example/", "hash", "invite", "/invitations/x"));
-    expect(url.origin + url.pathname).toBe("https://pglearn.example/auth/confirm");
-    expect(url.searchParams.get("token_hash")).toBe("hash");
-    expect(url.searchParams.get("type")).toBe("invite");
-    expect(url.searchParams.get("next")).toBe("/invitations/x");
-  });
-
-  it("follows only same-site paths afterwards", () => {
-    expect(safeNext("/invitations/x")).toBe("/invitations/x");
-    for (const bad of ["https://evil.example", "//evil.example", "/\\evil.example", "", undefined, null]) {
-      expect(safeNext(bad)).toBe("/learn");
-    }
-  });
-
-  it("exchanges only the two link types the email sends", () => {
-    expect([...CONFIRM_TYPES]).toEqual(["invite", "magiclink"]);
-  });
-});
+/** The token in the link of the email sent. */
+function sentToken(): string {
+  const match = /https:\/\/pglearn\.example\/invite\/([A-Za-z0-9_-]+)/.exec(send.mock.calls[0][0].text);
+  if (!match) throw new Error("no invitation link in the email");
+  return match[1];
+}
 
 describe("sending the invitation", () => {
-  it("sends a fresh link to a new invitee and records it without the link", async () => {
+  it("sends a 7-day link of ours and stores only its hash", async () => {
     databaseWith(context());
-    getUserById.mockResolvedValue({ data: { user: { email_confirmed_at: null } } });
-    generateLink.mockResolvedValue({ data: { properties: { hashed_token: "secret-hash" } }, error: null });
     send.mockResolvedValue({ providerId: "sg-1" });
     const { sendInvitationEmail } = await import("@/features/organizations/invitation-email");
 
     expect(await sendInvitationEmail(INVITATION)).toBe("accepted");
-    expect(generateLink).toHaveBeenCalledWith({ type: "invite", email: "amber@example.test" });
     const message = send.mock.calls[0][0];
     expect(message.to).toBe("amber@example.test");
-    expect(message.idempotencyKey).toBe(INVITATION);
-    expect(message.text).toContain("https://pglearn.example/auth/confirm?token_hash=secret-hash&type=invite");
     expect(message.text).toContain("NSCSS");
+    expect(message.text).toContain("valid for 7 days");
+
+    const token = sentToken();
+    expect(token).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(jobs("invitation.link")).toEqual([{ invitation_id: INVITATION, token_hash: sha256(token) }]);
     expect(recorded()).toEqual([{ invitation_id: INVITATION, outcome: "accepted", provider_id: "sg-1" }]);
-    expect(JSON.stringify(recorded())).not.toContain("secret-hash");
+    // The token goes in the email only: never to the database, never as the key.
+    expect(JSON.stringify(rpc.mock.calls)).not.toContain(token);
+    expect(message.idempotencyKey).not.toContain(token);
+    expect(generateLink).not.toHaveBeenCalled();
   });
 
-  it("sends a sign-in link to someone who already confirmed their account", async () => {
-    databaseWith(context({ onboarded: true }));
-    getUserById.mockResolvedValue({ data: { user: { email_confirmed_at: "2026-10-01T00:00:00Z" } } });
-    generateLink.mockResolvedValue({ data: { properties: { hashed_token: "h" } }, error: null });
+  it("issues a new link, under a new provider key, on each send", async () => {
     send.mockResolvedValue({ providerId: "sg-2" });
     const { sendInvitationEmail } = await import("@/features/organizations/invitation-email");
-
-    await sendInvitationEmail(INVITATION);
-    expect(generateLink).toHaveBeenCalledWith({ type: "magiclink", email: "amber@example.test" });
-    expect(send.mock.calls[0][0].text).toContain(`next=%2Finvitations%2F${INVITATION}`);
-  });
-
-  it("falls back to a sign-in link when Auth refuses an invite link", async () => {
     databaseWith(context());
-    getUserById.mockResolvedValue({ data: { user: { email_confirmed_at: null } } });
-    generateLink
-      .mockResolvedValueOnce({ data: { properties: null }, error: { code: "email_exists" } })
-      .mockResolvedValueOnce({ data: { properties: { hashed_token: "h2" } }, error: null });
-    send.mockResolvedValue({ providerId: "sg-3" });
-    const { sendInvitationEmail } = await import("@/features/organizations/invitation-email");
-
-    expect(await sendInvitationEmail(INVITATION)).toBe("accepted");
-    expect(send.mock.calls[0][0].text).toContain("token_hash=h2&type=magiclink");
+    await sendInvitationEmail(INVITATION);
+    databaseWith(context());
+    await sendInvitationEmail(INVITATION);
+    const [first, second] = jobs("invitation.link");
+    expect(first.token_hash).not.toBe(second.token_hash);
+    expect(send.mock.calls[0][0].idempotencyKey).not.toBe(send.mock.calls[1][0].idempotencyKey);
+    expect(send.mock.calls[0][0].idempotencyKey.startsWith(`${INVITATION}:`)).toBe(true);
   });
 
   it("does not send twice for a retried request", async () => {
@@ -134,6 +108,7 @@ describe("sending the invitation", () => {
     expect(await sendInvitationEmail(INVITATION)).toBe("not_sent");
     expect(send).not.toHaveBeenCalled();
     expect(recorded()).toEqual([]);
+    expect(jobs("invitation.link")).toEqual([]);
   });
 
   it("does not send for an invitation that is no longer pending", async () => {
@@ -148,14 +123,12 @@ describe("sending the invitation", () => {
     provider = null;
     const { sendInvitationEmail } = await import("@/features/organizations/invitation-email");
     expect(await sendInvitationEmail(INVITATION)).toBe("not_sent");
-    expect(generateLink).not.toHaveBeenCalled();
+    expect(jobs("invitation.link")).toEqual([]);
   });
 
   it("records a definitive rejection as failed and anything else as uncertain", async () => {
     const { EmailRejected, EmailUncertain } = await import("@/lib/email/provider");
     const { sendInvitationEmail } = await import("@/features/organizations/invitation-email");
-    getUserById.mockResolvedValue({ data: { user: { email_confirmed_at: null } } });
-    generateLink.mockResolvedValue({ data: { properties: { hashed_token: "h" } }, error: null });
 
     databaseWith(context());
     send.mockRejectedValueOnce(new EmailRejected("bad address"));
@@ -166,5 +139,79 @@ describe("sending the invitation", () => {
     send.mockRejectedValueOnce(new EmailUncertain("timeout"));
     expect(await sendInvitationEmail(INVITATION)).toBe("uncertain");
     expect(recorded().at(-1)).toMatchObject({ outcome: "unknown" });
+  });
+});
+
+describe("opening the link", () => {
+  const TOKEN = "A".repeat(43);
+  const found = (overrides: Record<string, unknown> = {}) => ({
+    invitation_id: INVITATION, user_id: USER, email: "amber@example.test", onboarded: false, ...overrides,
+  });
+  function redeemAnswers(data: unknown, error: { code: string } | null = null) {
+    rpc.mockImplementation(async () => ({ data, error }));
+  }
+
+  it("looks the invitation up by the token's hash, not the token", async () => {
+    redeemAnswers(found());
+    const { findInvitationByLink } = await import("@/features/organizations/invitation-link");
+    expect(await findInvitationByLink(TOKEN)).toMatchObject({ invitation_id: INVITATION });
+    expect(rpc).toHaveBeenCalledWith("pglearn_job", { job: "invitation.redeem", payload: { token_hash: sha256(TOKEN) } });
+  });
+
+  it("does not ask the database about something that is not a token", async () => {
+    const { findInvitationByLink } = await import("@/features/organizations/invitation-link");
+    for (const bad of ["", "short", "A".repeat(44), `${"A".repeat(42)}/`, INVITATION]) {
+      expect(await findInvitationByLink(bad)).toBeNull();
+    }
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("sends an expired, used or replaced link to the login page", async () => {
+    redeemAnswers(null, { code: "P0002" });
+    const { signInWithInvitationLink } = await import("@/features/organizations/invitation-link");
+    expect(await signInWithInvitationLink(TOKEN)).toBe("/login?link=invalid");
+    expect(verifyOtp).not.toHaveBeenCalled();
+  });
+
+  it("signs a new invitee in and sends them to choose a password, then the invitation", async () => {
+    redeemAnswers(found());
+    getUserById.mockResolvedValue({ data: { user: { email_confirmed_at: null } } });
+    generateLink.mockResolvedValue({ data: { properties: { hashed_token: "otp-hash" } }, error: null });
+    verifyOtp.mockResolvedValue({ error: null });
+    const { signInWithInvitationLink } = await import("@/features/organizations/invitation-link");
+
+    expect(await signInWithInvitationLink(TOKEN)).toBe(`/set-password?next=%2Finvitations%2F${INVITATION}`);
+    expect(generateLink).toHaveBeenCalledWith({ type: "invite", email: "amber@example.test" });
+    expect(verifyOtp).toHaveBeenCalledWith({ token_hash: "otp-hash", type: "invite" });
+  });
+
+  it("falls back to a sign-in token when Auth refuses an invite one", async () => {
+    redeemAnswers(found());
+    getUserById.mockResolvedValue({ data: { user: { email_confirmed_at: null } } });
+    generateLink
+      .mockResolvedValueOnce({ data: { properties: null }, error: { code: "email_exists" } })
+      .mockResolvedValueOnce({ data: { properties: { hashed_token: "h2" } }, error: null });
+    verifyOtp.mockResolvedValue({ error: null });
+    const { signInWithInvitationLink } = await import("@/features/organizations/invitation-link");
+
+    await signInWithInvitationLink(TOKEN);
+    expect(verifyOtp).toHaveBeenCalledWith({ token_hash: "h2", type: "magiclink" });
+  });
+
+  it("does not sign in someone who already uses PGLearn; they log in themselves (spec/03)", async () => {
+    redeemAnswers(found({ onboarded: true }));
+    const { signInWithInvitationLink } = await import("@/features/organizations/invitation-link");
+    expect(await signInWithInvitationLink(TOKEN)).toBe(`/invitations/${INVITATION}`);
+    expect(generateLink).not.toHaveBeenCalled();
+    expect(verifyOtp).not.toHaveBeenCalled();
+  });
+
+  it("sends the person to the login page when the sign-in fails", async () => {
+    redeemAnswers(found());
+    getUserById.mockResolvedValue({ data: { user: { email_confirmed_at: "2026-10-01T00:00:00Z" } } });
+    generateLink.mockResolvedValue({ data: { properties: { hashed_token: "h" } }, error: null });
+    verifyOtp.mockResolvedValue({ error: { code: "otp_expired" } });
+    const { signInWithInvitationLink } = await import("@/features/organizations/invitation-link");
+    expect(await signInWithInvitationLink(TOKEN)).toBe("/login?link=invalid");
   });
 });

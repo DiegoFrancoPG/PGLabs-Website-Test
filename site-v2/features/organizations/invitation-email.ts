@@ -3,36 +3,16 @@ import { serverEnv } from "@/lib/env";
 import { serviceClient } from "@/lib/supabase/server";
 import { renderEmail } from "@/lib/email/templates";
 import { emailProvider, maySendTo, EmailRejected, EmailUncertain } from "@/lib/email/provider";
+import { newInvitationToken, invitationUrl } from "@/features/organizations/invitation-link";
 
 /*
- * Sending an invitation (D-27, M42).
+ * Sending an invitation (D-27, M42; the link D-28, M43).
  *
- * spec/03 keeps the Auth link from the manager; it goes to the invited person
- * only, in this email, and is never stored or logged. It is a fresh one-time
- * link generated here, so the email is sent at once rather than queued for the
- * daily scheduler, by which time the link would have expired.
- *
- * The link opens /auth/confirm, a page with a Continue button, not the Auth
- * verification itself: mail scanners open links to check them, and a GET that
- * spent the token would leave the person with a used link. The token is only
- * exchanged when the person presses Continue (/auth/verify).
- *
- * Someone who has never set a password is taken to /set-password first, then
- * to the invitation; someone who has goes straight to the invitation.
+ * The email carries a link of ours, /invite/{token}, valid as long as the
+ * invitation (7 days); invitation-link.ts explains it. Only the token's hash is
+ * stored; the token itself goes to the invited person only, in this email, and
+ * is never logged. Each send issues a new token, replacing the last.
  */
-
-export type ConfirmType = "invite" | "magiclink";
-
-/** Where the person lands after confirming: always one of our own paths. */
-export function nextAfterConfirm(invitationId: string, onboarded: boolean): string {
-  const invitation = `/invitations/${invitationId}`;
-  return onboarded ? invitation : `/set-password?next=${encodeURIComponent(invitation)}`;
-}
-
-export function confirmUrl(appUrl: string, tokenHash: string, type: ConfirmType, next: string): string {
-  const query = new URLSearchParams({ token_hash: tokenHash, type, next });
-  return `${appUrl.replace(/\/$/, "")}/auth/confirm?${query.toString()}`;
-}
 
 const contextSchema = z.object({
   invitation_id: z.string().uuid(),
@@ -76,36 +56,22 @@ export async function sendInvitationEmail(invitationId: string): Promise<Invitat
     return "suppressed";
   }
 
-  // A fresh one-time link. An account that has confirmed its email gets a
-  // sign-in link; one that never has (a new invitee) gets an invite link.
-  const service = serviceClient();
-  const { data: found } = await service.auth.admin.getUserById(context.user_id);
-  const type: ConfirmType = found.user?.email_confirmed_at ? "magiclink" : "invite";
-  let { data, error } = await service.auth.admin.generateLink({ type, email: context.email });
-  let usedType: ConfirmType = type;
-  if ((error || !data.properties?.hashed_token) && type === "invite") {
-    // Auth refuses an invite link for an account it considers registered.
-    ({ data, error } = await service.auth.admin.generateLink({ type: "magiclink", email: context.email }));
-    usedType = "magiclink";
-  }
-  const tokenHash = data?.properties?.hashed_token;
-  if (error || !tokenHash) {
-    console.error("[invitation] the sign-in link could not be generated", { code: error?.code });
-    await record("rejected", { error: "the sign-in link could not be generated" });
-    return "failed";
-  }
+  const { token, hash } = newInvitationToken();
+  await job("invitation.link", { invitation_id: invitationId, token_hash: hash });
 
   const appUrl = serverEnv().NEXT_PUBLIC_APP_URL;
   const content = renderEmail("invitation", {
     appUrl,
     displayName: context.display_name,
     organizationName: context.organization_name,
-    actionUrl: confirmUrl(appUrl, tokenHash, usedType, nextAfterConfirm(invitationId, context.onboarded)),
+    actionUrl: invitationUrl(appUrl, token),
   });
 
   try {
     const { providerId } = await provider.send({
-      idempotencyKey: invitationId,
+      // Per link, not per invitation: a retry carries a new link that replaces
+      // the last, so a provider must not deduplicate it into the earlier email.
+      idempotencyKey: `${invitationId}:${hash.slice(0, 16)}`,
       to: context.email,
       subject: content.subject,
       html: content.html,

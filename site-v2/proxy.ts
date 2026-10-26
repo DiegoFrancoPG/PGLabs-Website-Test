@@ -80,6 +80,7 @@ export const config = {
     "/forgot-password",
     "/set-password",
     "/invitations/:path*",
+    "/invite/:path*",
     "/auth/:path*",
     "/learn/:path*",
     "/certificates/:path*",
