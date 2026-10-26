@@ -39,7 +39,7 @@ export default async function InvitationPage({ params }: { params: Promise<{ id:
       <AuthCard>
         <h1 className="text-center font-heading text-ui-title text-ui-foreground">This invitation has expired</h1>
         <p className="mt-4 text-ui-lead">
-          Invitations are valid for 24 hours. Ask whoever invited you to send a new one.
+          Invitations are valid for 7 days. Ask whoever invited you to send a new one.
         </p>
         <p className="mt-8 text-ui-body">
           <Link href="/login" className="pglearn-link">

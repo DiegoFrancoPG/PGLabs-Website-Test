@@ -5,6 +5,7 @@ import { verifiedUser } from "@/lib/auth";
 import { LoginForm } from "./login-form";
 import { Logo } from "@/components/pglearn/Logo";
 import { Eyebrow } from "@/components/pglearn/Eyebrow";
+import { Alert } from "@/components/pglearn/ui/alert";
 
 export const metadata: Metadata = { title: "Sign in" };
 
@@ -26,7 +27,8 @@ const promises = [
   "A certificate when you complete a program.",
 ];
 
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ link?: string }> }) {
+  const { link } = await searchParams;
   // An already-signed-in visitor has no business on the sign-in form.
   if (await verifiedUser()) redirect("/learn");
 
@@ -85,6 +87,12 @@ export default async function LoginPage() {
             Accounts are created by invitation. If you have not been invited yet, ask your
             organization&rsquo;s manager.
           </p>
+          {link === "invalid" && (
+            <Alert variant="warning" className="mt-6">
+              That link has expired or was already used. Sign in if you have a password, or ask whoever
+              invited you to send the invitation again.
+            </Alert>
+          )}
           <LoginForm />
         </div>
       </main>

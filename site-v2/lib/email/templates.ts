@@ -103,7 +103,7 @@ export function renderEmail(kind: EmailKind, context: TemplateContext): EmailCon
         `You have been invited to join PGLearn${where}${
           context.programTitle ? ` and start ${context.programTitle}` : ""
         }.`,
-        "Opening the link below confirms your account. It expires in 24 hours.",
+        "The link below opens your invitation. It is valid for 7 days.",
       ];
       const action = { label: "Accept your invitation", href: context.actionUrl ?? continueUrl };
       return {
