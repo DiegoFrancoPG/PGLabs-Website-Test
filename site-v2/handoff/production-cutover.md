@@ -233,7 +233,7 @@ reachable over the Data API even with the service key — that is the boundary w
    and confirm the run appears in `/admin/operations`. An unauthenticated 200 here would be a
    critical defect; a 401 that never becomes a scheduled run means `CRON_SECRET` differs between
    Vercel's cron configuration and the environment.
-4. Invite one real person at PG Labs and have them accept. This is the first real outbound email the
+4. Invite one real person at PG Labs and have them accept (D-27: the email goes out at once, not with the daily job). This is the first real outbound email the
    system has ever sent and it exercises SendGrid, the sender verification, the Auth link, the
    callback allow-list and `NEXT_PUBLIC_APP_URL` in one action. Confirm the delivery event arrives
    through the webhook.
