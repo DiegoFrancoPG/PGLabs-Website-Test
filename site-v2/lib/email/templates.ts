@@ -53,23 +53,72 @@ export function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function layout(heading: string, paragraphs: string[], action: { label: string; href: string } | null, settingsUrl: string): string {
-  const body = paragraphs.map((p) => `<p style="margin:0 0 16px">${escapeHtml(p)}</p>`).join("");
+/*
+ * The PG Labs design system, written inline because email clients ignore
+ * stylesheets (D-29). Same tokens as app/globals.css: surface-subtle canvas, a
+ * white card, heading navy in Lora, text-body in Nunito Sans, one ink-900
+ * filled action, and the accent only as a rule. Web fonts rarely load in mail,
+ * so each stack falls back to Georgia and Arial. Tables, not flex or grid, so
+ * Outlook lays it out too. The logo is a PNG (Gmail and Outlook drop SVG),
+ * served by the application itself.
+ */
+const EMAIL = {
+  canvas: "#f4f6f8", // surface-subtle
+  card: "#ffffff", // surface
+  heading: "#1a2230", // heading
+  body: "#667083", // text-body
+  ink: "#10161f", // ink-900 — the filled action
+  accent: "#59c4ed", // accent — rules only, never text on white
+  border: "#e5e7eb", // border-tab
+  divider: "#c9d4e2", // divider
+  serif: "Lora, Georgia, 'Times New Roman', serif",
+  sans: "'Nunito Sans', Arial, Helvetica, sans-serif",
+};
+
+function layout(
+  heading: string,
+  paragraphs: string[],
+  action: { label: string; href: string } | null,
+  settingsUrl: string,
+  appUrl: string
+): string {
+  const origin = appUrl.replace(/\/$/, "");
+  const body = paragraphs
+    .map(
+      (p) =>
+        `<p style="margin:0 0 16px;font-family:${EMAIL.sans};font-size:15px;line-height:23px;color:${EMAIL.body}">${escapeHtml(p)}</p>`
+    )
+    .join("");
   const button = action
-    ? `<p style="margin:24px 0"><a href="${escapeHtml(action.href)}" style="background:#26639f;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;display:inline-block">${escapeHtml(action.label)}</a></p>`
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 8px"><tr>` +
+      `<td style="background:${EMAIL.ink};border-radius:8px">` +
+      `<a href="${escapeHtml(action.href)}" style="display:inline-block;padding:13px 24px;font-family:${EMAIL.sans};font-size:15px;font-weight:700;line-height:20px;color:#ffffff;text-decoration:none;border-radius:8px">${escapeHtml(action.label)}</a>` +
+      `</td></tr></table>`
     : "";
   return [
-    `<!doctype html><html><body style="font-family:-apple-system,Segoe UI,sans-serif;color:#1c2128;line-height:1.5;margin:0;padding:24px">`,
-    `<div style="max-width:520px;margin:0 auto">`,
-    `<p style="font-weight:600;color:#26639f;margin:0 0 24px">PGLearn</p>`,
-    `<h1 style="font-size:20px;margin:0 0 16px">${escapeHtml(heading)}</h1>`,
+    `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">`,
+    `<meta name="color-scheme" content="light"><title>${escapeHtml(heading)}</title></head>`,
+    `<body style="margin:0;padding:0;background:${EMAIL.canvas}">`,
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${EMAIL.canvas}"><tr><td align="center" style="padding:32px 16px">`,
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px">`,
+    // The PGLearn lockup, as in components/pglearn/Logo: PG Labs, a hairline, "Learn" in Lora.
+    `<tr><td style="padding:0 0 20px"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>`,
+    `<td style="vertical-align:middle"><img src="${escapeHtml(origin)}/images/email/pglabs-logo.png" width="92" height="28" alt="PG Labs" style="display:block;border:0;height:28px;width:92px"></td>`,
+    `<td style="vertical-align:middle;padding:0 12px"><div style="width:1px;height:20px;background:${EMAIL.divider}"></div></td>`,
+    `<td style="vertical-align:middle;font-family:${EMAIL.serif};font-size:20px;line-height:24px;color:${EMAIL.heading}">Learn</td>`,
+    `</tr></table></td></tr>`,
+    `<tr><td style="background:${EMAIL.card};border:1px solid ${EMAIL.border};border-radius:12px;padding:0">`,
+    `<div style="height:4px;background:${EMAIL.accent};border-radius:12px 12px 0 0;font-size:0;line-height:0">&nbsp;</div>`,
+    `<div style="padding:32px 32px 28px">`,
+    `<h1 style="margin:0 0 20px;font-family:${EMAIL.serif};font-size:24px;line-height:31px;font-weight:400;color:${EMAIL.heading}">${escapeHtml(heading)}</h1>`,
     body,
     button,
-    `<hr style="border:none;border-top:1px solid #dde1e6;margin:32px 0 16px">`,
-    `<p style="font-size:13px;color:#6b7280;margin:0">`,
+    `</div></td></tr>`,
+    `<tr><td style="padding:20px 8px 0;font-family:${EMAIL.sans};font-size:13px;line-height:20px;color:${EMAIL.body}">`,
     `You can change your learning reminder preferences in your `,
-    `<a href="${escapeHtml(settingsUrl)}" style="color:#26639f">settings</a>.`,
-    `</p></div></body></html>`,
+    `<a href="${escapeHtml(settingsUrl)}" style="color:${EMAIL.heading};text-decoration:underline">settings</a>.<br>`,
+    `PGLearn · PG Labs, a PeaceGeeks initiative`,
+    `</td></tr></table></td></tr></table></body></html>`,
   ].join("");
 }
 
@@ -109,7 +158,7 @@ export function renderEmail(kind: EmailKind, context: TemplateContext): EmailCon
       return {
         subject: `Your PGLearn invitation${where}`,
         text: plain(heading, paragraphs, action, settingsUrl),
-        html: layout(heading, paragraphs, action, settingsUrl),
+        html: layout(heading, paragraphs, action, settingsUrl, context.appUrl),
       };
     }
 
@@ -124,7 +173,7 @@ export function renderEmail(kind: EmailKind, context: TemplateContext): EmailCon
       return {
         subject: `Continue ${programme}`,
         text: plain(heading, paragraphs, action, settingsUrl),
-        html: layout(heading, paragraphs, action, settingsUrl),
+        html: layout(heading, paragraphs, action, settingsUrl, context.appUrl),
       };
     }
 
@@ -139,7 +188,7 @@ export function renderEmail(kind: EmailKind, context: TemplateContext): EmailCon
       return {
         subject: `${programme} is due on ${context.dueDate}`,
         text: plain(heading, paragraphs, action, settingsUrl),
-        html: layout(heading, paragraphs, action, settingsUrl),
+        html: layout(heading, paragraphs, action, settingsUrl, context.appUrl),
       };
     }
 
@@ -153,7 +202,7 @@ export function renderEmail(kind: EmailKind, context: TemplateContext): EmailCon
       return {
         subject: `${programme} is due today`,
         text: plain(heading, paragraphs, action, settingsUrl),
-        html: layout(heading, paragraphs, action, settingsUrl),
+        html: layout(heading, paragraphs, action, settingsUrl, context.appUrl),
       };
     }
 
@@ -168,7 +217,7 @@ export function renderEmail(kind: EmailKind, context: TemplateContext): EmailCon
       return {
         subject: `${programme} is overdue`,
         text: plain(heading, paragraphs, action, settingsUrl),
-        html: layout(heading, paragraphs, action, settingsUrl),
+        html: layout(heading, paragraphs, action, settingsUrl, context.appUrl),
       };
     }
 
@@ -188,7 +237,7 @@ export function renderEmail(kind: EmailKind, context: TemplateContext): EmailCon
       return {
         subject: `Your certificate for ${programme}`,
         text: plain(heading, paragraphs, action, settingsUrl),
-        html: layout(heading, paragraphs, action, settingsUrl),
+        html: layout(heading, paragraphs, action, settingsUrl, context.appUrl),
       };
     }
   }
