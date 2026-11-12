@@ -10231,6 +10231,42 @@
           },
           "onboarded": {
             "type": "boolean"
+          },
+          "invitation": {
+            "description": "M44 (D-30): the member's latest invitation to this organization, or null if they were never invited.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "pending",
+                      "accepted",
+                      "expired",
+                      "cancelled"
+                    ]
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "id",
+                  "status",
+                  "expires_at"
+                ],
+                "additionalProperties": false
+              }
+            ]
           }
         },
         "required": [
