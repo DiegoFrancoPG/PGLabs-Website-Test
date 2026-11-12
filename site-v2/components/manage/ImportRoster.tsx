@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { previewRoster, PROBLEM_TEXT, type RosterPreview } from "@/lib/roster";
+import { derivedKey, digest } from "@/lib/derived-key";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Badge } from "@/components/pglearn/ui/badge";
 import { Button } from "@/components/pglearn/ui/button";
@@ -26,27 +27,6 @@ import { Card } from "@/components/pglearn/ui/card";
  *   - invitations are idempotent by normalized email anyway (T06), so even a
  *     different key does not create a second person.
  */
-
-async function digest(value: string): Promise<string> {
-  const bytes = new TextEncoder().encode(value);
-  const hash = await crypto.subtle.digest("SHA-256", bytes);
-  return [...new Uint8Array(hash)]
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("")
-    .slice(0, 32);
-}
-
-/** A uuid-shaped key derived from the file and one address. */
-async function keyFor(fileHash: string, email: string): Promise<string> {
-  const hex = await digest(`${fileHash}:${email}`);
-  return [
-    hex.slice(0, 8),
-    hex.slice(8, 12),
-    `4${hex.slice(13, 16)}`,
-    `8${hex.slice(17, 20)}`,
-    hex.slice(20, 32),
-  ].join("-");
-}
 
 interface Applied {
   invited: number;
@@ -101,7 +81,7 @@ export function ImportRoster({
             "Content-Type": "application/json",
             // Derived, not random: applying the same file twice is the same
             // request each time.
-            "Idempotency-Key": await keyFor(fileHash, row.email),
+            "Idempotency-Key": await derivedKey(fileHash, row.email),
           },
           body: JSON.stringify({
             organization_id: organizationId,
@@ -132,7 +112,7 @@ export function ImportRoster({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Idempotency-Key": await keyFor(fileHash, "cohort-members"),
+            "Idempotency-Key": await derivedKey(fileHash, "cohort-members"),
           },
           body: JSON.stringify({ user_ids: userIds }),
         });

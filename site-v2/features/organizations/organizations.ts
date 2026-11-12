@@ -70,9 +70,35 @@ export const organizationMemberSchema = z.object({
   role: z.enum(["manager", "learner"]),
   status: z.enum(["invited", "active", "removed"]),
   onboarded: z.boolean(),
+  // M44 (D-30): their latest invitation to this organization. Absent before
+  // M44, null for someone never invited (a test account).
+  invitation: z
+    .object({
+      id: z.string().uuid(),
+      status: z.enum(["pending", "accepted", "expired", "cancelled"]),
+      expires_at: z.string(),
+    })
+    .nullable()
+    .default(null),
 });
 
 export type OrganizationMember = z.infer<typeof organizationMemberSchema>;
+
+/**
+ * The invitations an administrator can resend in one go (D-30): each person
+ * still invited (never joined) whose latest invitation has lapsed, whether it
+ * reads "expired" or is a "pending" one past its date.
+ */
+export function expiredInvitations(members: OrganizationMember[], now: Date) {
+  return members.flatMap((member) => {
+    const invitation = member.invitation;
+    if (member.status !== "invited" || !invitation) return [];
+    const lapsed =
+      invitation.status === "expired" ||
+      (invitation.status === "pending" && new Date(invitation.expires_at).getTime() <= now.getTime());
+    return lapsed ? [{ invitationId: invitation.id, name: member.display_name, email: member.email }] : [];
+  });
+}
 
 export const memberProfilePatchSchema = z
   .object({

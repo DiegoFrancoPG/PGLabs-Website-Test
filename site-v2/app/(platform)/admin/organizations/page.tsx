@@ -4,7 +4,11 @@ import { redirect } from "next/navigation";
 import { verifiedUser } from "@/lib/auth";
 import { getMe } from "@/features/identity/me";
 import { RpcError } from "@/lib/rpc";
-import { listOrganizationMembers, listOrganizations } from "@/features/organizations/organizations";
+import {
+  expiredInvitations,
+  listOrganizationMembers,
+  listOrganizations,
+} from "@/features/organizations/organizations";
 import { listPrograms } from "@/features/content/content";
 import { listGrants } from "@/features/organizations/grants";
 import { AppShell } from "@/components/layout/AppShell";
@@ -16,6 +20,7 @@ import { GrantStatus } from "@/components/admin/GrantStatus";
 import { MoveToLatest, TestOrganizationToggle } from "@/components/admin/TestOrganization";
 import { TestAccounts } from "@/components/admin/TestAccounts";
 import { TestAccountList } from "@/components/admin/TestAccountList";
+import { ResendExpiredInvitations } from "@/components/admin/ResendExpiredInvitations";
 import { Alert } from "@/components/pglearn/ui/alert";
 import { Badge } from "@/components/pglearn/ui/badge";
 import { Button } from "@/components/pglearn/ui/button";
@@ -91,6 +96,7 @@ export default async function OrganizationsPage() {
     ),
   ]);
   const timezones = Intl.supportedValuesOf("timeZone");
+  const now = new Date();
 
   return (
     <AppShell active="admin">
@@ -133,6 +139,11 @@ export default async function OrganizationsPage() {
                       </Badge>
                     </div>
                   </div>
+
+                  {/* D-30: everyone whose invitation lapsed, resent in one go. */}
+                  {memberList !== null && (
+                    <ResendExpiredInvitations invitations={expiredInvitations(memberList, now)} />
+                  )}
 
                   {/* D-25: a test organization lists every account, with its management. */}
                   {organization.is_test && memberList !== null ? (
